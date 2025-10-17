@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
   Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import DropDownPicker from 'react-native-dropdown-picker';
 import { FontAwesomeIcon } from '../../utils/icons';
 
 import { Colors } from '../../constants/colors';
@@ -50,6 +51,176 @@ const InputField = ({
       multiline={multiline}
       numberOfLines={numberOfLines}
       blurOnSubmit={false}
+    />
+  </View>
+);
+
+// Dropdown components
+const DepartmentDropdown = ({ 
+  open, 
+  setOpen, 
+  value, 
+  setValue, 
+  items, 
+  placeholder, 
+  styles 
+}: {
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  value: string;
+  setValue: (callback: (prev: string) => string) => void;
+  items: Array<{label: string, value: string}>;
+  placeholder: string;
+  styles: any;
+}) => (
+  <View style={styles.inputContainer}>
+    <Text style={styles.inputLabel}>Department</Text>
+    <DropDownPicker
+      open={open}
+      value={value}
+      items={items}
+      setOpen={setOpen}
+      setValue={setValue}
+      placeholder={placeholder}
+      style={styles.dropdownStyle}
+      textStyle={styles.dropdownTextStyle}
+      placeholderStyle={styles.dropdownPlaceholderStyle}
+      dropDownContainerStyle={styles.dropdownContainerStyle}
+      listItemLabelStyle={styles.dropdownListItemStyle}
+      closeAfterSelecting={true}
+      searchable={false}
+      listMode="SCROLLVIEW"
+      zIndex={4000}
+      zIndexInverse={1000}
+    />
+  </View>
+);
+
+const SpecializationDropdown = ({ 
+  open, 
+  setOpen, 
+  value, 
+  setValue, 
+  items, 
+  placeholder, 
+  styles 
+}: {
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  value: string;
+  setValue: (callback: (prev: string) => string) => void;
+  items: Array<{label: string, value: string}>;
+  placeholder: string;
+  styles: any;
+}) => (
+  <View style={styles.inputContainer}>
+    <Text style={styles.inputLabel}>Specialization</Text>
+    <DropDownPicker
+      open={open}
+      value={value}
+      items={items}
+      setOpen={setOpen}
+      setValue={setValue}
+      placeholder={placeholder}
+      style={styles.dropdownStyle}
+      textStyle={styles.dropdownTextStyle}
+      placeholderStyle={styles.dropdownPlaceholderStyle}
+      dropDownContainerStyle={styles.dropdownContainerStyle}
+      listItemLabelStyle={styles.dropdownListItemStyle}
+      closeAfterSelecting={true}
+      searchable={false}
+      listMode="SCROLLVIEW"
+      zIndex={3000}
+      zIndexInverse={2000}
+    />
+  </View>
+);
+
+const HospitalDropdown = ({ 
+  open, 
+  setOpen, 
+  value, 
+  setValue, 
+  items, 
+  placeholder, 
+  loading, 
+  styles 
+}: {
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  value: string;
+  setValue: (callback: (prev: string) => string) => void;
+  items: Array<{label: string, value: string}>;
+  placeholder: string;
+  loading: boolean;
+  styles: any;
+}) => (
+  <View style={styles.inputContainer}>
+    <Text style={styles.inputLabel}>Hospital</Text>
+    <DropDownPicker
+      open={open}
+      value={value}
+      items={items}
+      setOpen={setOpen}
+      setValue={setValue}
+      placeholder={placeholder}
+      loading={loading}
+      style={styles.dropdownStyle}
+      textStyle={styles.dropdownTextStyle}
+      placeholderStyle={styles.dropdownPlaceholderStyle}
+      dropDownContainerStyle={styles.dropdownContainerStyle}
+      listItemLabelStyle={styles.dropdownListItemStyle}
+      closeAfterSelecting={true}
+      searchable={false}
+      listMode="SCROLLVIEW"
+      zIndex={2000}
+      zIndexInverse={3000}
+    />
+  </View>
+);
+
+const UnitDropdown = ({ 
+  open, 
+  setOpen, 
+  value, 
+  setValue, 
+  items, 
+  placeholder, 
+  loading, 
+  disabled,
+  styles 
+}: {
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  value: string;
+  setValue: (callback: (prev: string) => string) => void;
+  items: Array<{label: string, value: string}>;
+  placeholder: string;
+  loading: boolean;
+  disabled: boolean;
+  styles: any;
+}) => (
+  <View style={styles.inputContainer}>
+    <Text style={styles.inputLabel}>Unit</Text>
+    <DropDownPicker
+      open={open}
+      value={value}
+      items={items}
+      setOpen={setOpen}
+      setValue={setValue}
+      placeholder={placeholder}
+      loading={loading}
+      disabled={disabled}
+      style={styles.dropdownStyle}
+      textStyle={styles.dropdownTextStyle}
+      placeholderStyle={styles.dropdownPlaceholderStyle}
+      dropDownContainerStyle={styles.dropdownContainerStyle}
+      listItemLabelStyle={styles.dropdownListItemStyle}
+      closeAfterSelecting={true}
+      searchable={false}
+      listMode="SCROLLVIEW"
+      zIndex={1000}
+      zIndexInverse={4000}
     />
   </View>
 );
@@ -109,16 +280,143 @@ const CreateJobScreen: React.FC = () => {
     malpractice: false,
   });
 
+  // Hospital and unit data
+  const [hospitals, setHospitals] = useState<Array<{id: number, name: string}>>([]);
+  const [units, setUnits] = useState<Array<{code: string, name: string}>>([]);
+  const [loadingHospitals, setLoadingHospitals] = useState(false);
+  const [loadingUnits, setLoadingUnits] = useState(false);
+
+  // Dropdown states
+  const [departmentDropdownOpen, setDepartmentDropdownOpen] = useState(false);
+  const [specializationDropdownOpen, setSpecializationDropdownOpen] = useState(false);
+  const [hospitalDropdownOpen, setHospitalDropdownOpen] = useState(false);
+  const [unitDropdownOpen, setUnitDropdownOpen] = useState(false);
+
+  // Medical departments and specializations (same as RegisterScreen)
+  const medicalDepartments = [
+    'Emergency Medicine',
+    'General Medicine',
+    'General Surgery',
+    'Obstetrics & Gynecology',
+    'Pediatrics',
+    'Orthopedics',
+    'Cardiology',
+    'Neurology',
+    'Urology',
+    'Nephrology',
+    'Gastroenterology',
+    'Oncology',
+    'ENT',
+    'Ophthalmology',
+    'Dermatology',
+    'Psychiatry',
+    'Radiology',
+    'Pathology',
+    'Anesthesiology',
+    'Physiotherapy',
+  ];
+
+  // Department-specific specializations mapping
+  const departmentSpecializations: Record<string, string[]> = {
+    'Emergency Medicine': ['Trauma Care', 'Critical Care', 'Accident & Emergency', 'Emergency Surgery'],
+    'General Medicine': ['Internal Medicine', 'Diabetology', 'Infectious Diseases', 'Geriatric Medicine'],
+    'General Surgery': ['Laparoscopic Surgery', 'Gastrointestinal Surgery', 'Hernia Repair', 'Breast Surgery'],
+    'Obstetrics & Gynecology': ['Obstetrics', 'Gynecology', 'Infertility', 'Maternal-Fetal Medicine'],
+    'Pediatrics': ['Neonatology', 'Pediatric Neurology', 'Pediatric Cardiology', 'Child Development'],
+    'Orthopedics': ['Joint Replacement', 'Sports Medicine', 'Spine Surgery', 'Trauma Orthopedics'],
+    'Cardiology': ['Interventional Cardiology', 'Non-Invasive Cardiology', 'Pediatric Cardiology', 'Cardiac Rehabilitation'],
+    'Neurology': ['Stroke', 'Epilepsy', 'Neurophysiology', 'Movement Disorders'],
+    'Urology': ['Andrology', 'Endourology', 'Pediatric Urology', 'Uro-Oncology'],
+    'Nephrology': ['Dialysis', 'Renal Transplant', 'Chronic Kidney Disease', 'Hypertension Management'],
+    'Gastroenterology': ['Hepatology', 'Pancreatology', 'Endoscopy', 'Liver Transplant'],
+    'Oncology': ['Medical Oncology', 'Radiation Oncology', 'Surgical Oncology', 'Hematologic Oncology'],
+    'ENT': ['Otology (Ear)', 'Rhinology (Nose)', 'Laryngology (Throat)', 'Head & Neck Surgery'],
+    'Ophthalmology': ['Cataract Surgery', 'Glaucoma', 'Retina', 'Cornea & Refractive Surgery'],
+    'Dermatology': ['Cosmetic Dermatology', 'Trichology', 'Clinical Dermatology', 'Venereology'],
+    'Psychiatry': ['Child Psychiatry', 'Addiction Psychiatry', 'Clinical Psychology', 'Geriatric Psychiatry'],
+    'Radiology': ['MRI', 'CT Scan', 'Ultrasound', 'Interventional Radiology'],
+    'Pathology': ['Histopathology', 'Cytopathology', 'Hematology', 'Clinical Pathology'],
+    'Anesthesiology': ['Cardiac Anesthesia', 'Neuroanesthesia', 'Pain Management', 'Critical Care Anesthesia'],
+    'Physiotherapy': ['Orthopedic Physiotherapy', 'Neurological Physiotherapy', 'Cardiopulmonary Physiotherapy', 'Sports Rehabilitation'],
+  };
+
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // If department changes, reset specialization
+    if (field === 'department') {
+      setFormData(prev => ({ ...prev, department: value as string, specialization: '' }));
+    }
+    
+    // If hospital changes, reset unit and load new units
+    if (field === 'hospitalId') {
+      setFormData(prev => ({ ...prev, hospitalId: value as string, unitCode: '' }));
+      setUnits([]);
+      if (value) {
+        loadUnits(parseInt(value as string));
+      }
+    }
   };
+
+  const loadHospitals = useCallback(async () => {
+    setLoadingHospitals(true);
+    try {
+      const response = await ApiService.getHospitals();
+      const hospitalList = response.hospitals.map(hospital => ({
+        id: hospital.id,
+        name: hospital.name
+      }));
+      setHospitals(hospitalList);
+    } catch (error) {
+      console.error('❌ Failed to load hospitals:', error);
+      Alert.alert(
+        'Network Error', 
+        'Failed to connect to server. Please check your network connection and try again.'
+      );
+    } finally {
+      setLoadingHospitals(false);
+    }
+  }, []);
+
+  const loadUnits = useCallback(async (hospitalId: number) => {
+    setLoadingUnits(true);
+    try {
+      const response = await ApiService.getHospitalUnits(hospitalId);
+      
+      if (!response.units || !Array.isArray(response.units)) {
+        console.error('❌ No units array found in response:', response);
+        setUnits([]);
+        return;
+      }
+      
+      const unitList = response.units.map(unit => {
+        return {
+          code: unit.unitCode || '',
+          name: unit.unitName || 'Unknown Unit'
+        };
+      });
+      
+      setUnits(unitList);
+    } catch (error) {
+      console.error('❌ Failed to load units for hospital', hospitalId, ':', error);
+      Alert.alert('Error', `Failed to load units for the selected hospital. Please try again.`);
+      setUnits([]);
+    } finally {
+      setLoadingUnits(false);
+    }
+  }, []);
+
+  // Load hospitals on component mount
+  useEffect(() => {
+    loadHospitals();
+  }, [loadHospitals]);
 
   const validateForm = () => {
     const requiredFields = [
       'title', 'description', 'department', 'location', 'startDate', 'endDate',
       'startTime', 'endTime', 'hourlyRate', 'facilityName', 'facilityStreet',
       'facilityCity', 'facilityState', 'facilityZipCode', 'contactName',
-      'contactPhone', 'contactEmail', 'contactPosition'
+      'contactPhone', 'contactEmail', 'contactPosition', 'hospitalId', 'unitCode'
     ];
 
     for (const field of requiredFields) {
@@ -126,6 +424,37 @@ const CreateJobScreen: React.FC = () => {
         Alert.alert('Validation Error', `Please fill in ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`);
         return false;
       }
+    }
+
+    // Department and specialization validation
+    if (!formData.department) {
+      Alert.alert('Validation Error', 'Please select a department');
+      return false;
+    }
+
+    if (formData.requiredRole === 'DOCTOR' && !formData.specialization) {
+      Alert.alert('Validation Error', 'Please select a specialization for doctors');
+      return false;
+    }
+
+    // Validate specialization matches department
+    if (formData.requiredRole === 'DOCTOR' && formData.specialization && formData.department) {
+      const validSpecializations = departmentSpecializations[formData.department] || [];
+      if (!validSpecializations.includes(formData.specialization)) {
+        Alert.alert('Validation Error', `Selected specialization "${formData.specialization}" is not valid for department "${formData.department}"`);
+        return false;
+      }
+    }
+
+    // Hospital and unit validation
+    if (!formData.hospitalId) {
+      Alert.alert('Validation Error', 'Please select a hospital');
+      return false;
+    }
+
+    if (!formData.unitCode) {
+      Alert.alert('Validation Error', 'Please select a unit');
+      return false;
     }
 
     if (parseFloat(formData.hourlyRate) <= 0) {
@@ -155,9 +484,9 @@ const CreateJobScreen: React.FC = () => {
         description: formData.description,
         department: formData.department,
         location: formData.location,
-        hospitalId: 1,
-        unitCode: "ICU",
-        createdBy: 1,
+        hospitalId: parseInt(formData.hospitalId),
+        unitCode: formData.unitCode,
+        createdBy: 1, // TODO: Get from auth context
         requiredRole: formData.requiredRole,
         specialization: formData.specialization || undefined,
         startDate: normalizeDate(formData.startDate),
@@ -194,14 +523,21 @@ const CreateJobScreen: React.FC = () => {
         },
       };
 
-      console.log('jobData', jobData);
+      console.log('🔧 Job data being sent:', jobData);
 
-      await ApiService.createJob(jobData);
-      Alert.alert('Success', 'Job created successfully!', [
+      const response = await ApiService.createJob(jobData);
+      
+      // Handle the new response format with compatibility information
+      const compatibleStaffCount = (response as any).compatibleStaffCount || 0;
+      const message = compatibleStaffCount > 0 
+        ? `Job created successfully! Found ${compatibleStaffCount} compatible staff members.`
+        : 'Job created successfully! No compatible staff found yet, but the job is posted.';
+
+      Alert.alert('Success', message, [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
     } catch (error: any) {
-      console.log('Create job error response:', error.response?.data);
+      console.log('❌ Create job error response:', error.response?.data);
       Alert.alert('Error', error.response?.data?.message || 'Failed to create job');
     } finally {
       setIsLoading(false);
@@ -231,24 +567,35 @@ const CreateJobScreen: React.FC = () => {
             numberOfLines={4}
           />
 
-          <View style={styles.row}>
-            <View style={styles.halfWidth}>
-              <InputField
-                label="Department"
-                value={formData.department}
-                onChangeText={(text) => handleInputChange('department', text)}
-                placeholder="e.g., Emergency Medicine"
-              />
-            </View>
-            <View style={styles.halfWidth}>
-              <InputField
-                label="Location"
-                value={formData.location}
-                onChangeText={(text) => handleInputChange('location', text)}
-                placeholder="e.g., New York"
-              />
-            </View>
-          </View>
+          <DepartmentDropdown 
+            open={departmentDropdownOpen}
+            setOpen={(open) => {
+              setDepartmentDropdownOpen(open);
+              if (open) {
+                setSpecializationDropdownOpen(false);
+                setHospitalDropdownOpen(false);
+                setUnitDropdownOpen(false);
+              }
+            }}
+            value={formData.department}
+            setValue={(callback) => {
+              const newValue = callback(formData.department);
+              handleInputChange('department', newValue);
+            }}
+            items={medicalDepartments.map(dept => ({
+              label: dept,
+              value: dept,
+            }))}
+            placeholder="Select department"
+            styles={styles}
+          />
+
+          <InputField
+            label="Location"
+            value={formData.location}
+            onChangeText={(text) => handleInputChange('location', text)}
+            placeholder="e.g., New York"
+          />
 
           <View style={styles.roleSelector}>
             <Text style={styles.inputLabel}>Required Role</Text>
@@ -285,11 +632,27 @@ const CreateJobScreen: React.FC = () => {
           </View>
 
           {formData.requiredRole === 'DOCTOR' && (
-            <InputField
-              label="Specialization"
+            <SpecializationDropdown 
+              open={specializationDropdownOpen}
+              setOpen={(open) => {
+                setSpecializationDropdownOpen(open);
+                if (open) {
+                  setDepartmentDropdownOpen(false);
+                  setHospitalDropdownOpen(false);
+                  setUnitDropdownOpen(false);
+                }
+              }}
               value={formData.specialization}
-              onChangeText={(text) => handleInputChange('specialization', text)}
-              placeholder="e.g., Emergency Medicine"
+              setValue={(callback) => {
+                const newValue = callback(formData.specialization);
+                handleInputChange('specialization', newValue);
+              }}
+              items={(departmentSpecializations[formData.department] || []).map(specialization => ({
+                label: specialization,
+                value: specialization,
+              }))}
+              placeholder="Select specialization"
+              styles={styles}
             />
           )}
 
@@ -383,24 +746,54 @@ const CreateJobScreen: React.FC = () => {
             placeholder="e.g., New York General Hospital"
           />
 
-          <View style={styles.row}>
-            <View style={styles.halfWidth}>
-              <InputField
-                label="Hospital ID"
-                value={formData.hospitalId}
-                onChangeText={(text) => handleInputChange('hospitalId', text)}
-                placeholder="e.g., HOSP-123"
-              />
-            </View>
-            <View style={styles.halfWidth}>
-              <InputField
-                label="Unit Code"
-                value={formData.unitCode}
-                onChangeText={(text) => handleInputChange('unitCode', text)}
-                placeholder="e.g., ICU-01"
-              />
-            </View>
-          </View>
+          <HospitalDropdown 
+            open={hospitalDropdownOpen}
+            setOpen={(open) => {
+              setHospitalDropdownOpen(open);
+              if (open) {
+                setDepartmentDropdownOpen(false);
+                setSpecializationDropdownOpen(false);
+                setUnitDropdownOpen(false);
+              }
+            }}
+            value={formData.hospitalId}
+            setValue={(callback) => {
+              const newValue = callback(formData.hospitalId);
+              handleInputChange('hospitalId', newValue);
+            }}
+            items={hospitals.map(hospital => ({
+              label: hospital.name,
+              value: hospital.id.toString(),
+            }))}
+            placeholder="Select hospital"
+            loading={loadingHospitals}
+            styles={styles}
+          />
+
+          <UnitDropdown 
+            open={unitDropdownOpen}
+            setOpen={(open) => {
+              setUnitDropdownOpen(open);
+              if (open) {
+                setDepartmentDropdownOpen(false);
+                setSpecializationDropdownOpen(false);
+                setHospitalDropdownOpen(false);
+              }
+            }}
+            value={formData.unitCode}
+            setValue={(callback) => {
+              const newValue = callback(formData.unitCode);
+              handleInputChange('unitCode', newValue);
+            }}
+            items={units.map(unit => ({
+              label: unit.name,
+              value: unit.code,
+            }))}
+            placeholder="Select unit"
+            loading={loadingUnits}
+            disabled={!formData.hospitalId || units.length === 0}
+            styles={styles}
+          />
 
           <InputField
             label="Street Address"
@@ -705,6 +1098,39 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.lg,
     fontWeight: Typography.fontWeight.bold,
     color: Colors.white,
+  },
+  dropdownStyle: {
+    backgroundColor: Colors.backgroundSecondary,
+    borderColor: Colors.border,
+    borderWidth: 1,
+    borderRadius: BorderRadius.lg,
+    minHeight: 50,
+  },
+  dropdownTextStyle: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textPrimary,
+  },
+  dropdownPlaceholderStyle: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textTertiary,
+  },
+  dropdownContainerStyle: {
+    backgroundColor: Colors.white,
+    borderColor: Colors.border,
+    borderWidth: 1,
+    borderRadius: BorderRadius.lg,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  dropdownListItemStyle: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textPrimary,
   },
 });
 

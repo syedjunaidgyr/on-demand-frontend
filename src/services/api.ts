@@ -475,6 +475,69 @@ class ApiService {
     return response.data;
   }
 
+  // Public endpoints
+  async getHospitals(): Promise<{ hospitals: Array<{ id: number; name: string; code: string; isActive: boolean }> }> {
+    try {
+      console.log('🏥 Fetching hospitals from:', `${BASE_URL}/public/hospitals`);
+      console.log('🌐 Full URL being called:', `${BASE_URL}/public/hospitals`);
+      console.log('📡 Network info - Base URL:', BASE_URL);
+      
+      const response: AxiosResponse<{ hospitals: Array<{ id: number; name: string; code: string; isActive: boolean }> }> = 
+        await this.api.get('/public/hospitals');
+      
+      console.log('✅ Hospitals fetched successfully:', response.data);
+      console.log('📊 Number of hospitals:', response.data.hospitals?.length || 0);
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to fetch hospitals:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response?.data,
+        status: error.response?.status,
+        url: error.config?.url,
+        baseURL: error.config?.baseURL
+      });
+      throw error;
+    }
+  }
+
+  async getHospitalUnits(hospitalId: number): Promise<{ units: Array<{ unitCode: string; unitName: string; isActive: boolean }> }> {
+    try {
+      console.log('🏥 Fetching units for hospital ID:', hospitalId);
+      console.log('🌐 Full URL being called:', `${BASE_URL}/public/hospitals/${hospitalId}/units`);
+      console.log('📡 Network info - Base URL:', BASE_URL);
+      
+      const response: AxiosResponse<{ units: Array<{ unitCode: string; unitName: string; isActive: boolean }> }> = 
+        await this.api.get(`/public/hospitals/${hospitalId}/units`);
+      
+      console.log('🔍 RAW API RESPONSE:', JSON.stringify(response.data, null, 2));
+      console.log('🔍 Response structure:', {
+        hasUnits: 'units' in response.data,
+        unitsCount: response.data.units?.length || 0,
+        responseType: typeof response.data
+      });
+      
+      console.log('✅ Units fetched successfully for hospital', hospitalId, ':', response.data);
+      console.log('📊 Number of units found:', response.data.units?.length || 0);
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to fetch units for hospital', hospitalId, ':', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response?.data,
+        status: error.response?.status,
+        url: error.config?.url,
+        baseURL: error.config?.baseURL,
+        hospitalId: hospitalId
+      });
+      throw error;
+    }
+  }
+
   // Health check - using a simple endpoint that exists
   async healthCheck(): Promise<any> {
     try {
