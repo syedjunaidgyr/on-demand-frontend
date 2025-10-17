@@ -85,6 +85,13 @@ android {
         versionCode 1
         versionName "1.0"
     }
+    
+    // Add font configuration
+    sourceSets {
+        main {
+            assets.srcDirs = ['src/main/assets', 'src/main/assets/fonts']
+        }
+    }
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
