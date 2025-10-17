@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -34,6 +34,8 @@ const RegisterScreen: React.FC = () => {
     specialization: '',
     licenseNumber: '',
     phone: '',
+    hospitalId: '',
+    unitCode: '',
     emergencyContactName: '',
     emergencyContactPhone: '',
     emergencyContactRelationship: '',
@@ -45,9 +47,65 @@ const RegisterScreen: React.FC = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [hospitals, setHospitals] = useState<Array<{id: number, name: string}>>([]);
+  const [units, setUnits] = useState<Array<{code: string, name: string}>>([]);
+  const [loadingHospitals, setLoadingHospitals] = useState(false);
+  const [loadingUnits, setLoadingUnits] = useState(false);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // If hospital changes, reset unit and load new units
+    if (field === 'hospitalId') {
+      setFormData(prev => ({ ...prev, hospitalId: value, unitCode: '' }));
+      setUnits([]);
+      if (value) {
+        loadUnits(parseInt(value));
+      }
+    }
+  };
+
+  // Load hospitals on component mount
+  useEffect(() => {
+    loadHospitals();
+  }, []);
+
+  const loadHospitals = async () => {
+    setLoadingHospitals(true);
+    try {
+      // Mock data - replace with actual API call
+      const mockHospitals = [
+        { id: 1, name: 'Indira Gandhi Hospital' },
+        { id: 2, name: 'Apollo Hospital' },
+        { id: 3, name: 'Fortis Hospital' },
+        { id: 4, name: 'Manipal Hospital' },
+      ];
+      setHospitals(mockHospitals);
+    } catch (error) {
+      console.error('Failed to load hospitals:', error);
+    } finally {
+      setLoadingHospitals(false);
+    }
+  };
+
+  const loadUnits = async (hospitalId: number) => {
+    setLoadingUnits(true);
+    try {
+      // Mock data - replace with actual API call
+      const mockUnits = [
+        { code: 'ICU', name: 'Intensive Care Unit' },
+        { code: 'ER', name: 'Emergency Room' },
+        { code: 'OR', name: 'Operating Room' },
+        { code: 'WARD', name: 'General Ward' },
+        { code: 'CARDIO', name: 'Cardiology' },
+        { code: 'NEURO', name: 'Neurology' },
+      ];
+      setUnits(mockUnits);
+    } catch (error) {
+      console.error('Failed to load units:', error);
+    } finally {
+      setLoadingUnits(false);
+    }
   };
 
   const validateForm = () => {
@@ -106,6 +164,8 @@ const RegisterScreen: React.FC = () => {
           zipCode: formData.zipCode,
           country: formData.country,
         },
+        hospitalId: formData.hospitalId ? parseInt(formData.hospitalId) : undefined,
+        unitCode: formData.unitCode || undefined,
       };
 
       await ApiService.register(registerData);
@@ -166,6 +226,52 @@ const RegisterScreen: React.FC = () => {
             />
           </TouchableOpacity>
         )}
+      </View>
+    </View>
+  );
+
+  const DropdownField = ({ 
+    label, 
+    value, 
+    onValueChange, 
+    placeholder, 
+    options, 
+    icon,
+    loading = false,
+  }: {
+    label: string;
+    value: string;
+    onValueChange: (value: string) => void;
+    placeholder: string;
+    options: Array<{id?: number, code?: string, name: string}>;
+    icon: any;
+    loading?: boolean;
+  }) => (
+    <View style={styles.inputContainer}>
+      <Text style={styles.inputLabel}>{label}</Text>
+      <View style={styles.inputWrapper}>
+        <FontAwesomeIcon icon={icon} size={20} color={Colors.textTertiary} style={styles.inputIcon} />
+        <TouchableOpacity 
+          style={styles.dropdownButton}
+          onPress={() => {
+            // Simple implementation - in a real app you'd use a proper dropdown library
+            Alert.alert(
+              label,
+              'Select an option:',
+              options.map(option => ({
+                text: option.name,
+                onPress: () => onValueChange(option.id?.toString() || option.code || ''),
+              })).concat([{ text: 'Cancel', onPress: () => {} }])
+            );
+          }}
+        >
+          <Text style={[styles.dropdownText, !value && styles.dropdownPlaceholder]}>
+            {loading ? 'Loading...' : 
+             value ? options.find(opt => (opt.id?.toString() || opt.code) === value)?.name || placeholder : 
+             placeholder}
+          </Text>
+          <FontAwesomeIcon icon="chevron-down" size={16} color={Colors.textTertiary} />
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -314,6 +420,28 @@ const RegisterScreen: React.FC = () => {
             placeholder="+1234567890"
             keyboardType="phone-pad"
             icon="phone"
+          />
+
+          <Text style={styles.sectionTitle}>Hospital Assignment</Text>
+          
+          <DropdownField
+            label="Hospital"
+            value={formData.hospitalId}
+            onValueChange={(value) => handleInputChange('hospitalId', value)}
+            placeholder="Select a hospital"
+            options={hospitals}
+            icon="hospital"
+            loading={loadingHospitals}
+          />
+
+          <DropdownField
+            label="Unit/Department"
+            value={formData.unitCode}
+            onValueChange={(value) => handleInputChange('unitCode', value)}
+            placeholder="Select a unit"
+            options={units}
+            icon="building"
+            loading={loadingUnits}
           />
 
           <Text style={styles.sectionTitle}>Emergency Contact</Text>
@@ -556,6 +684,21 @@ const styles = StyleSheet.create({
   loginLinkText: {
     color: Colors.primary,
     fontWeight: Typography.fontWeight.bold,
+  },
+  dropdownButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 0,
+  },
+  dropdownText: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textPrimary,
+    flex: 1,
+  },
+  dropdownPlaceholder: {
+    color: Colors.textTertiary,
   },
 });
 

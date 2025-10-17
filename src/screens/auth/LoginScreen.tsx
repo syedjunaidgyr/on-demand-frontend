@@ -6,11 +6,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  KeyboardAvoidingView,
   Platform,
   Alert,
   ActivityIndicator,
   Image,
+  ScrollView,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -94,6 +96,7 @@ const LoginScreen: React.FC = () => {
   };
 
   const handleLogin = () => {
+    Keyboard.dismiss();
     performLogin(false);
   };
 
@@ -101,8 +104,13 @@ const LoginScreen: React.FC = () => {
     navigation.navigate('Register' as never);
   };
 
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
+
   return (
     <SafeAreaView style={styles.container}>
+      {/* Fixed Header - Won't move with keyboard */}
       <LinearGradient
         colors={[Colors.primary, Colors.primary]}
         style={styles.headerGradient}>
@@ -119,82 +127,107 @@ const LoginScreen: React.FC = () => {
         </View>
       </LinearGradient>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.content}>
-        <View style={styles.formContainer}>
-          <Text style={styles.welcomeText}>Welcome Back!</Text>
-          <Text style={styles.subtitleText}>Sign in to continue</Text>
+      {/* Content Area with Keyboard Handling */}
+      <TouchableWithoutFeedback onPress={dismissKeyboard}>
+        <View style={styles.keyboardAvoidingView}>
+          <ScrollView 
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollViewContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            scrollEnabled={Platform.OS === 'android' ? false : true}
+            overScrollMode={Platform.OS === 'android' ? 'never' : 'auto'}>
+            
+            <View style={styles.formContainer}>
+              <Text style={styles.welcomeText}>Welcome Back!</Text>
+              <Text style={styles.subtitleText}>Sign in to continue</Text>
 
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <FontAwesomeIcon icon="envelope" size={20} color={Colors.textTertiary} style={styles.inputIcon} />
-              <TextInput
-                style={styles.textInput}
-                placeholder="Email Address"
-                placeholderTextColor={Colors.textTertiary}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-          </View>
+              <View style={styles.inputContainer}>
+                <View style={styles.inputWrapper}>
+                  <FontAwesomeIcon icon="envelope" size={20} color={Colors.textTertiary} style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Email Address"
+                    placeholderTextColor={Colors.textTertiary}
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    returnKeyType="next"
+                  />
+                </View>
+              </View>
 
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <FontAwesomeIcon icon="lock" size={20} color={Colors.textTertiary} style={styles.inputIcon} />
-              <TextInput
-                style={styles.textInput}
-                placeholder="Password"
-                placeholderTextColor={Colors.textTertiary}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
+              <View style={styles.inputContainer}>
+                <View style={styles.inputWrapper}>
+                  <FontAwesomeIcon icon="lock" size={20} color={Colors.textTertiary} style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Password"
+                    placeholderTextColor={Colors.textTertiary}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    returnKeyType="done"
+                    onSubmitEditing={dismissKeyboard}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.eyeIcon}>
+                    <FontAwesomeIcon
+                      icon={showPassword ? "eye-slash" : "eye"}
+                      size={20}
+                      color={Colors.textTertiary}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
               <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                style={styles.eyeIcon}>
-                <FontAwesomeIcon
-                  icon={showPassword ? "eye-slash" : "eye"}
-                  size={20}
-                  color={Colors.textTertiary}
-                />
+                style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+                onPressIn={dismissKeyboard}
+                onPress={handleLogin}
+                disabled={isLoading}>
+                {isLoading ? (
+                  <ActivityIndicator color={Colors.white} />
+                ) : (
+                  <Text style={styles.loginButtonText}>Sign In</Text>
+                )}
+              </TouchableOpacity>
+
+              {retryMessage ? (
+                <Text style={styles.retryMessage}>{retryMessage}</Text>
+              ) : null}
+
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>OR</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <TouchableOpacity style={styles.registerButton} onPress={navigateToRegister}>
+                <Text style={styles.registerButtonText}>
+                  Don't have an account? <Text style={styles.registerLinkText}>Sign Up</Text>
+                </Text>
               </TouchableOpacity>
             </View>
-          </View>
-
-          <TouchableOpacity
-            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
-            onPress={handleLogin}
-            disabled={isLoading}>
-            {isLoading ? (
-              <ActivityIndicator color={Colors.white} />
-            ) : (
-              <Text style={styles.loginButtonText}>Sign In</Text>
-            )}
-          </TouchableOpacity>
-
-          {retryMessage ? (
-            <Text style={styles.retryMessage}>{retryMessage}</Text>
-          ) : null}
-
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <TouchableOpacity style={styles.registerButton} onPress={navigateToRegister}>
-            <Text style={styles.registerButtonText}>
-              Don't have an account? <Text style={styles.registerLinkText}>Sign Up</Text>
-            </Text>
-          </TouchableOpacity>
+          </ScrollView>
         </View>
-      </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
+      {/* Footer - Anchored to bottom */}
+      <View style={styles.footerOuter}>
+        <View style={styles.footerContainer}>
+          <Text style={styles.footerText}>Powered by</Text>
+          <Image
+            source={require('../../assets/footer_logo.png')}
+            style={styles.footerLogo}
+            resizeMode="contain"
+          />
+        </View>
+      </View>
     </SafeAreaView>
   );
 };
@@ -241,14 +274,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     opacity: 0.9,
   },
-  content: {
+  keyboardAvoidingView: {
     flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
     paddingHorizontal: Spacing.lg,
   },
   formContainer: {
-    flex: 1,
-    justifyContent: 'center',
     paddingTop: Spacing.sm,
+    paddingBottom: Spacing.xl, // Extra padding at bottom for keyboard
   },
   welcomeText: {
     fontSize: Typography.fontSize['2xl'],
@@ -336,6 +375,26 @@ const styles = StyleSheet.create({
   registerLinkText: {
     color: Colors.primary,
     fontWeight: Typography.fontWeight.bold,
+  },
+  footerOuter: {
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+  },
+  footerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footerText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textTertiary,
+    marginLeft: 30,
+  },
+  footerLogo: {
+    height: 16,
+    width: 100,
+    marginLeft: -28,
+    marginTop: 2,
   },
 });
 

@@ -9,6 +9,8 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
@@ -17,6 +19,57 @@ import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
 import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import ApiService from '../../services/api';
+
+// Reusable input components must be defined outside to avoid remounting on each render
+const InputField = ({ 
+  label, 
+  value, 
+  onChangeText, 
+  placeholder, 
+  keyboardType = 'default',
+  multiline = false,
+  numberOfLines = 1,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder: string;
+  keyboardType?: any;
+  multiline?: boolean;
+  numberOfLines?: number;
+}) => (
+  <View style={styles.inputContainer}>
+    <Text style={styles.inputLabel}>{label}</Text>
+    <TextInput
+      style={[styles.textInput, multiline && styles.multilineInput]}
+      placeholder={placeholder}
+      placeholderTextColor={Colors.textTertiary}
+      value={value}
+      onChangeText={onChangeText}
+      keyboardType={keyboardType}
+      multiline={multiline}
+      numberOfLines={numberOfLines}
+      blurOnSubmit={false}
+    />
+  </View>
+);
+
+const CheckboxField = ({ 
+  label, 
+  value, 
+  onValueChange 
+}: {
+  label: string;
+  value: boolean;
+  onValueChange: (value: boolean) => void;
+}) => (
+  <TouchableOpacity style={styles.checkboxContainer} onPress={() => onValueChange(!value)}>
+    <View style={[styles.checkbox, value && styles.checkboxChecked]}>
+      {value && <FontAwesomeIcon icon="check" size={16} color={Colors.white}  />}
+    </View>
+    <Text style={styles.checkboxLabel}>{label}</Text>
+  </TouchableOpacity>
+);
 
 const CreateJobScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -35,6 +88,8 @@ const CreateJobScreen: React.FC = () => {
     hourlyRate: '',
     priority: 'MEDIUM' as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT',
     maxAssignments: '1',
+    hospitalId: '',
+    unitCode: '',
     facilityName: '',
     facilityStreet: '',
     facilityCity: '',
@@ -86,15 +141,27 @@ const CreateJobScreen: React.FC = () => {
 
     setIsLoading(true);
     try {
+      const normalizeDate = (value: string) => {
+        const ddmmyyyy = value.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+        if (ddmmyyyy) {
+          const [, dd, mm, yyyy] = ddmmyyyy;
+          return `${yyyy}-${mm}-${dd}`; // convert to YYYY-MM-DD
+        }
+        return value;
+      };
+
       const jobData = {
         title: formData.title,
         description: formData.description,
         department: formData.department,
         location: formData.location,
+        hospitalId: 1,
+        unitCode: "ICU",
+        createdBy: 1,
         requiredRole: formData.requiredRole,
         specialization: formData.specialization || undefined,
-        startDate: formData.startDate,
-        endDate: formData.endDate,
+        startDate: normalizeDate(formData.startDate),
+        endDate: normalizeDate(formData.endDate),
         startTime: formData.startTime,
         endTime: formData.endTime,
         hourlyRate: parseFloat(formData.hourlyRate),
@@ -127,69 +194,24 @@ const CreateJobScreen: React.FC = () => {
         },
       };
 
+      console.log('jobData', jobData);
+
       await ApiService.createJob(jobData);
       Alert.alert('Success', 'Job created successfully!', [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
     } catch (error: any) {
+      console.log('Create job error response:', error.response?.data);
       Alert.alert('Error', error.response?.data?.message || 'Failed to create job');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const InputField = ({ 
-    label, 
-    value, 
-    onChangeText, 
-    placeholder, 
-    keyboardType = 'default',
-    multiline = false,
-    numberOfLines = 1,
-  }: {
-    label: string;
-    value: string;
-    onChangeText: (text: string) => void;
-    placeholder: string;
-    keyboardType?: any;
-    multiline?: boolean;
-    numberOfLines?: number;
-  }) => (
-    <View style={styles.inputContainer}>
-      <Text style={styles.inputLabel}>{label}</Text>
-      <TextInput
-        style={[styles.textInput, multiline && styles.multilineInput]}
-        placeholder={placeholder}
-        placeholderTextColor={Colors.textTertiary}
-        value={value}
-        onChangeText={onChangeText}
-        keyboardType={keyboardType}
-        multiline={multiline}
-        numberOfLines={numberOfLines}
-      />
-    </View>
-  );
-
-  const CheckboxField = ({ 
-    label, 
-    value, 
-    onValueChange 
-  }: {
-    label: string;
-    value: boolean;
-    onValueChange: (value: boolean) => void;
-  }) => (
-    <TouchableOpacity style={styles.checkboxContainer} onPress={() => onValueChange(!value)}>
-      <View style={[styles.checkbox, value && styles.checkboxChecked]}>
-        {value && <FontAwesomeIcon icon="check" size={16} color={Colors.white}  />}
-      </View>
-      <Text style={styles.checkboxLabel}>{label}</Text>
-    </TouchableOpacity>
-  );
-
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView style={styles.flex1} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="always" keyboardDismissMode="none">
         <View style={styles.formContainer}>
           <Text style={styles.sectionTitle}>Job Details</Text>
           
@@ -251,7 +273,7 @@ const CreateJobScreen: React.FC = () => {
                   formData.requiredRole === 'NURSE' && styles.roleButtonActive,
                 ]}
                 onPress={() => handleInputChange('requiredRole', 'NURSE')}>
-                <FontAwesomeIcon icon="healing" size={20} color={formData.requiredRole === 'NURSE' ? Colors.white : Colors.primary}  />
+                <FontAwesomeIcon icon="user-nurse" size={20} color={formData.requiredRole === 'NURSE' ? Colors.white : Colors.primary}  />
                 <Text style={[
                   styles.roleButtonText,
                   formData.requiredRole === 'NURSE' && styles.roleButtonTextActive,
@@ -360,6 +382,25 @@ const CreateJobScreen: React.FC = () => {
             onChangeText={(text) => handleInputChange('facilityName', text)}
             placeholder="e.g., New York General Hospital"
           />
+
+          <View style={styles.row}>
+            <View style={styles.halfWidth}>
+              <InputField
+                label="Hospital ID"
+                value={formData.hospitalId}
+                onChangeText={(text) => handleInputChange('hospitalId', text)}
+                placeholder="e.g., HOSP-123"
+              />
+            </View>
+            <View style={styles.halfWidth}>
+              <InputField
+                label="Unit Code"
+                value={formData.unitCode}
+                onChangeText={(text) => handleInputChange('unitCode', text)}
+                placeholder="e.g., ICU-01"
+              />
+            </View>
+          </View>
 
           <InputField
             label="Street Address"
@@ -508,6 +549,7 @@ const CreateJobScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -518,6 +560,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   content: {
+    flex: 1,
+  },
+  flex1: {
     flex: 1,
   },
   formContainer: {

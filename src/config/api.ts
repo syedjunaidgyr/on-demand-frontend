@@ -7,17 +7,17 @@ import { Platform } from 'react-native';
 // Configuration for different environments
 const API_CONFIG = {
   // For Android emulator
-  EMULATOR: 'http://10.0.2.2:3000/api/v1',
+  EMULATOR: 'http://192.168.1.79:3000/api/v1',
   
   // For iOS simulator
-  SIMULATOR: 'http://localhost:3000/api/v1',
+  SIMULATOR: 'http://192.168.1.79:3000/api/v1',
   
   // For physical device - REPLACE WITH YOUR COMPUTER'S IP ADDRESS
   // Example: 'http://192.168.1.100:3000/api/v1'
-  PHYSICAL_DEVICE: 'http://192.168.1.2:3000/api/v1', // Your actual IP
+  PHYSICAL_DEVICE: 'http://192.168.1.79:3000/api/v1', // Your actual IP
   
   // Production URL (when you deploy your backend)
-  PRODUCTION: 'https://your-backend-domain.com/api/v1',
+  PRODUCTION: 'https://192.168.1.79:3000/api/v1',
 };
 
 // Auto-detect the best URL based on platform and environment
@@ -47,7 +47,7 @@ export const getComputerIP = (): string => {
   // macOS: ifconfig | grep "inet " | grep -v 127.0.0.1
   // Windows: ipconfig
   // Linux: hostname -I
-  return '192.168.1.2'; // Your actual IP
+  return '192.168.1.79'; // Your actual IP
 };
 
 // Manual override for testing on physical device
@@ -55,7 +55,7 @@ export const FORCE_PHYSICAL_DEVICE = true; // Set to true when testing on real d
 
 export const getFinalApiUrl = (): string => {
   if (FORCE_PHYSICAL_DEVICE && __DEV__) {
-    return `http://192.168.1.2:3000/api/v1`;
+    return `http://192.168.1.79:3000/api/v1`;
   }
   return API_BASE_URL;
 };
