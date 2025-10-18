@@ -20,32 +20,60 @@ import ApiService from '../../services/api';
 
 const CheckInOutScreen: React.FC = () => {
   const navigation = useNavigation();
-  const [activeAssignments, setActiveAssignments] = useState<JobAssignment[]>([]);
+  const [confirmedAssignments, setConfirmedAssignments] = useState<JobAssignment[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    loadActiveAssignments();
+    loadConfirmedAssignments();
   }, []);
 
-  const loadActiveAssignments = async () => {
+  const loadConfirmedAssignments = async () => {
     try {
       // Load user profile first to determine role
       const userData = await ApiService.getProfile();
       setUser(userData);
 
-      // Load role-specific active assignments
-      const assignmentsData = userData.role === 'DOCTOR'
-        ? await ApiService.getDoctorAssignments()
-        : await ApiService.getNurseAssignments();
+      // Load assignments for the user
+      const assignmentsData = await ApiService.getMyAssignments();
 
-      // Filter for active assignments only
-      const active = assignmentsData.data.filter(assignment => assignment.status === 'active');
-      setActiveAssignments(active);
+      // Filter for assignments that can be checked in/out (ACCEPTED or IN_PROGRESS)
+      console.log('🔍 All assignments:', assignmentsData.data);
+      console.log('📊 Assignment statuses:', assignmentsData.data.map(a => ({ id: a.id, status: a.status })));
+      const confirmed = assignmentsData.data.filter(assignment => 
+        assignment.status === 'ACCEPTED' || assignment.status === 'IN_PROGRESS'
+      );
+      console.log('✅ Confirmed assignments (ACCEPTED or IN_PROGRESS):', confirmed);
+
+      // ✅ Add check-in status to each assignment
+      const assignmentsWithCheckInStatus = await Promise.all(
+        confirmed.map(async (assignment) => {
+          try {
+            // Check if there's an active check-in for this assignment
+            const checkInStatus = await ApiService.getCheckInStatus(assignment.id);
+            console.log('🔍 Check-in status for assignment', assignment.id, ':', checkInStatus);
+            return {
+              ...assignment,
+              isCheckedIn: checkInStatus.isCheckedIn,
+              checkInId: checkInStatus.checkInId
+            };
+          } catch (error) {
+            console.log('Could not get check-in status for assignment:', assignment.id, error);
+            // For now, let's assume they can check in (since backend endpoint might not exist)
+            return {
+              ...assignment,
+              isCheckedIn: false,
+              checkInId: null
+            };
+          }
+        })
+      );
+
+      setConfirmedAssignments(assignmentsWithCheckInStatus);
     } catch (error) {
-      console.error('Failed to load active assignments:', error);
-      Alert.alert('Error', 'Failed to load active assignments');
+      console.error('Failed to load confirmed assignments:', error);
+      Alert.alert('Error', 'Failed to load confirmed assignments');
     } finally {
       setIsLoading(false);
     }
@@ -63,21 +91,23 @@ const CheckInOutScreen: React.FC = () => {
             setIsProcessing(true);
             try {
               const checkInData = {
-                assignmentId: assignment.id,
-                location: assignment.job.location,
-                notes: '',
+                jobAssignmentId: assignment.id,
+                location: {
+                  latitude: 0,
+                  longitude: 0,
+                  address: assignment.job.location || 'Hospital Location'
+                },
+                notes: 'Checked in for shift',
               };
-
-              if (user?.role === 'DOCTOR') {
-                await ApiService.doctorCheckIn(checkInData);
-              } else {
-                await ApiService.nurseCheckIn(checkInData);
-              }
-
+  
+               // ✅ Use the unified endpoint
+               await ApiService.checkIn(checkInData.jobAssignmentId, checkInData.location, checkInData.notes);
+  
               Alert.alert('Success', 'Successfully checked in!');
-              loadActiveAssignments(); // Refresh the list
+              loadConfirmedAssignments();
             } catch (error) {
-              Alert.alert('Error', 'Failed to check in. Please try again.');
+              console.error('Check-in error:', error);
+              Alert.alert('Error', error.message || 'Failed to check in. Please try again.');
             } finally {
               setIsProcessing(false);
             }
@@ -99,18 +129,20 @@ const CheckInOutScreen: React.FC = () => {
             setIsProcessing(true);
             try {
               const checkOutData = {
-                assignmentId: assignment.id,
-                notes: '',
+                jobAssignmentId: assignment.id,
+                location: {
+                  latitude: 0, // TODO: Get actual location
+                  longitude: 0, // TODO: Get actual location
+                  address: assignment.job.location || 'Hospital Location'
+                },
+                notes: 'Checked out after shift', // ✅ Non-empty notes
               };
 
-              if (user?.role === 'DOCTOR') {
-                await ApiService.doctorCheckOut(checkOutData);
-              } else {
-                await ApiService.nurseCheckOut(checkOutData);
-              }
+              // ✅ Use the unified endpoint
+              await ApiService.checkOut(checkOutData.jobAssignmentId, checkOutData.location, checkOutData.notes);
 
               Alert.alert('Success', 'Successfully checked out!');
-              loadActiveAssignments(); // Refresh the list
+              loadConfirmedAssignments(); // Refresh the list
             } catch (error) {
               Alert.alert('Error', 'Failed to check out. Please try again.');
             } finally {
@@ -142,7 +174,7 @@ const CheckInOutScreen: React.FC = () => {
 
   const getRoleConfig = () => {
     if (!user) return { color: Colors.primary, title: 'Check In/Out' };
-    
+
     switch (user.role) {
       case 'DOCTOR':
         return {
@@ -170,22 +202,22 @@ const CheckInOutScreen: React.FC = () => {
           <Text style={styles.assignmentStatusText}>Active</Text>
         </View>
       </View>
-      
+
       <Text style={styles.assignmentDescription}>{assignment.job.description}</Text>
-      
+
       <View style={styles.assignmentDetails}>
         <View style={styles.assignmentDetail}>
           <FontAwesomeIcon icon="map-marker-alt" size={16} color={Colors.textTertiary} />
           <Text style={styles.assignmentDetailText}>{assignment.job.location}</Text>
         </View>
-        
+
         <View style={styles.assignmentDetail}>
           <FontAwesomeIcon icon="calendar" size={16} color={Colors.textTertiary} />
           <Text style={styles.assignmentDetailText}>
             {formatDate(assignment.job.startDate)}
           </Text>
         </View>
-        
+
         <View style={styles.assignmentDetail}>
           <FontAwesomeIcon icon="clock" size={16} color={Colors.textTertiary} />
           <Text style={styles.assignmentDetailText}>
@@ -195,23 +227,65 @@ const CheckInOutScreen: React.FC = () => {
       </View>
 
       <View style={styles.checkInOutActions}>
-        {!assignment.isCheckedIn ? (
-          <TouchableOpacity 
-            style={[styles.checkInButton, { backgroundColor: Colors.success }]}
-            onPress={() => handleCheckIn(assignment)}
-            disabled={isProcessing}>
-            <FontAwesomeIcon icon="sign-in-alt" size={16} color={Colors.white} />
-            <Text style={styles.checkInButtonText}>Check In</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity 
-            style={[styles.checkOutButton, { backgroundColor: Colors.error }]}
-            onPress={() => handleCheckOut(assignment)}
-            disabled={isProcessing}>
-            <FontAwesomeIcon icon="sign-out-alt" size={16} color={Colors.white} />
-            <Text style={styles.checkOutButtonText}>Check Out</Text>
-          </TouchableOpacity>
-        )}
+        {(() => {
+          console.log('🎨 Rendering button for assignment:', assignment.id, 'status:', assignment.status, 'isCheckedIn:', assignment.isCheckedIn);
+          
+          // If status is IN_PROGRESS, you're already checked in - show Check Out
+          if (assignment.status === 'IN_PROGRESS') {
+            return (
+              <TouchableOpacity
+                style={[styles.checkOutButton, { backgroundColor: Colors.error }]}
+                onPress={() => handleCheckOut(assignment)}
+                disabled={isProcessing}>
+                <FontAwesomeIcon icon="sign-out-alt" size={16} color={Colors.white} />
+                <Text style={styles.checkOutButtonText}>Check Out</Text>
+              </TouchableOpacity>
+            );
+          }
+          
+          // If status is ACCEPTED and not checked in, show Check In
+          if (assignment.status === 'ACCEPTED' && !assignment.isCheckedIn) {
+            return (
+              <TouchableOpacity
+                style={[styles.checkInButton, { backgroundColor: Colors.success }]}
+                onPress={() => handleCheckIn(assignment)}
+                disabled={isProcessing}>
+                <FontAwesomeIcon icon="sign-in-alt" size={16} color={Colors.white} />
+                <Text style={styles.checkInButtonText}>Check In</Text>
+              </TouchableOpacity>
+            );
+          }
+          
+          // If status is ACCEPTED and checked in, show Check Out
+          if (assignment.status === 'ACCEPTED' && assignment.isCheckedIn) {
+            return (
+              <TouchableOpacity
+                style={[styles.checkOutButton, { backgroundColor: Colors.error }]}
+                onPress={() => handleCheckOut(assignment)}
+                disabled={isProcessing}>
+                <FontAwesomeIcon icon="sign-out-alt" size={16} color={Colors.white} />
+                <Text style={styles.checkOutButtonText}>Check Out</Text>
+              </TouchableOpacity>
+            );
+          }
+          
+          // Default fallback
+          return null;
+        })()}
+        
+        {/* Temporary debug button - remove this later */}
+        <TouchableOpacity
+          style={[styles.checkInButton, { backgroundColor: Colors.warning, marginTop: 8 }]}
+          onPress={() => {
+            console.log('🔄 Toggling check-in status for assignment:', assignment.id);
+            // This is just for testing - in real app, this would be handled by backend
+            const updatedAssignments = confirmedAssignments.map(a => 
+              a.id === assignment.id ? { ...a, isCheckedIn: !a.isCheckedIn } : a
+            );
+            setConfirmedAssignments(updatedAssignments);
+          }}>
+          <Text style={styles.checkInButtonText}>Toggle Status (Debug)</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -233,7 +307,7 @@ const CheckInOutScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <View style={[styles.header, { backgroundColor: roleConfig.color }]}>
         <View style={styles.headerContent}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}>
             <FontAwesomeIcon icon="arrow-left" size={24} color={Colors.white} />
@@ -244,8 +318,8 @@ const CheckInOutScreen: React.FC = () => {
       </View>
 
       <ScrollView style={styles.content}>
-        {activeAssignments.length > 0 ? (
-          activeAssignments.map((assignment) => (
+        {confirmedAssignments.length > 0 ? (
+          confirmedAssignments.map((assignment) => (
             <AssignmentCard key={assignment.id} assignment={assignment} />
           ))
         ) : (
@@ -255,11 +329,11 @@ const CheckInOutScreen: React.FC = () => {
             <Text style={styles.emptyStateText}>
               You don't have any active assignments that require check in/out at the moment.
             </Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.primaryButton, { backgroundColor: roleConfig.color }]}
-              onPress={() => navigation.navigate('MyAssignments' as never)}>
+              onPress={() => navigation.goBack()}>
               <FontAwesomeIcon icon="calendar" size={16} color={Colors.white} />
-              <Text style={styles.primaryButtonText}>View All Assignments</Text>
+              <Text style={styles.primaryButtonText}>Go Back</Text>
             </TouchableOpacity>
           </View>
         )}

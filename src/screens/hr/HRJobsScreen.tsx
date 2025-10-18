@@ -34,14 +34,20 @@ const HRJobsScreen: React.FC = () => {
 
   const loadJobs = async (pageNum = 1, refresh = false) => {
     try {
+      console.log('🔧 Loading HR jobs...');
       const response = await ApiService.getAllJobs({
         page: pageNum,
         limit: 10,
       });
 
+      console.log('📦 HR Jobs response:', response);
+
       // Handle different response formats
-      const jobsData = response.data || [];
+      const jobsData = response.jobs || response.data || [];
       const pagination = response.pagination || response;
+
+      console.log('📋 Jobs data:', jobsData);
+      console.log('📊 Jobs count:', jobsData.length);
 
       if (refresh || pageNum === 1) {
         setJobs(jobsData);
@@ -49,9 +55,9 @@ const HRJobsScreen: React.FC = () => {
         setJobs(prev => [...prev, ...jobsData]);
       }
 
-      setHasMore(pagination.page < pagination.totalPages);
+      setHasMore(pagination.page < pagination.pages);
     } catch (error) {
-      console.error('Failed to load jobs:', error);
+      console.error('❌ Failed to load jobs:', error);
       Alert.alert('Error', 'Failed to load jobs. Please try again.');
       if (refresh || pageNum === 1) {
         setJobs([]);
@@ -131,68 +137,126 @@ const HRJobsScreen: React.FC = () => {
     (navigation as any).navigate('CreateJob');
   };
 
-  const JobCard = ({ job }: { job: Job }) => (
-    <TouchableOpacity style={styles.jobCard} onPress={() => handleJobPress(job)}>
-      <View style={styles.jobHeader}>
-        <View style={styles.jobTitleContainer}>
-          <Text style={styles.jobTitle} numberOfLines={2}>
-            {job.title}
-          </Text>
-          <View style={styles.jobMeta}>
-            <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(job.priority) }]}>
-              <Text style={styles.priorityText}>{job.priority}</Text>
-            </View>
-            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(job.status) }]}>
-              <Text style={styles.statusText}>{job.status}</Text>
+  const handleReviewCandidates = async (job: Job) => {
+    try {
+      console.log('🔍 HR reviewing candidates for job:', job.id, job.title);
+      const response = await ApiService.getAcceptedAssignments(job.id.toString());
+      console.log('📦 Got accepted assignments response:', response);
+      
+      // Extract the acceptedAssignments array from the response
+      const acceptedAssignments = response.acceptedAssignments || response;
+      console.log('📋 Extracted accepted assignments:', acceptedAssignments);
+      
+      (navigation as any).navigate('JobAssignment', { 
+        jobId: job.id, 
+        acceptedAssignments: acceptedAssignments 
+      });
+    } catch (error) {
+      console.error('❌ Failed to load accepted assignments:', error);
+      console.error('❌ Job details:', job);
+      Alert.alert('Error', `Failed to load accepted assignments: ${error.message}`);
+    }
+  };
+
+  const JobCard = ({ job }: { job: Job }) => {
+    const currentAssignments = job.assignments?.length || 0;
+    const pendingAssignments = job.assignments?.filter(a => a.status === 'PENDING').length || 0;
+    const acceptedAssignments = job.assignments?.filter(a => a.status === 'ACCEPTED').length || 0;
+    
+    return (
+      <TouchableOpacity style={styles.jobCard} onPress={() => handleJobPress(job)}>
+        <View style={styles.jobHeader}>
+          <View style={styles.jobTitleContainer}>
+            <Text style={styles.jobTitle} numberOfLines={2}>
+              {job.title}
+            </Text>
+            <View style={styles.jobMeta}>
+              <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(job.priority) }]}>
+                <Text style={styles.priorityText}>{job.priority}</Text>
+              </View>
+              <View style={[styles.statusBadge, { backgroundColor: getStatusColor(job.status) }]}>
+                <Text style={styles.statusText}>{job.status}</Text>
+              </View>
             </View>
           </View>
+          <View style={styles.jobRate}>
+            <Text style={styles.rateAmount}>Rs/-{job.hourlyRate}</Text>
+            <Text style={styles.rateLabel}>/hour</Text>
+          </View>
         </View>
-        <View style={styles.jobRate}>
-          <Text style={styles.rateAmount}>₹{job.hourlyRate}</Text>
-          <Text style={styles.rateLabel}>/hour</Text>
-        </View>
-      </View>
 
-      <View style={styles.jobDetails}>
-        <View style={styles.jobDetailRow}>
-          <FontAwesomeIcon icon="building" size={16} color={Colors.textTertiary}  />
-          <Text style={styles.jobDetailText}>{job.department}</Text>
+        <View style={styles.jobDetails}>
+          <View style={styles.jobDetailRow}>
+            <FontAwesomeIcon icon="building" size={16} color={Colors.textTertiary}  />
+            <Text style={styles.jobDetailText}>{job.department}</Text>
+          </View>
+          <View style={styles.jobDetailRow}>
+            <FontAwesomeIcon icon="map-marker-alt" size={16} color={Colors.textTertiary}  />
+            <Text style={styles.jobDetailText}>{job.location}</Text>
+          </View>
+          <View style={styles.jobDetailRow}>
+            <FontAwesomeIcon icon="calendar" size={16} color={Colors.textTertiary}  />
+            <Text style={styles.jobDetailText}>
+              {formatDate(job.startDate)} - {formatDate(job.endDate)}
+            </Text>
+          </View>
+          <View style={styles.jobDetailRow}>
+            <FontAwesomeIcon icon="clock" size={16} color={Colors.textTertiary}  />
+            <Text style={styles.jobDetailText}>
+              {formatTime(job.startTime)} - {formatTime(job.endTime)}
+            </Text>
+          </View>
+          {job.specialization && (
+            <View style={styles.jobDetailRow}>
+              <FontAwesomeIcon icon="stethoscope" size={16} color={Colors.textTertiary}  />
+              <Text style={styles.jobDetailText}>{job.specialization}</Text>
+            </View>
+          )}
         </View>
-        <View style={styles.jobDetailRow}>
-          <FontAwesomeIcon icon="map-marker-alt" size={16} color={Colors.textTertiary}  />
-          <Text style={styles.jobDetailText}>{job.location}</Text>
-        </View>
-        <View style={styles.jobDetailRow}>
-          <FontAwesomeIcon icon="schedule" size={16} color={Colors.textTertiary}  />
-          <Text style={styles.jobDetailText}>
-            {formatDate(job.startDate)} - {formatDate(job.endDate)}
-          </Text>
-        </View>
-        <View style={styles.jobDetailRow}>
-          <FontAwesomeIcon icon="clock" size={16} color={Colors.textTertiary}  />
-          <Text style={styles.jobDetailText}>
-            {formatTime(job.startTime)} - {formatTime(job.endTime)}
-          </Text>
-        </View>
-      </View>
 
-      <View style={styles.jobFooter}>
-        <View style={styles.assignmentInfo}>
-          <Text style={styles.assignmentText}>
-            {job.currentAssignments}/{job.maxAssignments} assigned
-          </Text>
+        <View style={styles.jobFooter}>
+          <View style={styles.assignmentInfo}>
+            <Text style={styles.assignmentText}>
+              {currentAssignments}/{job.maxAssignments} assigned
+            </Text>
+            {pendingAssignments > 0 && (
+              <Text style={styles.pendingText}>
+                {pendingAssignments} pending response
+              </Text>
+            )}
+            {acceptedAssignments > 0 && (
+              <Text style={styles.acceptedText}>
+                {acceptedAssignments} accepted
+              </Text>
+            )}
+          </View>
+          <View style={styles.jobActions}>
+            {acceptedAssignments > 0 ? (
+              <TouchableOpacity 
+                style={[styles.reviewButton, { opacity: job.status === 'ACTIVE' ? 1 : 0.5 }]}
+                onPress={() => job.status === 'ACTIVE' && handleReviewCandidates(job)}
+                disabled={job.status !== 'ACTIVE'}>
+                <FontAwesomeIcon icon="users" size={16} color={Colors.white}  />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity 
+                style={[styles.assignButton, { opacity: job.status === 'ACTIVE' ? 1 : 0.5 }]}
+                onPress={() => job.status === 'ACTIVE' && handleReviewCandidates(job)}
+                disabled={job.status !== 'ACTIVE'}>
+                <FontAwesomeIcon icon="user-plus" size={16} color={Colors.white}  />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.actionButton}>
+              <FontAwesomeIcon icon="edit" size={16} color={Colors.primary}  />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton}>
+              <FontAwesomeIcon icon="ellipsis-v" size={16} color={Colors.textTertiary} />
+            </TouchableOpacity>
+          </View>
         </View>
-        <View style={styles.jobActions}>
-          <TouchableOpacity style={styles.actionButton}>
-            <FontAwesomeIcon icon="edit" size={16} color={Colors.primary}  />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <FontAwesomeIcon icon="more-vert" size={16} color={Colors.textTertiary}  />
-          </TouchableOpacity>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   const renderFooter = () => {
     if (!isLoading) return null;
@@ -270,14 +334,15 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   header: {
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.lg,
+    paddingTop: Spacing['3xl'],
+    paddingBottom: Spacing['2xl'],
     paddingHorizontal: Spacing.lg,
   },
   headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: -20,
   },
   headerTitle: {
     fontSize: Typography.fontSize['2xl'],
@@ -388,6 +453,16 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     color: Colors.textTertiary,
   },
+  pendingText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.warning,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  acceptedText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.success,
+    fontWeight: Typography.fontWeight.medium,
+  },
   jobActions: {
     flexDirection: 'row',
     gap: Spacing.sm,
@@ -397,6 +472,22 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     backgroundColor: Colors.backgroundSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  assignButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.success,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  reviewButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.warning,
     justifyContent: 'center',
     alignItems: 'center',
   },

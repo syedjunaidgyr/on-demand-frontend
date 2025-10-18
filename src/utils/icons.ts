@@ -13,6 +13,7 @@ import { faPhone } from '@fortawesome/free-solid-svg-icons/faPhone';
 import { faEnvelope } from '@fortawesome/free-solid-svg-icons/faEnvelope';
 import { faCog } from '@fortawesome/free-solid-svg-icons/faCog';
 import { faSignOutAlt } from '@fortawesome/free-solid-svg-icons/faSignOutAlt';
+import { faSignInAlt } from '@fortawesome/free-solid-svg-icons/faSignInAlt';
 import { faBell } from '@fortawesome/free-solid-svg-icons/faBell';
 import { faSearch } from '@fortawesome/free-solid-svg-icons/faSearch';
 import { faPlus } from '@fortawesome/free-solid-svg-icons/faPlus';
@@ -85,6 +86,14 @@ import { faAlignJustify } from '@fortawesome/free-solid-svg-icons/faAlignJustify
 import { faBuilding } from '@fortawesome/free-solid-svg-icons/faBuilding';
 import { faDollarSign } from '@fortawesome/free-solid-svg-icons/faDollarSign';
 import { faRupeeSign } from '@fortawesome/free-solid-svg-icons/faRupeeSign';
+import { faEllipsisV } from '@fortawesome/free-solid-svg-icons/faEllipsisV';
+import { faSync } from '@fortawesome/free-solid-svg-icons/faSync';
+import { faCalendarAlt } from '@fortawesome/free-solid-svg-icons/faCalendarAlt';
+import { faPaperPlane } from '@fortawesome/free-solid-svg-icons/faPaperPlane';
+import { faGraduationCap } from '@fortawesome/free-solid-svg-icons/faGraduationCap';
+import { faUtensils } from '@fortawesome/free-solid-svg-icons/faUtensils';
+import { faParking } from '@fortawesome/free-solid-svg-icons/faParking';
+import { faShieldAlt } from '@fortawesome/free-solid-svg-icons/faShieldAlt';
 
 // Add all icons to the library
 library.add(
@@ -99,6 +108,7 @@ library.add(
   faEnvelope as any,
   faCog as any,
   faSignOutAlt as any,
+  faSignInAlt as any,
   faBell as any,
   faSearch as any,
   faPlus as any,
@@ -171,6 +181,14 @@ library.add(
   faBuilding as any,
   faDollarSign as any,
   faRupeeSign as any,
+  faEllipsisV as any,
+  faSync as any,
+  faCalendarAlt as any,
+  faPaperPlane as any,
+  faGraduationCap as any,
+  faUtensils as any,
+  faParking as any,
+  faShieldAlt as any,
 );
 
 export { FontAwesomeIcon };

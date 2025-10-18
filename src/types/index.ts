@@ -76,7 +76,7 @@ export interface JobAssignment {
   id: string;
   jobId: string;
   userId: string;
-  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'COMPLETED' | 'CANCELLED' | 'IN_PROGRESS';
   hourlyRate: number;
   notes?: string;
   rejectionReason?: string;

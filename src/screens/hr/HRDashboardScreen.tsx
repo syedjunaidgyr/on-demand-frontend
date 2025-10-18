@@ -61,11 +61,31 @@ const HRDashboardScreen: React.FC = () => {
 
   const loadDashboardData = async () => {
     try {
-      const response = await ApiService.getHRDashboard();
-      console.log('HR Dashboard Response:', JSON.stringify(response, null, 2));
+      console.log('🔧 Loading HR dashboard data...');
+      
+      // Try to get dashboard data first
+      let dashboardResponse;
+      try {
+        dashboardResponse = await ApiService.getHRDashboard();
+        console.log('📊 HR Dashboard Response:', JSON.stringify(dashboardResponse, null, 2));
+      } catch (dashboardError) {
+        console.log('⚠️ Dashboard API failed, loading jobs directly:', dashboardError);
+        dashboardResponse = null;
+      }
+      
+      // Always load jobs to get accurate count
+      const jobsResponse = await ApiService.getAllJobs();
+      console.log('📋 Jobs Response:', jobsResponse);
+      
+      const jobs = jobsResponse.jobs || jobsResponse.data || [];
+      const totalJobs = jobs.length;
+      const activeJobs = jobs.filter(job => job.status === 'ACTIVE').length;
+      const assignedJobs = jobs.filter(job => (job.assignments?.length || 0) > 0).length;
+      
+      console.log('📊 Job Stats:', { totalJobs, activeJobs, assignedJobs });
       
       // Handle nested dashboard response
-      const dashboardData = response.dashboard || response;
+      const dashboardData = dashboardResponse?.dashboard || dashboardResponse;
       const statsData = dashboardData || {
         jobs: { total: 0, active: 0, assigned: 0, inProgress: 0, completed: 0, cancelled: 0 },
         assignments: { total: 0, pending: 0, accepted: 0, inProgress: 0, completed: 0 },
@@ -73,14 +93,15 @@ const HRDashboardScreen: React.FC = () => {
         monthly: { jobs: 0, assignments: 0 },
         recent: { jobs: [], assignments: [] }
       };
+      
+      // Update with real job data
+      statsData.jobs.total = totalJobs;
+      statsData.jobs.active = activeJobs;
+      statsData.jobs.assigned = assignedJobs;
+      
       setStats(statsData);
     } catch (error: any) {
-      console.error('Failed to load dashboard data:', error);
-      
-      // Handle specific error cases
-      if (error.response?.status === 500) {
-        console.log('HR Dashboard API returned 500 error - using default data');
-      }
+      console.error('❌ Failed to load dashboard data:', error);
       
       // Set default stats on error
       setStats({
@@ -458,7 +479,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   header: {
-    paddingTop: Spacing.lg,
+    paddingTop: Spacing['3xl'],
     paddingBottom: Spacing['2xl'],
     paddingHorizontal: Spacing.lg,
   },
@@ -466,6 +487,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: -20,
   },
   headerTitle: {
     fontSize: Typography.fontSize['2xl'],
@@ -476,7 +498,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     color: Colors.white,
     opacity: 0.9,
-    marginTop: Spacing.xs,
+    marginTop: 10,
   },
   profileButton: {
     width: 40,

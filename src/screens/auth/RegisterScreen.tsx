@@ -387,11 +387,6 @@ const RegisterScreen: React.FC = () => {
   const loadHospitals = useCallback(async () => {
     setLoadingHospitals(true);
     try {
-      const connectionTest = await ApiService.testHospitalsConnection();
-      if (!connectionTest) {
-        throw new Error('Connection test failed - check your network and server');
-      }
-      
       const response = await ApiService.getHospitals();
       const hospitalList = response.hospitals.map(hospital => ({
         id: hospital.id,

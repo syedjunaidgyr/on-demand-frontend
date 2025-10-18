@@ -26,6 +26,8 @@ const BASE_URL = getFinalApiUrl();
 
 class ApiService {
   private api: AxiosInstance;
+  staffCheckIn: any;
+  post: any;
 
   constructor() {
     this.api = axios.create({
@@ -178,10 +180,6 @@ class ApiService {
     return response.data;
   }
 
-  async getJobById(jobId: string): Promise<Job> {
-    const response: AxiosResponse<Job> = await this.api.get(`/jobs/${jobId}`);
-    return response.data;
-  }
 
   async getJobDetailsForProvider(jobId: string): Promise<Job> {
     const response: AxiosResponse<Job> = await this.api.get(`/doctor/jobs/${jobId}`);
@@ -300,10 +298,23 @@ class ApiService {
   }
 
   async respondToAssignment(assignmentId: string, action: 'ACCEPT' | 'REJECT', rejectionReason?: string): Promise<void> {
-    await this.api.post(`/staff/assignments/${assignmentId}/respond`, {
-      action,
-      rejectionReason,
-    });
+    console.log('🔧 Responding to assignment:', assignmentId, 'with action:', action);
+    
+    const requestBody: any = { action };
+    if (action === 'REJECT' && rejectionReason) {
+      requestBody.rejectionReason = rejectionReason;
+    }
+    
+    console.log('📤 Request body:', requestBody);
+    
+    try {
+      const response = await this.api.post(`/staff/assignments/${assignmentId}/respond`, requestBody);
+      console.log('✅ Assignment response successful:', response.data);
+    } catch (error) {
+      console.error('❌ Assignment response failed:', error);
+      console.error('❌ Error response:', error.response?.data);
+      throw error;
+    }
   }
 
   async checkIn(jobAssignmentId: string, location: { latitude: number; longitude: number; address: string }, notes?: string): Promise<CheckIn> {
@@ -315,6 +326,11 @@ class ApiService {
     return response.data;
   }
 
+  async staffCheckIn(checkInData: { jobAssignmentId: string; location: any; notes?: string }): Promise<CheckIn> {
+    console.log('🔧 staffCheckIn called with:', checkInData);
+    return this.checkIn(checkInData.jobAssignmentId, checkInData.location, checkInData.notes);
+  }
+
   async checkOut(jobAssignmentId: string, location: { latitude: number; longitude: number; address: string }, notes?: string): Promise<CheckOut> {
     const response: AxiosResponse<CheckOut> = await this.api.post('/staff/check-out', {
       jobAssignmentId,
@@ -322,6 +338,26 @@ class ApiService {
       notes,
     });
     return response.data;
+  }
+
+  async staffCheckOut(checkOutData: { jobAssignmentId: string; location: any; notes?: string }): Promise<CheckOut> {
+    console.log('🔧 staffCheckOut called with:', checkOutData);
+    return this.checkOut(checkOutData.jobAssignmentId, checkOutData.location, checkOutData.notes);
+  }
+
+  async getCheckInStatus(jobAssignmentId: string): Promise<{ isCheckedIn: boolean; checkInId: string | null; checkInTime: string | null }> {
+    try {
+      const response = await this.api.get(`/staff/check-in-status/${jobAssignmentId}`);
+      return response.data;
+    } catch (error) {
+      console.log('Could not get check-in status:', error);
+      // Return default status if endpoint doesn't exist or fails
+      return {
+        isCheckedIn: false,
+        checkInId: null,
+        checkInTime: null
+      };
+    }
   }
 
   async getMyWorkStatus(): Promise<any> {
@@ -368,9 +404,19 @@ class ApiService {
     return this.respondToAssignment(assignmentId, action, rejectionReason);
   }
 
+  async doctorCheckIn(jobAssignmentId: string, location: { latitude: number; longitude: number; address: string }, notes?: string): Promise<CheckIn> {
+    // Use the same staff endpoint as nurses
+    return this.checkIn(jobAssignmentId, location, notes);
+  }
+
   async nurseCheckIn(jobAssignmentId: string, location: { latitude: number; longitude: number; address: string }, notes?: string): Promise<CheckIn> {
     // Use the same staff endpoint as doctors
     return this.checkIn(jobAssignmentId, location, notes);
+  }
+
+  async doctorCheckOut(jobAssignmentId: string, location: { latitude: number; longitude: number; address: string }, notes?: string): Promise<CheckOut> {
+    // Use the same staff endpoint as nurses
+    return this.checkOut(jobAssignmentId, location, notes);
   }
 
   async nurseCheckOut(jobAssignmentId: string, location: { latitude: number; longitude: number; address: string }, notes?: string): Promise<CheckOut> {
@@ -576,6 +622,206 @@ class ApiService {
     } catch (error) {
       console.error('Error checking authentication status:', error);
       return false;
+    }
+  }
+
+  // HR Assignment APIs
+  async getCompatibleStaff(jobId: string): Promise<any> {
+    try {
+      console.log('🔧 Fetching compatible staff for job:', jobId);
+      const response = await this.api.get(`/api/v1/hr/jobs/${jobId}/compatible-staff`);
+      console.log('✅ Compatible staff:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Failed to fetch compatible staff:', error);
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 404) {
+          throw new Error('Job not found.');
+        }
+        throw new Error(error.response?.data?.message || 'Failed to fetch compatible staff.');
+      }
+      throw new Error('Network error. Please try again.');
+    }
+  }
+
+  async assignJobToStaff(jobId: string, staffId: string): Promise<void> {
+    try {
+      console.log('🔧 Assigning job:', jobId, 'to staff:', staffId);
+      const response = await this.api.post(`/api/v1/hr/jobs/${jobId}/assign`, {
+        staffId: staffId,
+        assignedAt: new Date().toISOString()
+      });
+      console.log('✅ Job assigned successfully:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Failed to assign job:', error);
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 404) {
+          throw new Error('Job or staff member not found.');
+        } else if (error.response?.status === 409) {
+          throw new Error('Job has already been assigned.');
+        } else if (error.response?.status === 400) {
+          throw new Error('Staff member is not compatible with this job.');
+        }
+        throw new Error(error.response?.data?.message || 'Failed to assign job.');
+      }
+      throw new Error('Network error. Please try again.');
+    }
+  }
+
+  // Staff Assignment APIs - Using REAL backend endpoints only
+  async getAssignments(params: any = {}): Promise<any[]> {
+    try {
+      console.log('🔧 ========== FETCHING JOB ASSIGNMENTS ==========');
+      console.log('🌐 Base URL:', this.api.defaults.baseURL);
+      console.log('🔑 Auth Token:', this.api.defaults.headers.Authorization ? 'Present' : 'Missing');
+      console.log('📋 Parameters:', params);
+      
+      const fullUrl = `${this.api.defaults.baseURL}/api/v1/staff/assignments`;
+      console.log(`🌐 Full URL: ${fullUrl}`);
+      
+      const response = await this.api.get('/api/v1/staff/assignments', { params });
+      
+      console.log('✅ SUCCESS! Assignments loaded from backend');
+      console.log('📊 Response status:', response.status);
+      console.log('📦 Response data:', JSON.stringify(response.data, null, 2));
+      
+      // Return assignments from the response
+      return response.data.assignments || [];
+      
+    } catch (error: any) {
+      console.error('❌ Failed to fetch assignments:', error);
+      console.log('   Status:', error.response?.status);
+      console.log('   Message:', error.message);
+      console.log('   Response:', error.response?.data);
+      throw new Error('Failed to fetch your job assignments. Please try again.');
+    }
+  }
+
+  async loadAssignmentsFallback(): Promise<any[]> {
+    try {
+      console.log('🔄 Loading assignments fallback...');
+      
+      // Get user profile to determine role
+      const userData = await this.getProfile();
+      
+      // Try to get available jobs based on role
+      let availableJobs;
+      if (userData.role === 'DOCTOR') {
+        availableJobs = await this.getAvailableJobs();
+      } else if (userData.role === 'NURSE') {
+        availableJobs = await this.getNurseAvailableJobs();
+      } else {
+        availableJobs = await this.getAvailableJobs();
+      }
+      
+      const jobs = availableJobs.data || availableJobs || [];
+      
+      // Convert jobs to assignment format
+      const assignments = jobs.map(job => ({
+        id: `assignment-${job.id}`, // Simulated assignment ID
+        job: job,
+        status: 'PENDING',
+        assignedAt: new Date().toISOString(),
+        isSimulated: true // Flag to indicate this is a fallback assignment
+      }));
+      
+      console.log('✅ Fallback assignments created:', assignments.length);
+      return assignments;
+      
+    } catch (error) {
+      console.error('❌ Fallback failed:', error);
+      return [];
+    }
+  }
+
+  async getJobById(jobId: string): Promise<any> {
+    try {
+      console.log('🔧 Fetching job details:', jobId);
+      
+      // Try HR endpoint first
+      try {
+        const response = await this.api.get(`/hr/jobs/${jobId}`);
+        console.log('✅ Job details from HR endpoint:', response.data);
+        return response.data;
+      } catch (hrError) {
+        console.log('HR endpoint failed, trying staff endpoints...');
+      }
+      
+      // Try staff endpoints
+      try {
+        const response = await this.api.get(`/staff/jobs/${jobId}`);
+        console.log('✅ Job details from staff endpoint:', response.data);
+        return response.data;
+      } catch (staffError) {
+        console.log('Staff endpoint failed, trying doctor endpoint...');
+      }
+      
+      // Try doctor endpoint
+      try {
+        const response = await this.api.get(`/doctor/jobs/${jobId}`);
+        console.log('✅ Job details from doctor endpoint:', response.data);
+        return response.data;
+      } catch (doctorError) {
+        console.log('Doctor endpoint failed, trying nurse endpoint...');
+      }
+      
+      // Try nurse endpoint
+      try {
+        const response = await this.api.get(`/nurse/jobs/${jobId}`);
+        console.log('✅ Job details from nurse endpoint:', response.data);
+        return response.data;
+      } catch (nurseError) {
+        console.log('All endpoints failed');
+        throw new Error('Job not found in any available endpoints');
+      }
+      
+    } catch (error) {
+      console.error('❌ Failed to fetch job details:', error);
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 404) {
+          throw new Error('Job not found.');
+        }
+        throw new Error(error.response?.data?.message || 'Failed to fetch job details.');
+      }
+      throw new Error('Network error. Please try again.');
+    }
+  }
+
+  // HR APIs for managing accepted assignments
+  async getAcceptedAssignments(jobId: string): Promise<any[]> {
+    console.log('🔍 Getting accepted assignments for jobId:', jobId);
+    console.log('🔗 API endpoint:', `/hr/jobs/${jobId}/accepted-assignments`);
+    
+    try {
+      const response = await this.api.get(`/hr/jobs/${jobId}/accepted-assignments`);
+      console.log('✅ Accepted assignments response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Failed to get accepted assignments:', error);
+      console.error('❌ Error response:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
+      throw error;
+    }
+  }
+
+  async selectCandidate(jobId: string, assignmentId: string): Promise<void> {
+    console.log('🔧 Selecting candidate for job:', jobId, 'assignment:', assignmentId);
+    console.log('🔗 API endpoint:', `/hr/jobs/${jobId}/select-candidate`);
+    
+    const requestBody = {
+      assignmentId: assignmentId
+    };
+    console.log('📤 Request body:', requestBody);
+    
+    try {
+      const response = await this.api.post(`/hr/jobs/${jobId}/select-candidate`, requestBody);
+      console.log('✅ Select candidate successful:', response.data);
+    } catch (error) {
+      console.error('❌ Select candidate failed:', error);
+      console.error('❌ Error response:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
+      throw error;
     }
   }
 }

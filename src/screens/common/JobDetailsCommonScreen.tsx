@@ -22,14 +22,38 @@ import ApiService from '../../services/api';
 const JobDetailsCommonScreen: React.FC = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const { jobId } = route.params as { jobId: string };
+  const { jobId, job: passedJob } = route.params as { jobId?: string; job?: Job };
   
   const [job, setJob] = useState<Job | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadJobDetails();
-  }, [jobId]);
+    console.log('🔍 JobDetailsCommonScreen useEffect - jobId:', jobId, 'passedJob:', passedJob);
+    
+    if (passedJob) {
+      console.log('✅ Using passed job object directly:', passedJob);
+      // Handle nested job structure if needed
+      let jobData = passedJob;
+      
+      // Check if it's the full API response structure
+      if (passedJob.job) {
+        jobData = passedJob.job;
+        console.log('📦 Found nested job structure, extracting job data');
+      } else {
+        console.log('📦 Using passed job directly');
+      }
+      
+      console.log('📦 Final job data:', jobData);
+      console.log('📋 Job title from extracted data:', jobData.title);
+      console.log('📋 Job description from extracted data:', jobData.description);
+      setJob(jobData);
+      setIsLoading(false);
+    } else if (jobId) {
+      console.log('🔄 No passed job, falling back to API call for jobId:', jobId);
+      // Fallback to API call if no job object is passed
+      loadJobDetails();
+    }
+  }, [jobId, passedJob]);
 
   const loadJobDetails = async () => {
     try {
@@ -37,8 +61,12 @@ const JobDetailsCommonScreen: React.FC = () => {
       
       // Try the general jobs endpoint first (should work for all users)
       try {
-        const jobData = await ApiService.getJobById(jobId);
-        console.log('📋 Job details loaded from general endpoint:', jobData);
+        const response = await ApiService.getJobById(jobId);
+        console.log('📋 Job details loaded from general endpoint:', response);
+        // Handle nested job structure
+        const jobData = response.job || response;
+        console.log('📦 Extracted job data from API:', jobData);
+        console.log('📋 Job title from API data:', jobData.title);
         setJob(jobData);
         return;
       } catch (generalError) {
@@ -106,7 +134,11 @@ const JobDetailsCommonScreen: React.FC = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | undefined | null) => {
+    if (!dateString) {
+      return 'TBD';
+    }
+    
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
@@ -116,7 +148,11 @@ const JobDetailsCommonScreen: React.FC = () => {
     });
   };
 
-  const formatTime = (timeString: string) => {
+  const formatTime = (timeString: string | undefined | null) => {
+    if (!timeString) {
+      return 'TBD';
+    }
+    
     const [hours, minutes] = timeString.split(':');
     const hour = parseInt(hours);
     const ampm = hour >= 12 ? 'PM' : 'AM';
@@ -136,6 +172,7 @@ const JobDetailsCommonScreen: React.FC = () => {
   }
 
   if (!job) {
+    console.log('❌ Job object is null/undefined');
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
@@ -145,6 +182,13 @@ const JobDetailsCommonScreen: React.FC = () => {
       </SafeAreaView>
     );
   }
+
+  console.log('✅ Job object loaded:', job);
+  console.log('📋 Job title:', job?.title);
+  console.log('📋 Job description:', job?.description);
+  console.log('📋 Job location:', job?.location);
+  console.log('📋 Job ID:', job?.id);
+  console.log('📋 Is job object truthy:', !!job);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -191,7 +235,7 @@ const JobDetailsCommonScreen: React.FC = () => {
                 <Text style={styles.overviewText}>{job.location}</Text>
               </View>
               <View style={styles.overviewRow}>
-                <FontAwesomeIcon icon="schedule" size={20} color={Colors.textTertiary}  />
+                <FontAwesomeIcon icon="calendar-alt" size={20} color={Colors.textTertiary}  />
                 <Text style={styles.overviewText}>
                   {formatDate(job.startDate)} - {formatDate(job.endDate)}
                 </Text>
@@ -218,15 +262,17 @@ const JobDetailsCommonScreen: React.FC = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Requirements</Text>
           <View style={styles.requirementsCard}>
-            <View style={styles.requirementItem}>
-              <FontAwesomeIcon icon="school" size={20} color={Colors.primary}  />
-              <View style={styles.requirementContent}>
-                <Text style={styles.requirementLabel}>Experience</Text>
-                <Text style={styles.requirementValue}>{job.requirements.experience}</Text>
+            {job.requirements?.experience && (
+              <View style={styles.requirementItem}>
+                <FontAwesomeIcon icon="graduation-cap" size={20} color={Colors.primary}  />
+                <View style={styles.requirementContent}>
+                  <Text style={styles.requirementLabel}>Experience</Text>
+                  <Text style={styles.requirementValue}>{job.requirements.experience}</Text>
+                </View>
               </View>
-            </View>
+            )}
             
-            {job.requirements.boardCertified && (
+            {job.requirements?.boardCertified && (
               <View style={styles.requirementItem}>
                 <FontAwesomeIcon icon="verified" size={20} color={Colors.primary}  />
                 <View style={styles.requirementContent}>
@@ -236,7 +282,7 @@ const JobDetailsCommonScreen: React.FC = () => {
               </View>
             )}
 
-            {job.requirements.skills.length > 0 && (
+            {job.requirements?.skills && job.requirements.skills.length > 0 && (
               <View style={styles.requirementItem}>
                 <FontAwesomeIcon icon="star" size={20} color={Colors.primary}  />
                 <View style={styles.requirementContent}>
@@ -258,21 +304,21 @@ const JobDetailsCommonScreen: React.FC = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Benefits</Text>
           <View style={styles.benefitsCard}>
-            {job.benefits.mealAllowance && (
+            {job.benefits?.mealAllowance && (
               <View style={styles.benefitItem}>
-                <FontAwesomeIcon icon="restaurant" size={20} color={Colors.success}  />
+                <FontAwesomeIcon icon="utensils" size={20} color={Colors.success}  />
                 <Text style={styles.benefitText}>Meal Allowance</Text>
               </View>
             )}
-            {job.benefits.parking && (
+            {job.benefits?.parking && (
               <View style={styles.benefitItem}>
-                <FontAwesomeIcon icon="local-parking" size={20} color={Colors.success}  />
+                <FontAwesomeIcon icon="parking" size={20} color={Colors.success}  />
                 <Text style={styles.benefitText}>Free Parking</Text>
               </View>
             )}
-            {job.benefits.malpractice && (
+            {job.benefits?.malpractice && (
               <View style={styles.benefitItem}>
-                <FontAwesomeIcon icon="security" size={20} color={Colors.success}  />
+                <FontAwesomeIcon icon="shield-alt" size={20} color={Colors.success}  />
                 <Text style={styles.benefitText}>Malpractice Insurance</Text>
               </View>
             )}
@@ -283,13 +329,15 @@ const JobDetailsCommonScreen: React.FC = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Facility Information</Text>
           <View style={styles.facilityCard}>
-            <Text style={styles.facilityName}>{job.facilityName}</Text>
-            <View style={styles.facilityAddress}>
-              <FontAwesomeIcon icon="map-marker-alt" size={16} color={Colors.textTertiary}  />
-              <Text style={styles.facilityAddressText}>
-                {job.facilityAddress.street}, {job.facilityAddress.city}, {job.facilityAddress.state} {job.facilityAddress.zipCode}
-              </Text>
-            </View>
+            <Text style={styles.facilityName}>{job.facilityName || 'TBD'}</Text>
+            {job.facilityAddress && (
+              <View style={styles.facilityAddress}>
+                <FontAwesomeIcon icon="map-marker-alt" size={16} color={Colors.textTertiary}  />
+                <Text style={styles.facilityAddressText}>
+                  {job.facilityAddress.street}, {job.facilityAddress.city}, {job.facilityAddress.state} {job.facilityAddress.zipCode}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -297,30 +345,36 @@ const JobDetailsCommonScreen: React.FC = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Contact Information</Text>
           <View style={styles.contactCard}>
-            <View style={styles.contactItem}>
-              <FontAwesomeIcon icon="user" size={20} color={Colors.primary}  />
-              <View style={styles.contactContent}>
-                <Text style={styles.contactLabel}>Contact Person</Text>
-                <Text style={styles.contactValue}>{job.contactPerson.name}</Text>
-                <Text style={styles.contactSubValue}>{job.contactPerson.position}</Text>
-              </View>
-            </View>
+            {job.contactPerson && (
+              <>
+                <View style={styles.contactItem}>
+                  <FontAwesomeIcon icon="user" size={20} color={Colors.primary}  />
+                  <View style={styles.contactContent}>
+                    <Text style={styles.contactLabel}>Contact Person</Text>
+                    <Text style={styles.contactValue}>{job.contactPerson.name || 'TBD'}</Text>
+                    <Text style={styles.contactSubValue}>{job.contactPerson.position || 'TBD'}</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.contactItem}>
+                  <FontAwesomeIcon icon="phone" size={20} color={Colors.primary}  />
+                  <View style={styles.contactContent}>
+                    <Text style={styles.contactLabel}>Phone</Text>
+                    <Text style={styles.contactValue}>{job.contactPerson.phone || 'TBD'}</Text>
+                  </View>
+                </View>
+              </>
+            )}
             
-            <View style={styles.contactItem}>
-              <FontAwesomeIcon icon="phone" size={20} color={Colors.primary}  />
-              <View style={styles.contactContent}>
-                <Text style={styles.contactLabel}>Phone</Text>
-                <Text style={styles.contactValue}>{job.contactPerson.phone}</Text>
+            {job.contactPerson && (
+              <View style={styles.contactItem}>
+                <FontAwesomeIcon icon="envelope" size={20} color={Colors.primary}  />
+                <View style={styles.contactContent}>
+                  <Text style={styles.contactLabel}>Email</Text>
+                  <Text style={styles.contactValue}>{job.contactPerson.email || 'TBD'}</Text>
+                </View>
               </View>
-            </View>
-            
-            <View style={styles.contactItem}>
-              <FontAwesomeIcon icon="envelope" size={20} color={Colors.primary}  />
-              <View style={styles.contactContent}>
-                <Text style={styles.contactLabel}>Email</Text>
-                <Text style={styles.contactValue}>{job.contactPerson.email}</Text>
-              </View>
-            </View>
+            )}
           </View>
         </View>
 
@@ -355,17 +409,14 @@ const JobDetailsCommonScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Action Buttons */}
+        {/* Assignment Status Info */}
         <View style={styles.actionSection}>
-          <TouchableOpacity style={styles.primaryButton}>
-            <FontAwesomeIcon icon="send" size={20} color={Colors.white}  />
-            <Text style={styles.primaryButtonText}>Apply for Job</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.secondaryButton}>
-            <FontAwesomeIcon icon="favorite-border" size={20} color={Colors.primary}  />
-            <Text style={styles.secondaryButtonText}>Save Job</Text>
-          </TouchableOpacity>
+          <View style={styles.infoCard}>
+            <FontAwesomeIcon icon="info-circle" size={20} color={Colors.primary} />
+            <Text style={styles.infoText}>
+              This job has been automatically assigned to compatible staff. Check your assignments to see if you have been assigned to this job.
+            </Text>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -658,6 +709,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing['3xl'],
     gap: Spacing.md,
+  },
+  infoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.lg,
+    backgroundColor: Colors.backgroundSecondary,
+    borderRadius: BorderRadius.lg,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.primary,
+  },
+  infoText: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textSecondary,
+    marginLeft: Spacing.md,
+    flex: 1,
+    lineHeight: 22,
   },
   primaryButton: {
     backgroundColor: Colors.primary,

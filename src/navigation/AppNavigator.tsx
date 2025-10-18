@@ -14,11 +14,12 @@ import HRDashboardScreen from '../screens/hr/HRDashboardScreen';
 import HRJobsScreen from '../screens/hr/HRJobsScreen';
 import HRUsersScreen from '../screens/hr/HRUsersScreen';
 import CreateJobScreen from '../screens/hr/CreateJobScreen';
-import JobDetailsScreen from '../screens/hr/JobDetailsScreen';
+import JobAssignmentScreen from '../screens/hr/JobAssignmentScreen';
 
 // Healthcare Provider Screens (Unified)
 import HealthcareProviderDashboardScreen from '../screens/healthcare/HealthcareProviderDashboardScreen';
-import AvailableJobsScreen from '../screens/healthcare/AvailableJobsScreen';
+import AssignmentScreen from '../screens/healthcare/AssignmentScreen';
+import AssignmentDetailsScreen from '../screens/healthcare/AssignmentDetailsScreen';
 import MyAssignmentsScreen from '../screens/healthcare/MyAssignmentsScreen';
 import CheckInOutScreen from '../screens/healthcare/CheckInOutScreen';
 
@@ -58,6 +59,8 @@ export type RootStackParamList = {
   JobDetails: { jobId?: string; job?: Job };
   CreateJob: undefined;
   CheckInOut: { assignmentId: string };
+  JobAssignment: { jobId: string };
+  AssignmentDetails: { assignmentId: string };
 };
 
 export type AuthStackParamList = {
@@ -70,7 +73,7 @@ export type MainTabParamList = {
   HealthcareProviderDashboard: undefined;
   HRJobs: undefined;
   HRUsers: undefined;
-  AvailableJobs: undefined;
+  Assignments: undefined;
   MyAssignments: undefined;
 };
 
@@ -143,8 +146,8 @@ const HealthcareProviderTabNavigator = () => {
             case 'HealthcareProviderDashboard':
               iconName = 'user-md';
               break;
-            case 'AvailableJobs':
-              iconName = 'search';
+            case 'Assignments':
+              iconName = 'user-check';
               break;
             case 'MyAssignments':
               iconName = 'clipboard-list';
@@ -167,7 +170,7 @@ const HealthcareProviderTabNavigator = () => {
         headerShown: false,
       })}>
       <MainTab.Screen name="HealthcareProviderDashboard" component={HealthcareProviderDashboardScreen} options={{ title: 'Dashboard' }} />
-      <MainTab.Screen name="AvailableJobs" component={AvailableJobsScreen} options={{ title: 'Available Jobs' }} />
+      <MainTab.Screen name="Assignments" component={AssignmentScreen} options={{ title: 'Job Assignments' }} />
       <MainTab.Screen name="MyAssignments" component={MyAssignmentsScreen} options={{ title: 'My Jobs' }} />
     </MainTab.Navigator>
   );
@@ -230,6 +233,26 @@ const MainNavigator = ({ user }: { user: User }) => {
         options={{
           headerShown: true,
           title: 'Check In/Out',
+          headerStyle: { backgroundColor: Colors.primary },
+          headerTintColor: Colors.white,
+        }}
+      />
+      <Stack.Screen 
+        name="JobAssignment" 
+        component={JobAssignmentScreen}
+        options={{
+          headerShown: true,
+          title: 'Assign Job',
+          headerStyle: { backgroundColor: Colors.primary },
+          headerTintColor: Colors.white,
+        }}
+      />
+      <Stack.Screen 
+        name="AssignmentDetails" 
+        component={AssignmentDetailsScreen}
+        options={{
+          headerShown: true,
+          title: 'Assignment Details',
           headerStyle: { backgroundColor: Colors.primary },
           headerTintColor: Colors.white,
         }}

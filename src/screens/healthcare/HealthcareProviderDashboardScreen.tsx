@@ -382,9 +382,9 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
           <View style={styles.quickActionsContainer}>
             <QuickAction
               icon="search"
-              title="Find Jobs"
-              subtitle="Browse opportunities"
-              onPress={() => navigation.navigate('AvailableJobs' as never)}
+              title="Job Assignments"
+              subtitle="View assigned jobs"
+              onPress={() => navigation.navigate('Assignments' as never)}
               color={roleConfig.color}
             />
             <QuickAction
@@ -414,8 +414,8 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
         {/* Available Jobs */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Available Jobs</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('AvailableJobs' as never)}>
+            <Text style={styles.sectionTitle}>Job Assignments</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Assignments' as never)}>
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
