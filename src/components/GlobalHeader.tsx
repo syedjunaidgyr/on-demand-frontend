@@ -8,8 +8,6 @@ import {
 } from 'react-native';
 import { FontAwesomeIcon } from '../utils/icons';
 import { Colors } from '../constants/colors';
-import { Typography } from '../constants/typography';
-import { Spacing } from '../constants/spacing';
 
 interface GlobalHeaderProps {
   title: string;
@@ -58,9 +56,9 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   header: {
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing['2xl'],
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    paddingTop: 60,
   },
   headerContent: {
     flexDirection: 'row',
@@ -76,8 +74,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.bold,
+    fontSize: 20,
+    fontWeight: 'bold',
     flex: 1,
     textAlign: 'center',
   },

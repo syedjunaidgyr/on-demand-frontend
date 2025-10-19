@@ -14,9 +14,6 @@ import { FontAwesomeIcon } from '../../utils/icons';
 import LinearGradient from 'react-native-linear-gradient';
 import GlobalHeader from '../../components/GlobalHeader';
 
-import { Colors } from '../../constants/colors';
-import { Typography } from '../../constants/typography';
-import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import ApiService from '../../services/api';
 
 interface DashboardStats {
@@ -53,6 +50,7 @@ interface DashboardStats {
 const HRDashboardScreen: React.FC = () => {
   const navigation = useNavigation();
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -64,7 +62,16 @@ const HRDashboardScreen: React.FC = () => {
     try {
       console.log('🔧 Loading HR dashboard data...');
       
-      // Try to get dashboard data first
+      // Load user profile first
+      try {
+        const profile = await ApiService.getProfile();
+        console.log('👤 User Profile:', profile);
+        setUserProfile(profile);
+      } catch (profileError) {
+        console.log('⚠️ Profile API failed:', profileError);
+        setUserProfile(null);
+      }
+      
       let dashboardResponse;
       try {
         dashboardResponse = await ApiService.getHRDashboard();
@@ -74,7 +81,6 @@ const HRDashboardScreen: React.FC = () => {
         dashboardResponse = null;
       }
       
-      // Always load jobs to get accurate count
       const jobsResponse = await ApiService.getAllJobs();
       console.log('📋 Jobs Response:', jobsResponse);
       
@@ -85,7 +91,6 @@ const HRDashboardScreen: React.FC = () => {
       
       console.log('📊 Job Stats:', { totalJobs, activeJobs, assignedJobs });
       
-      // Handle nested dashboard response
       const dashboardData = dashboardResponse?.dashboard || dashboardResponse;
       const statsData = dashboardData || {
         jobs: { total: 0, active: 0, assigned: 0, inProgress: 0, completed: 0, cancelled: 0 },
@@ -95,7 +100,6 @@ const HRDashboardScreen: React.FC = () => {
         recent: { jobs: [], assignments: [] }
       };
       
-      // Update with real job data
       statsData.jobs.total = totalJobs;
       statsData.jobs.active = activeJobs;
       statsData.jobs.assigned = assignedJobs;
@@ -104,7 +108,6 @@ const HRDashboardScreen: React.FC = () => {
     } catch (error: any) {
       console.error('❌ Failed to load dashboard data:', error);
       
-      // Set default stats on error
       setStats({
         jobs: { total: 0, active: 0, assigned: 0, inProgress: 0, completed: 0, cancelled: 0 },
         assignments: { total: 0, pending: 0, accepted: 0, inProgress: 0, completed: 0 },
@@ -123,25 +126,24 @@ const HRDashboardScreen: React.FC = () => {
     setRefreshing(false);
   };
 
-  // Utility functions for data formatting
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
     
     if (diffInHours < 1) return 'Just now';
-    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+    if (diffInHours < 24) return `${diffInHours}h ago`;
     if (diffInHours < 48) return 'Yesterday';
-    return date.toLocaleDateString();
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'URGENT': return Colors.error;
-      case 'HIGH': return Colors.warning;
-      case 'MEDIUM': return Colors.info;
-      case 'LOW': return Colors.success;
-      default: return Colors.textSecondary;
+      case 'URGENT': return '#EF4444';
+      case 'HIGH': return '#F59E0B';
+      case 'MEDIUM': return '#3B82F6';
+      case 'LOW': return '#10B981';
+      default: return '#6B7280';
     }
   };
 
@@ -149,28 +151,41 @@ const HRDashboardScreen: React.FC = () => {
     title, 
     value, 
     icon, 
-    color, 
-    onPress 
+    gradient, 
+    onPress,
+    percentage 
   }: {
     title: string;
     value: number;
     icon: string;
-    color: string;
+    gradient: string[];
     onPress?: () => void;
+    percentage?: string;
   }) => (
     <TouchableOpacity 
-      style={[styles.statCard, { borderLeftColor: color }]} 
+      style={styles.statCard} 
       onPress={onPress}
-      disabled={!onPress}>
-      <View style={styles.statContent}>
-        <View style={styles.statHeader}>
-          <View style={[styles.statIcon, { backgroundColor: color + '20' }]}>
-            <FontAwesomeIcon icon={icon} size={20} color={color}  />
-          </View>
+      disabled={!onPress}
+      activeOpacity={0.7}>
+      <LinearGradient
+        colors={gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.statGradient}>
+        <View style={styles.statCardHeader}>
           <Text style={styles.statTitle}>{title}</Text>
+          <View style={styles.statIconRound}>
+            <FontAwesomeIcon icon={icon} size={18} color="#FFFFFF" />
+          </View>
         </View>
-        <Text style={[styles.statValue, { color }]}>{value}</Text>
-      </View>
+        <Text style={styles.statValue}>{value.toLocaleString()}</Text>
+        {percentage && (
+          <View style={styles.percentageBadge}>
+            <FontAwesomeIcon icon="chevron-up" size={10} color="#FFFFFF" />
+            <Text style={styles.percentageText}>{percentage}</Text>
+          </View>
+        )}
+      </LinearGradient>
     </TouchableOpacity>
   );
 
@@ -178,24 +193,29 @@ const HRDashboardScreen: React.FC = () => {
     title, 
     subtitle, 
     icon, 
-    color, 
+    gradient, 
     onPress 
   }: {
     title: string;
     subtitle: string;
     icon: string;
-    color: string;
+    gradient: string[];
     onPress: () => void;
   }) => (
-    <TouchableOpacity style={styles.quickAction} onPress={onPress}>
+    <TouchableOpacity 
+      style={styles.quickActionWrapper} 
+      onPress={onPress}
+      activeOpacity={0.8}>
       <View style={styles.quickActionCard}>
-        <View style={[styles.quickActionIcon, { backgroundColor: color }]}>
-          <FontAwesomeIcon icon={icon} size={20} color={Colors.white}  />
-        </View>
-        <View style={styles.quickActionContent}>
-          <Text style={styles.quickActionTitle}>{title}</Text>
-          <Text style={styles.quickActionSubtitle}>{subtitle}</Text>
-        </View>
+        <LinearGradient
+          colors={gradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.quickActionGradient}>
+          <FontAwesomeIcon icon={icon} size={24} color="#FFFFFF" />
+        </LinearGradient>
+        <Text style={styles.quickActionTitle}>{title}</Text>
+        <Text style={styles.quickActionSubtitle}>{subtitle}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -204,7 +224,7 @@ const HRDashboardScreen: React.FC = () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color="#6366F1" />
           <Text style={styles.loadingText}>Loading dashboard...</Text>
         </View>
       </SafeAreaView>
@@ -213,126 +233,202 @@ const HRDashboardScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <GlobalHeader 
-        title="HR Dashboard"
-        backgroundColor={Colors.primary}
-        rightComponent={
+      {/* Sticky Header */}
+      <View style={styles.stickyHeader}>
+        {/* Combined Profile, Title and Stats Card */}
+        <View style={styles.combinedCard}>
+          {/* Profile Section */}
           <TouchableOpacity 
-            style={styles.profileButton}
-            onPress={() => (navigation as any).navigate('Profile')}>
-            <FontAwesomeIcon icon="user" size={24} color={Colors.white} />
-          </TouchableOpacity>
-        }
-      />
-      <ScrollView
-        style={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }>
-
-        {/* Summary Cards */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Quick Summary</Text>
-            <Text style={styles.sectionSubtitle}>Key insights at a glance</Text>
-          </View>
-          <View style={styles.summaryGrid}>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>Staff Distribution</Text>
-              <Text style={styles.summaryValue}>
-                {stats?.staff?.doctors || 0} Doctors • {stats?.staff?.nurses || 0} Nurses
-              </Text>
+            style={styles.profileSection}
+            onPress={() => (navigation as any).navigate('Profile')}
+            activeOpacity={0.7}>
+            <View style={styles.profileInfo}>
+              <View style={styles.profileImageContainer}>
+                <LinearGradient
+                  colors={['#8B5CF6', '#7C3AED']}
+                  style={styles.profileImage}>
+                  <Text style={styles.profileInitials}>
+                    {userProfile ? 
+                      (userProfile.firstName || userProfile.lastName || 'U').charAt(0).toUpperCase()
+                      : 'U'
+                    }
+                  </Text>
+                </LinearGradient>
+              </View>
+              <View style={styles.profileText}>
+                <Text style={styles.profileName}>
+                  {userProfile ? `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() : 'Loading...'}
+                </Text>
+                <Text style={styles.profileRole}>
+                  {userProfile?.role || 'HR'}
+                </Text>
+              </View>
             </View>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>This Month</Text>
-              <Text style={styles.summaryValue}>
-                {stats?.monthly?.jobs || 0} Jobs • {stats?.monthly?.assignments || 0} Assignments
-              </Text>
+            <TouchableOpacity style={styles.notificationButton}>
+              <FontAwesomeIcon icon="bell" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+          </TouchableOpacity>
+
+          {/* Main Title */}
+          <View style={styles.titleSection}>
+            <Text style={styles.mainTitle}>HR Dashboard</Text>
+          </View>
+
+          {/* Main Stats Cards */}
+          <View style={styles.mainStatsSection}>
+            <View style={styles.mainStatsRow}>
+              <View style={styles.mainStatCard}>
+                <View style={styles.mainStatContent}>
+                  <View style={styles.mainStatIcon}>
+                    <FontAwesomeIcon icon="users" size={24} color="#FFFFFF" />
+                  </View>
+                  <View style={styles.mainStatText}>
+                    <Text style={styles.mainStatValue}>{stats?.staff?.total || 0}</Text>
+                    <Text style={styles.mainStatLabel}>Total Staff</Text>
+                  </View>
+                </View>
+              </View>
+              
+              <View style={styles.mainStatCard}>
+                <View style={styles.mainStatContent}>
+                  <View style={styles.mainStatIcon}>
+                    <FontAwesomeIcon icon="briefcase" size={24} color="#FFFFFF" />
+                  </View>
+                  <View style={styles.mainStatText}>
+                    <Text style={styles.mainStatValue}>{stats?.jobs?.total || 0}</Text>
+                    <Text style={styles.mainStatLabel}>Total Jobs</Text>
+                  </View>
+                </View>
+              </View>
             </View>
           </View>
         </View>
+      </View>
 
-        {/* Stats Overview */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Overview</Text>
-            <Text style={styles.sectionSubtitle}>Key metrics and statistics</Text>
-          </View>
+      {/* Scrollable Content */}
+      <ScrollView
+        style={styles.scrollableContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            tintColor="#6366F1"
+            colors={['#6366F1']}
+          />
+        }>
+
+        {/* Overview Stats Grid */}
+        <View style={[styles.section, styles.firstSection]}>
+          <Text style={styles.sectionTitle}>Overview</Text>
           <View style={styles.statsGrid}>
             <StatCard
               title="Total Jobs"
               value={stats?.jobs?.total || 0}
               icon="briefcase"
-              color={Colors.primary}
+              gradient={['#0891B2', '#0E7490']}
               onPress={() => (navigation as any).navigate('HRJobs')}
             />
             <StatCard
               title="Active Jobs"
               value={stats?.jobs?.active || 0}
               icon="play"
-              color={Colors.success}
+              gradient={['#1F2937', '#374151']}
+            />
+            <StatCard
+              title="Assigned Jobs"
+              value={stats?.jobs?.assigned || 0}
+              icon="user-check"
+              gradient={['#2563EB', '#3B82F6']}
+            />
+            <StatCard
+              title="In Progress"
+              value={stats?.jobs?.inProgress || 0}
+              icon="sync"
+              gradient={['#EC4899', '#BE185D']}
+            />
+            <StatCard
+              title="Completed Jobs"
+              value={stats?.jobs?.completed || 0}
+              icon="check-circle"
+              gradient={['#10B981', '#059669']}
+            />
+            <StatCard
+              title="Cancelled Jobs"
+              value={stats?.jobs?.cancelled || 0}
+              icon="times-circle"
+              gradient={['#EF4444', '#DC2626']}
             />
             <StatCard
               title="Total Staff"
               value={stats?.staff?.total || 0}
               icon="users"
-              color={Colors.info}
+              gradient={['#8B5CF6', '#7C3AED']}
               onPress={() => (navigation as any).navigate('HRUsers')}
             />
             <StatCard
               title="Total Assignments"
               value={stats?.assignments?.total || 0}
-              icon="clipboard-list"
-              color={Colors.warning}
+              icon="list"
+              gradient={['#F59E0B', '#D97706']}
             />
             <StatCard
-              title="Pending Assignments"
+              title="Pending"
               value={stats?.assignments?.pending || 0}
               icon="clock"
-              color={Colors.error}
+              gradient={['#F97316', '#EA580C']}
             />
             <StatCard
-              title="Accepted Assignments"
+              title="Accepted"
               value={stats?.assignments?.accepted || 0}
               icon="check"
-              color={Colors.success}
+              gradient={['#14B8A6', '#0D9488']}
+            />
+            <StatCard
+              title="In Progress"
+              value={stats?.assignments?.inProgress || 0}
+              icon="sync"
+              gradient={['#06B6D4', '#0891B2']}
+            />
+            <StatCard
+              title="Completed"
+              value={stats?.assignments?.completed || 0}
+              icon="check-circle"
+              gradient={['#22C55E', '#16A34A']}
             />
           </View>
         </View>
 
         {/* Quick Actions */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
-            <Text style={styles.sectionSubtitle}>Common HR tasks and operations</Text>
-          </View>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
             <QuickAction
               title="Create Job"
               subtitle="Post new opening"
               icon="plus"
-              color={Colors.primary}
+              gradient={['#3B82F6', '#2563EB']}
               onPress={() => (navigation as any).navigate('CreateJob')}
             />
             <QuickAction
               title="Manage Jobs"
-              subtitle="View & edit jobs"
+              subtitle="View & edit"
               icon="briefcase"
-              color={Colors.info}
+              gradient={['#8B5CF6', '#7C3AED']}
               onPress={() => (navigation as any).navigate('HRJobs')}
             />
             <QuickAction
-              title="Staff Management"
+              title="Staff"
               subtitle="Manage users"
               icon="users"
-              color={Colors.success}
+              gradient={['#10B981', '#059669']}
               onPress={() => (navigation as any).navigate('HRUsers')}
             />
             <QuickAction
               title="Reports"
-              subtitle="Analytics & insights"
-              icon="chart-bar"
-              color={Colors.warning}
+              subtitle="View insights"
+              icon="chart-line"
+              gradient={['#F59E0B', '#D97706']}
               onPress={() => {}}
             />
           </View>
@@ -340,66 +436,77 @@ const HRDashboardScreen: React.FC = () => {
 
         {/* Recent Jobs */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
+          <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>Recent Jobs</Text>
-            <Text style={styles.sectionSubtitle}>Latest job postings</Text>
+            <TouchableOpacity onPress={() => (navigation as any).navigate('HRJobs')}>
+              <Text style={styles.viewAllText}>View All</Text>
+            </TouchableOpacity>
           </View>
-          <View style={styles.activityCard}>
+          <View style={styles.listCard}>
             {stats?.recent?.jobs && stats.recent.jobs.length > 0 ? (
               stats.recent.jobs.slice(0, 3).map((job, index) => (
                 <TouchableOpacity 
                   key={job.id} 
                   style={[
-                    styles.activityItem, 
-                    index === Math.min(2, stats.recent.jobs.length - 1) && { marginBottom: 0, paddingBottom: 0, borderBottomWidth: 0 }
+                    styles.listItem,
+                    index === Math.min(2, stats.recent.jobs.length - 1) && styles.listItemLast
                   ]}
                   onPress={() => (navigation as any).navigate('JobDetails', { jobId: job.id })}
-                >
-                  <View style={[styles.activityIcon, { backgroundColor: Colors.primary }]}>
-                    <FontAwesomeIcon icon="briefcase" size={20} color={Colors.white} />
+                  activeOpacity={0.7}>
+                  <View style={styles.listIconWrapper}>
+                    <LinearGradient
+                      colors={['#3B82F6', '#2563EB']}
+                      style={styles.listIcon}>
+                      <FontAwesomeIcon icon="briefcase" size={18} color="#FFFFFF" />
+                    </LinearGradient>
                   </View>
-                  <View style={styles.activityContent}>
-                    <Text style={styles.activityTitle}>{job.title}</Text>
-                    <Text style={styles.activitySubtitle}>
-                      {job.department} • {job.location} • ₹{job.hourlyRate}/hr
+                  <View style={styles.listContent}>
+                    <Text style={styles.listTitle} numberOfLines={1}>{job.title}</Text>
+                    <Text style={styles.listSubtitle} numberOfLines={1}>
+                      {job.department} • {job.location}
                     </Text>
-                    <Text style={styles.activityTime}>
-                      {formatDate(job.createdAt)} • 
-                      <Text style={{ color: getPriorityColor(job.priority) }}> {job.priority}</Text>
-                    </Text>
+                    <View style={styles.listFooter}>
+                      <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(job.priority) + '20' }]}>
+                        <Text style={[styles.priorityText, { color: getPriorityColor(job.priority) }]}>
+                          {job.priority}
+                        </Text>
+                      </View>
+                      <Text style={styles.listRate}>₹{job.hourlyRate}/hr</Text>
+                    </View>
                   </View>
+                  <Text style={styles.listTime}>{formatDate(job.createdAt)}</Text>
                 </TouchableOpacity>
               ))
             ) : (
-              <View style={styles.activityItem}>
-                <View style={[styles.activityIcon, { backgroundColor: Colors.textSecondary }]}>
-                  <FontAwesomeIcon icon="briefcase" size={20} color={Colors.white} />
+              <View style={styles.emptyState}>
+                <View style={styles.emptyIcon}>
+                  <FontAwesomeIcon icon="briefcase" size={32} color="#D1D5DB" />
                 </View>
-                <View style={styles.activityContent}>
-                  <Text style={styles.activityTitle}>No Recent Jobs</Text>
-                  <Text style={styles.activitySubtitle}>No job postings found</Text>
-                </View>
+                <Text style={styles.emptyTitle}>No Recent Jobs</Text>
+                <Text style={styles.emptySubtitle}>Job postings will appear here</Text>
               </View>
             )}
           </View>
         </View>
 
         {/* Recent Assignments */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
+        <View style={[styles.section, styles.lastSection]}>
+          <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>Recent Assignments</Text>
-            <Text style={styles.sectionSubtitle}>Latest assignment updates</Text>
+            <TouchableOpacity>
+              <Text style={styles.viewAllText}>View All</Text>
+            </TouchableOpacity>
           </View>
-          <View style={styles.activityCard}>
+          <View style={styles.listCard}>
             {stats?.recent?.assignments && stats.recent.assignments.length > 0 ? (
               stats.recent.assignments.slice(0, 3).map((assignment, index) => {
                 const getStatusColor = (status: string) => {
                   switch (status) {
-                    case 'ACCEPTED': return Colors.success;
-                    case 'PENDING': return Colors.warning;
-                    case 'COMPLETED': return Colors.info;
-                    case 'REJECTED': return Colors.error;
-                    default: return Colors.textSecondary;
+                    case 'ACCEPTED': return '#10B981';
+                    case 'PENDING': return '#F59E0B';
+                    case 'COMPLETED': return '#3B82F6';
+                    case 'REJECTED': return '#EF4444';
+                    default: return '#6B7280';
                   }
                 };
                 
@@ -408,45 +515,54 @@ const HRDashboardScreen: React.FC = () => {
                     case 'ACCEPTED': return 'check';
                     case 'PENDING': return 'clock';
                     case 'COMPLETED': return 'check-circle';
-                    case 'REJECTED': return 'times';
-                    default: return 'question';
+                    case 'REJECTED': return 'times-circle';
+                    default: return 'info-circle';
                   }
                 };
+
+                const statusColor = getStatusColor(assignment.status);
 
                 return (
                   <View 
                     key={assignment.id} 
                     style={[
-                      styles.activityItem, 
-                      index === Math.min(2, stats.recent.assignments.length - 1) && { marginBottom: 0, paddingBottom: 0, borderBottomWidth: 0 }
-                    ]}
-                  >
-                    <View style={[styles.activityIcon, { backgroundColor: getStatusColor(assignment.status) }]}>
-                      <FontAwesomeIcon icon={getStatusIcon(assignment.status)} size={20} color={Colors.white} />
+                      styles.listItem,
+                      index === Math.min(2, stats.recent.assignments.length - 1) && styles.listItemLast
+                    ]}>
+                    <View style={styles.listIconWrapper}>
+                      <LinearGradient
+                        colors={[statusColor, statusColor]}
+                        style={styles.listIcon}>
+                        <FontAwesomeIcon icon={getStatusIcon(assignment.status)} size={18} color="#FFFFFF" />
+                      </LinearGradient>
                     </View>
-                    <View style={styles.activityContent}>
-                      <Text style={styles.activityTitle}>
-                        {assignment.user?.firstName} {assignment.user?.lastName} - {assignment.status}
+                    <View style={styles.listContent}>
+                      <Text style={styles.listTitle} numberOfLines={1}>
+                        {assignment.user?.firstName} {assignment.user?.lastName}
                       </Text>
-                      <Text style={styles.activitySubtitle}>
-                        {assignment.job?.title} • {assignment.job?.department}
+                      <Text style={styles.listSubtitle} numberOfLines={1}>
+                        {assignment.job?.title}
                       </Text>
-                      <Text style={styles.activityTime}>
-                        ₹{assignment.hourlyRate}/hr • {formatDate(assignment.assignedAt)}
-                      </Text>
+                      <View style={styles.listFooter}>
+                        <View style={[styles.statusBadge, { backgroundColor: statusColor + '20' }]}>
+                          <Text style={[styles.statusText, { color: statusColor }]}>
+                            {assignment.status}
+                          </Text>
+                        </View>
+                        <Text style={styles.listRate}>₹{assignment.hourlyRate}/hr</Text>
+                      </View>
                     </View>
+                    <Text style={styles.listTime}>{formatDate(assignment.assignedAt)}</Text>
                   </View>
                 );
               })
             ) : (
-              <View style={styles.activityItem}>
-                <View style={[styles.activityIcon, { backgroundColor: Colors.textSecondary }]}>
-                  <FontAwesomeIcon icon="clipboard-list" size={20} color={Colors.white} />
+              <View style={styles.emptyState}>
+                <View style={styles.emptyIcon}>
+                  <FontAwesomeIcon icon="list" size={32} color="#D1D5DB" />
                 </View>
-                <View style={styles.activityContent}>
-                  <Text style={styles.activityTitle}>No Recent Assignments</Text>
-                  <Text style={styles.activitySubtitle}>No assignment updates found</Text>
-                </View>
+                <Text style={styles.emptyTitle}>No Recent Assignments</Text>
+                <Text style={styles.emptySubtitle}>Assignment updates will appear here</Text>
               </View>
             )}
           </View>
@@ -459,219 +575,439 @@ const HRDashboardScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#ffffff',
   },
-  content: {
+  stickyHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+  },
+  scrollableContent: {
     flex: 1,
+    marginTop: 290, // Height of the sticky header + extra space
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F9FAFB',
   },
   loadingText: {
-    marginTop: Spacing.md,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-  },
-  header: {
-    paddingTop: Spacing['3xl'],
-    paddingBottom: Spacing['2xl'],
-    paddingHorizontal: Spacing.lg,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: -20,
-  },
-  headerTitle: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.white,
-  },
-  headerSubtitle: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.white,
-    opacity: 0.9,
-    marginTop: 10,
+    marginTop: 16,
+    fontSize: 16,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   profileButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  section: {
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.sm,
+  combinedCard: {
+    backgroundColor: '#1C2A3A',
+    paddingTop: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  sectionHeader: {
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.md,
+  profileSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
+  },
+  profileInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  profileImageContainer: {
+    marginRight: 16,
+  },
+  profileImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profileInitials: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  profileText: {
+    flex: 1,
+  },
+  profileName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  profileRole: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '500',
+  },
+  notificationButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  titleSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  mainTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+  },
+  mainStatsSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+  },
+  mainStatsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  mainStatCard: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 16,
+    padding: 20,
+    minHeight: 100,
+    justifyContent: 'center',
+  },
+  mainStatContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  mainStatIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  mainStatText: {
+    flex: 1,
+  },
+  mainStatValue: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  mainStatLabel: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '500',
+  },
+  heroSection: {
+    paddingBottom: 8,
+  },
+  heroGradient: {
+    borderRadius: 4,
+    overflow: 'hidden',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  heroContent: {
+    padding: 24,
+  },
+  heroRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  heroStat: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  heroDivider: {
+    width: 1,
+    height: 60,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    marginHorizontal: 20,
+  },
+  heroLabel: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '600',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  heroValue: {
+    fontSize: 36,
+    color: '#FFFFFF',
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  heroSubtext: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontWeight: '500',
+  },
+  section: {
+    paddingHorizontal: 20,
+    marginTop: 24,
+  },
+  firstSection: {
+    paddingTop: 30,
+    marginTop: 0,
+  },
+  lastSection: {
+    marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.xs,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 16,
+    letterSpacing: -0.3,
   },
-  sectionSubtitle: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-  },
-  summaryGrid: {
+  sectionHeaderRow: {
     flexDirection: 'row',
-    gap: Spacing.md,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
-  summaryCard: {
-    flex: 1,
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-    borderLeftWidth: 4,
-    borderLeftColor: Colors.primary,
-    ...Shadow.sm,
-  },
-  summaryTitle: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.xs,
-  },
-  summaryValue: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
+  viewAllText: {
+    fontSize: 14,
+    color: '#6366F1',
+    fontWeight: '600',
   },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    marginHorizontal: -6,
   },
   statCard: {
-    width: '48%',
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.lg,
-    borderLeftWidth: 4,
-    marginBottom: Spacing.md,
-    ...Shadow.md,
+    width: '50%',
+    paddingHorizontal: 6,
+    marginBottom: 12,
   },
-  statContent: {
-    flex: 1,
+  statGradient: {
+    borderRadius: 20,
+    padding: 20,
+    minHeight: 140,
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  statHeader: {
+  statCardHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
   },
-  statIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  statIconRound: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: Spacing.sm,
-  },
-  statTitle: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
-    flex: 1,
   },
   statValue: {
-    fontSize: Typography.fontSize['3xl'],
-    fontWeight: Typography.fontWeight.bold,
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    lineHeight: 36,
+    marginBottom: 8,
+  },
+  statTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.95)',
+    maxWidth: '60%',
+    lineHeight: 18,
+  },
+  percentageBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    gap: 4,
+  },
+  percentageText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   quickActionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    marginHorizontal: -6,
   },
-  quickAction: {
-    width: '48%',
-    marginBottom: Spacing.md,
+  quickActionWrapper: {
+    width: '50%',
+    paddingHorizontal: 6,
+    marginBottom: 12,
   },
   quickActionCard: {
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.lg,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
     alignItems: 'center',
-    ...Shadow.md,
-    height: 170,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  quickActionIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+  quickActionGradient: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  quickActionContent: {
-    alignItems: 'center',
+    marginBottom: 12,
   },
   quickActionTitle: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.xs,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 4,
     textAlign: 'center',
   },
   quickActionSubtitle: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
     textAlign: 'center',
   },
-  activityCard: {
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.lg,
-    ...Shadow.md,
-  },
-  activityItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: Spacing.lg,
-    paddingBottom: Spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border + '30',
-  },
-  activityIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: Spacing.md,
+  listCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
     elevation: 3,
   },
-  activityContent: {
+  listItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  listItemLast: {
+    borderBottomWidth: 0,
+  },
+  listIconWrapper: {
+    marginRight: 14,
+  },
+  listIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  listContent: {
     flex: 1,
+    marginRight: 12,
   },
-  activityTitle: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.xs,
+  listTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
   },
-  activitySubtitle: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.xs,
-    lineHeight: 18,
+  listSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 8,
   },
-  activityTime: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textTertiary,
-    fontWeight: Typography.fontWeight.medium,
+  listFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  priorityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  priorityText: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'capitalize',
+  },
+  listRate: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  listTime: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontWeight: '500',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+  },
+  emptyIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 4,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
   },
 });
 
