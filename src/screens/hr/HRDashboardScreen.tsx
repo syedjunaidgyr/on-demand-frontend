@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
@@ -53,6 +54,11 @@ const HRDashboardScreen: React.FC = () => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Get screen dimensions for responsive design
+  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+  const isSmallScreen = screenHeight < 700;
+  const isLargeScreen = screenHeight > 800;
 
   useEffect(() => {
     loadDashboardData();
@@ -265,7 +271,7 @@ const HRDashboardScreen: React.FC = () => {
               </View>
             </View>
             <TouchableOpacity style={styles.notificationButton}>
-              <FontAwesomeIcon icon="bell" size={20} color="#FFFFFF" />
+              <FontAwesomeIcon icon="bell" size={18} color="#FFFFFF" />
             </TouchableOpacity>
           </TouchableOpacity>
 
@@ -280,7 +286,7 @@ const HRDashboardScreen: React.FC = () => {
               <View style={styles.mainStatCard}>
                 <View style={styles.mainStatContent}>
                   <View style={styles.mainStatIcon}>
-                    <FontAwesomeIcon icon="users" size={24} color="#FFFFFF" />
+                    <FontAwesomeIcon icon="users" size={20} color="#FFFFFF" />
                   </View>
                   <View style={styles.mainStatText}>
                     <Text style={styles.mainStatValue}>{stats?.staff?.total || 0}</Text>
@@ -292,7 +298,7 @@ const HRDashboardScreen: React.FC = () => {
               <View style={styles.mainStatCard}>
                 <View style={styles.mainStatContent}>
                   <View style={styles.mainStatIcon}>
-                    <FontAwesomeIcon icon="briefcase" size={24} color="#FFFFFF" />
+                    <FontAwesomeIcon icon="briefcase" size={20} color="#FFFFFF" />
                   </View>
                   <View style={styles.mainStatText}>
                     <Text style={styles.mainStatValue}>{stats?.jobs?.total || 0}</Text>
@@ -586,7 +592,7 @@ const styles = StyleSheet.create({
   },
   scrollableContent: {
     flex: 1,
-    marginTop: 290, // Height of the sticky header + extra space
+    marginTop: 260, // Height of the sticky header + extra space
   },
   loadingContainer: {
     flex: 1,
@@ -610,7 +616,7 @@ const styles = StyleSheet.create({
   },
   combinedCard: {
     backgroundColor: '#1C2A3A',
-    paddingTop: 40,
+    paddingTop: 35,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -622,8 +628,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
+    paddingTop: 15,
+    paddingBottom: 12,
   },
   profileInfo: {
     flexDirection: 'row',
@@ -634,14 +640,14 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   profileImage: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
   },
   profileInitials: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: '#FFFFFF',
   },
@@ -649,37 +655,37 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   profileRole: {
-    fontSize: 14,
+    fontSize: 12,
     color: 'rgba(255, 255, 255, 0.8)',
     fontWeight: '500',
   },
   notificationButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   titleSection: {
     paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingBottom: 12,
   },
   mainTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: -0.5,
   },
   mainStatsSection: {
     paddingHorizontal: 20,
-    paddingBottom: 24,
+    paddingBottom: 20,
   },
   mainStatsRow: {
     flexDirection: 'row',
@@ -689,8 +695,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 16,
-    padding: 20,
-    minHeight: 100,
+    padding: 16,
+    minHeight: 90,
     justifyContent: 'center',
   },
   mainStatContent: {
@@ -698,25 +704,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   mainStatIcon: {
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     borderRadius: 12,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
   mainStatText: {
     flex: 1,
   },
   mainStatValue: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   mainStatLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: 'rgba(255, 255, 255, 0.9)',
     fontWeight: '500',
   },
