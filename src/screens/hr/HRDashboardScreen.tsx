@@ -12,6 +12,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import LinearGradient from 'react-native-linear-gradient';
+import GlobalHeader from '../../components/GlobalHeader';
 
 import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
@@ -211,28 +212,23 @@ const HRDashboardScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <GlobalHeader 
+        title="HR Dashboard"
+        backgroundColor={Colors.primary}
+        rightComponent={
+          <TouchableOpacity 
+            style={styles.profileButton}
+            onPress={() => (navigation as any).navigate('Profile')}>
+            <FontAwesomeIcon icon="user" size={24} color={Colors.white} />
+          </TouchableOpacity>
+        }
+      />
       <ScrollView
         style={styles.content}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }>
-        {/* Header */}
-        <LinearGradient
-          colors={[Colors.primary, Colors.primaryDark]}
-          style={styles.header}>
-          <View style={styles.headerContent}>
-            <View>
-              <Text style={styles.headerTitle}>HR Dashboard</Text>
-              <Text style={styles.headerSubtitle}>Manage your healthcare staffing</Text>
-            </View>
-            <TouchableOpacity 
-              style={styles.profileButton}
-              onPress={() => (navigation as any).navigate('Profile')}>
-              <FontAwesomeIcon icon="user" size={24} color={Colors.white}  />
-            </TouchableOpacity>
-          </View>
-        </LinearGradient>
 
         {/* Summary Cards */}
         <View style={styles.section}>
@@ -456,7 +452,7 @@ const HRDashboardScreen: React.FC = () => {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

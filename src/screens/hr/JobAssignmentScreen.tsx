@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
+import GlobalHeader from '../../components/GlobalHeader';
 
 import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
@@ -60,9 +61,29 @@ const JobAssignmentScreen: React.FC = () => {
         setCandidates(candidatesArray);
       } else {
         console.log('🔍 Loading accepted assignments for job:', jobId);
-        const response = await ApiService.getAcceptedAssignments(jobId);
-        const candidatesData = response.acceptedAssignments || response;
-        setCandidates(Array.isArray(candidatesData) ? candidatesData : []);
+        try {
+          const response = await ApiService.getAcceptedAssignments(jobId);
+          console.log('📦 API response:', response);
+          const candidatesData = response.acceptedAssignments || response;
+          console.log('📋 Candidates data:', candidatesData);
+          setCandidates(Array.isArray(candidatesData) ? candidatesData : []);
+        } catch (error) {
+          console.error('❌ Failed to load accepted assignments:', error);
+          // Fallback: try to get all assignments and filter for accepted ones
+          try {
+            console.log('🔄 Fallback: Getting all assignments for job:', jobId);
+            const allAssignmentsResponse = await ApiService.getJobAssignments(jobId);
+            console.log('📦 All assignments response:', allAssignmentsResponse);
+            
+            const allAssignments = allAssignmentsResponse.assignments || allAssignmentsResponse.data || allAssignmentsResponse || [];
+            const acceptedAssignments = allAssignments.filter((assignment: any) => assignment.status === 'ACCEPTED');
+            console.log('📋 Filtered accepted assignments:', acceptedAssignments);
+            setCandidates(acceptedAssignments);
+          } catch (fallbackError) {
+            console.error('❌ Fallback also failed:', fallbackError);
+            setCandidates([]);
+          }
+        }
       }
       
     } catch (error) {
@@ -98,13 +119,12 @@ const JobAssignmentScreen: React.FC = () => {
               await ApiService.selectCandidate(jobId, assignment.id.toString());
               
               Alert.alert(
-                'Candidate Selected Successfully! 🎉', 
-                `${staff.firstName} ${staff.lastName} has been selected for this job.\n\nAll other candidates have been automatically rejected.`,
+                'Candidate Assigned Successfully! 🎉', 
+                `${staff.firstName} ${staff.lastName} has been assigned to this job.\n\nThey can now check-in and start working. All other candidates have been automatically rejected.`,
                 [
                   { 
                     text: 'OK', 
                     onPress: () => {
-                      // Go back to job management screen
                       navigation.goBack();
                     }
                   }
@@ -298,9 +318,12 @@ const JobAssignmentScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-     
-
+    <View style={styles.container}>
+      <GlobalHeader 
+        title="Review Candidates"
+        backgroundColor={Colors.primary}
+        onBackPress={() => navigation.goBack()}
+      />
       <ScrollView style={styles.content}>
         {/* Job Information */}
         <View style={styles.jobCard}>
@@ -382,7 +405,7 @@ const JobAssignmentScreen: React.FC = () => {
           })()}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

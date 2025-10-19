@@ -13,6 +13,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import LinearGradient from 'react-native-linear-gradient';
+import GlobalHeader from '../../components/GlobalHeader';
 
 import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
@@ -137,15 +138,66 @@ const HRJobsScreen: React.FC = () => {
     (navigation as any).navigate('CreateJob');
   };
 
+  const handleAssignJobToStaff = async (job: Job) => {
+    try {
+      console.log('🔍 Assigning job to staff:', job.id, job.title);
+      // Navigate to staff selection screen or show staff list
+      // For now, let's show an alert with instructions
+      Alert.alert(
+        'Assign Job to Staff',
+        `To assign "${job.title}" to staff members:\n\n1. Go to Staff Management\n2. Select compatible staff\n3. Send them job assignments\n4. Wait for them to accept\n5. Then review candidates here`,
+        [
+          { text: 'OK' },
+          { 
+            text: 'Go to Staff', 
+            onPress: () => {
+              // Navigate to staff management screen
+              console.log('Navigate to staff management');
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('❌ Failed to assign job to staff:', error);
+      Alert.alert('Error', `Failed to assign job: ${error.message}`);
+    }
+  };
+
   const handleReviewCandidates = async (job: Job) => {
     try {
       console.log('🔍 HR reviewing candidates for job:', job.id, job.title);
-      const response = await ApiService.getAcceptedAssignments(job.id.toString());
-      console.log('📦 Got accepted assignments response:', response);
+      console.log('📊 Job assignments count:', job.assignments?.length || 0);
+      console.log('📊 Job assignments:', job.assignments);
       
-      // Extract the acceptedAssignments array from the response
-      const acceptedAssignments = response.acceptedAssignments || response;
-      console.log('📋 Extracted accepted assignments:', acceptedAssignments);
+      // Get ALL assignments for this job and filter for accepted ones
+      console.log('🔍 Getting ALL assignments for job:', job.id);
+      const allAssignmentsResponse = await ApiService.getJobAssignments(job.id.toString());
+      console.log('📦 All assignments response:', allAssignmentsResponse);
+      
+      // Filter for accepted assignments
+      const allAssignments = allAssignmentsResponse.assignments || allAssignmentsResponse.data || allAssignmentsResponse || [];
+      console.log('📋 All assignments array:', allAssignments);
+      
+      const acceptedAssignments = allAssignments.filter((assignment: any) => assignment.status === 'ACCEPTED');
+      console.log('📋 Filtered accepted assignments:', acceptedAssignments);
+      console.log('📋 Accepted assignments count:', acceptedAssignments?.length || 0);
+      
+      if (!acceptedAssignments || acceptedAssignments.length === 0) {
+        Alert.alert(
+          'No Accepted Candidates', 
+          `No staff members have accepted this job yet.\n\nCurrent assignments:\n${allAssignments.map((a: any) => `- ${a.user?.firstName || 'Unknown'} ${a.user?.lastName || ''}: ${a.status}`).join('\n')}\n\nYou need staff to accept assignments first.`,
+          [
+            { text: 'OK' },
+            { 
+              text: 'Assign Job to Staff', 
+              onPress: () => {
+                console.log('Navigate to assign job to staff');
+              }
+            }
+          ]
+        );
+        return;
+      }
       
       (navigation as any).navigate('JobAssignment', { 
         jobId: job.id, 
@@ -162,6 +214,7 @@ const HRJobsScreen: React.FC = () => {
     const currentAssignments = job.assignments?.length || 0;
     const pendingAssignments = job.assignments?.filter(a => a.status === 'PENDING').length || 0;
     const acceptedAssignments = job.assignments?.filter(a => a.status === 'ACCEPTED').length || 0;
+    const assignedAssignments = job.assignments?.filter(a => a.status === 'ASSIGNED').length || 0;
     
     return (
       <TouchableOpacity style={styles.jobCard} onPress={() => handleJobPress(job)}>
@@ -229,6 +282,11 @@ const HRJobsScreen: React.FC = () => {
                 {acceptedAssignments} accepted
               </Text>
             )}
+            {assignedAssignments > 0 && (
+              <Text style={[styles.acceptedText, { color: Colors.primary }]}>
+                {assignedAssignments} assigned
+              </Text>
+            )}
           </View>
           <View style={styles.jobActions}>
             {acceptedAssignments > 0 ? (
@@ -241,7 +299,7 @@ const HRJobsScreen: React.FC = () => {
             ) : (
               <TouchableOpacity 
                 style={[styles.assignButton, { opacity: job.status === 'ACTIVE' ? 1 : 0.5 }]}
-                onPress={() => job.status === 'ACTIVE' && handleReviewCandidates(job)}
+                onPress={() => job.status === 'ACTIVE' && handleAssignJobToStaff(job)}
                 disabled={job.status !== 'ACTIVE'}>
                 <FontAwesomeIcon icon="user-plus" size={16} color={Colors.white}  />
               </TouchableOpacity>
@@ -279,21 +337,16 @@ const HRJobsScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <LinearGradient
-        colors={[Colors.primary, Colors.primaryDark]}
-        style={styles.header}>
-        <View style={styles.headerContent}>
-          <View>
-            <Text style={styles.headerTitle}>Job Management</Text>
-            <Text style={styles.headerSubtitle}>{jobs.length} total jobs</Text>
-          </View>
+    <View style={styles.container}>
+      <GlobalHeader 
+        title="Job Management"
+        backgroundColor={Colors.primary}
+        rightComponent={
           <TouchableOpacity style={styles.createButton} onPress={handleCreateJob}>
-            <FontAwesomeIcon icon="plus" size={24} color={Colors.white}  />
+            <FontAwesomeIcon icon="plus" size={24} color={Colors.white} />
           </TouchableOpacity>
-        </View>
-      </LinearGradient>
+        }
+      />
 
       {/* Jobs List */}
       <FlatList
@@ -314,7 +367,7 @@ const HRJobsScreen: React.FC = () => {
       <TouchableOpacity style={styles.fab} onPress={handleCreateJob}>
         <FontAwesomeIcon icon="plus" size={24} color={Colors.white}  />
       </TouchableOpacity>
-    </SafeAreaView>
+    </View>
   );
 };
 

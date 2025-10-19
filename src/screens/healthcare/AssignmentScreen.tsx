@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
+import GlobalHeader from '../../components/GlobalHeader';
 
 import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';

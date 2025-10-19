@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
+import GlobalHeader from '../../components/GlobalHeader';
 
 import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
@@ -38,13 +39,13 @@ const CheckInOutScreen: React.FC = () => {
       // Load assignments for the user
       const assignmentsData = await ApiService.getMyAssignments();
 
-      // Filter for assignments that can be checked in/out (ACCEPTED or IN_PROGRESS)
+      // Filter for assignments that can be checked in/out (ASSIGNED or IN_PROGRESS)
       console.log('🔍 All assignments:', assignmentsData.data);
       console.log('📊 Assignment statuses:', assignmentsData.data.map(a => ({ id: a.id, status: a.status })));
       const confirmed = assignmentsData.data.filter(assignment => 
-        assignment.status === 'ACCEPTED' || assignment.status === 'IN_PROGRESS'
+        assignment.status === 'ASSIGNED' || assignment.status === 'IN_PROGRESS'
       );
-      console.log('✅ Confirmed assignments (ACCEPTED or IN_PROGRESS):', confirmed);
+      console.log('✅ Confirmed assignments (ASSIGNED or IN_PROGRESS):', confirmed);
 
       // ✅ Add check-in status to each assignment
       const assignmentsWithCheckInStatus = await Promise.all(
@@ -243,8 +244,8 @@ const CheckInOutScreen: React.FC = () => {
             );
           }
           
-          // If status is ACCEPTED and not checked in, show Check In
-          if (assignment.status === 'ACCEPTED' && !assignment.isCheckedIn) {
+          // If status is ASSIGNED and not checked in, show Check In
+          if (assignment.status === 'ASSIGNED' && !assignment.isCheckedIn) {
             return (
               <TouchableOpacity
                 style={[styles.checkInButton, { backgroundColor: Colors.success }]}
@@ -256,8 +257,8 @@ const CheckInOutScreen: React.FC = () => {
             );
           }
           
-          // If status is ACCEPTED and checked in, show Check Out
-          if (assignment.status === 'ACCEPTED' && assignment.isCheckedIn) {
+          // If status is ASSIGNED and checked in, show Check Out
+          if (assignment.status === 'ASSIGNED' && assignment.isCheckedIn) {
             return (
               <TouchableOpacity
                 style={[styles.checkOutButton, { backgroundColor: Colors.error }]}
@@ -304,19 +305,12 @@ const CheckInOutScreen: React.FC = () => {
   const roleConfig = getRoleConfig();
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={[styles.header, { backgroundColor: roleConfig.color }]}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}>
-            <FontAwesomeIcon icon="arrow-left" size={24} color={Colors.white} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{roleConfig.title}</Text>
-          <View style={styles.headerSpacer} />
-        </View>
-      </View>
-
+    <View style={styles.container}>
+      <GlobalHeader 
+        title={roleConfig.title}
+        backgroundColor={roleConfig.color}
+        onBackPress={() => navigation.goBack()}
+      />
       <ScrollView style={styles.content}>
         {confirmedAssignments.length > 0 ? (
           confirmedAssignments.map((assignment) => (
@@ -347,7 +341,7 @@ const CheckInOutScreen: React.FC = () => {
           </View>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 

@@ -12,6 +12,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import LinearGradient from 'react-native-linear-gradient';
+import GlobalHeader from '../../components/GlobalHeader';
 
 import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
@@ -39,21 +40,47 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
       const userData = await ApiService.getProfile();
       setUser(userData);
 
-      // Load role-specific data
-      const [availableData, upcomingData, assignmentsData, statusData] = await Promise.all([
-        userData.role === 'DOCTOR' 
-          ? ApiService.getAvailableJobs()
-          : ApiService.getNurseAvailableJobs(),
-        userData.role === 'DOCTOR' 
-          ? ApiService.getUpcomingJobs()
-          : ApiService.getNurseUpcomingJobs(),
-        userData.role === 'DOCTOR'
-          ? ApiService.getMyAssignments({ limit: 5 })
-          : ApiService.getNurseAssignments({ limit: 5 }),
-        userData.role === 'DOCTOR'
-          ? ApiService.getMyWorkStatus()
-          : ApiService.getNurseWorkStatus(),
-      ]);
+      // Load role-specific data with individual error handling
+      let availableData = null;
+      let upcomingData = null;
+      let assignmentsData = null;
+      let statusData = null;
+
+      try {
+        availableData = userData.role === 'DOCTOR' 
+          ? await ApiService.getAvailableJobs()
+          : await ApiService.getNurseAvailableJobs();
+        console.log('✅ Available jobs loaded successfully');
+      } catch (error) {
+        console.error('❌ Failed to load available jobs:', error);
+      }
+
+      try {
+        upcomingData = userData.role === 'DOCTOR' 
+          ? await ApiService.getUpcomingJobs()
+          : await ApiService.getNurseUpcomingJobs();
+        console.log('✅ Upcoming jobs loaded successfully');
+      } catch (error) {
+        console.error('❌ Failed to load upcoming jobs:', error);
+      }
+
+      try {
+        assignmentsData = userData.role === 'DOCTOR'
+          ? await ApiService.getMyAssignments({ limit: 5 })
+          : await ApiService.getNurseAssignments({ limit: 5 });
+        console.log('✅ Assignments loaded successfully');
+      } catch (error) {
+        console.error('❌ Failed to load assignments:', error);
+      }
+
+      try {
+        statusData = userData.role === 'DOCTOR'
+          ? await ApiService.getMyWorkStatus()
+          : await ApiService.getNurseWorkStatus();
+        console.log('✅ Work status loaded successfully');
+      } catch (error) {
+        console.error('❌ Failed to load work status:', error);
+      }
 
       setAvailableJobs(availableData?.data || []);
       setUpcomingJobs(upcomingData || []);
@@ -352,28 +379,23 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
   const roleConfig = getRoleConfig();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <GlobalHeader 
+        title={roleConfig.title}
+        backgroundColor={roleConfig.color}
+        rightComponent={
+          <TouchableOpacity 
+            style={styles.profileButton}
+            onPress={() => navigation.navigate('Profile' as never)}>
+            <FontAwesomeIcon icon="user" size={24} color={Colors.white} />
+          </TouchableOpacity>
+        }
+      />
       <ScrollView
         style={styles.content}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }>
-        {/* Header */}
-        <LinearGradient
-          colors={[roleConfig.color, roleConfig.color]}
-          style={styles.header}>
-          <View style={styles.headerContent}>
-            <View>
-              <Text style={styles.headerTitle}>{roleConfig.title}</Text>
-              <Text style={styles.headerSubtitle}>{roleConfig.subtitle}</Text>
-            </View>
-            <TouchableOpacity 
-              style={styles.profileButton}
-              onPress={() => navigation.navigate('Profile' as never)}>
-              <FontAwesomeIcon icon="user" size={24} color={Colors.white} />
-            </TouchableOpacity>
-          </View>
-        </LinearGradient>
 
 
         {/* Quick Actions */}
@@ -452,7 +474,7 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
