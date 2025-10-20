@@ -121,10 +121,32 @@ const CheckInOutScreen: React.FC = () => {
       };
 
       // ✅ Use the unified endpoint
-      await ApiService.checkIn(checkInData.jobAssignmentId, checkInData.location, checkInData.notes);
-
-      Alert.alert('Success', 'Successfully checked in!');
-      loadConfirmedAssignments();
+      const response = await ApiService.checkIn(checkInData.jobAssignmentId, checkInData.location, checkInData.notes);
+      
+      // ✅ Handle the new response format with jobContext and userInfo
+      console.log('Check-in response:', response);
+      console.log('Job context:', response.jobContext);
+      console.log('User info:', response.userInfo);
+      
+      const facilityName = response.jobContext?.facilityName || 'the facility';
+      const userName = response.userInfo ? `${response.userInfo.firstName} ${response.userInfo.lastName}` : 'User';
+      Alert.alert('Success', `${userName} successfully checked in at ${facilityName}!`);
+      
+      // ✅ Update the assignment status immediately with user and job context
+      const updatedAssignments = confirmedAssignments.map(assignment => 
+        assignment.id === currentAssignment.id 
+          ? { 
+              ...assignment, 
+              status: 'IN_PROGRESS' as const, 
+              isCheckedIn: true,
+              // ✅ Store the user and job context for display
+              checkedInBy: response.userInfo,
+              jobContext: response.jobContext
+            }
+          : assignment
+      );
+      setConfirmedAssignments(updatedAssignments);
+      
       setShowActionSheet(false);
     } catch (error) {
       console.error('Check-in error:', error);
@@ -211,13 +233,36 @@ const CheckInOutScreen: React.FC = () => {
       };
 
       // ✅ Use the unified endpoint
-      await ApiService.checkOut(checkOutData.jobAssignmentId, checkOutData.location, checkOutData.notes);
-
-      Alert.alert('Success', 'Successfully checked out!');
-      loadConfirmedAssignments(); // Refresh the list
+      const response = await ApiService.checkOut(checkOutData.jobAssignmentId, checkOutData.location, checkOutData.notes);
+      
+      // ✅ Handle the new response format with jobContext and userInfo
+      console.log('Check-out response:', response);
+      console.log('Job context:', response.jobContext);
+      console.log('User info:', response.userInfo);
+      
+      const facilityName = response.jobContext?.facilityName || 'the facility';
+      const userName = response.userInfo ? `${response.userInfo.firstName} ${response.userInfo.lastName}` : 'User';
+      Alert.alert('Success', `${userName} successfully checked out from ${facilityName}!`);
+      
+      // ✅ Update the assignment status immediately with user and job context
+      const updatedAssignments = confirmedAssignments.map(assignment => 
+        assignment.id === currentAssignment.id 
+          ? { 
+              ...assignment, 
+              status: 'COMPLETED' as const, 
+              isCheckedIn: false,
+              // ✅ Store the user and job context for display
+              checkedOutBy: response.userInfo,
+              jobContext: response.jobContext
+            }
+          : assignment
+      );
+      setConfirmedAssignments(updatedAssignments);
+      
       setShowActionSheet(false);
     } catch (error) {
-      Alert.alert('Error', 'Failed to check out. Please try again.');
+      console.error('Check-out error:', error);
+      Alert.alert('Error', (error as any)?.message || 'Failed to check out. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -275,10 +320,30 @@ const CheckInOutScreen: React.FC = () => {
       <Text style={styles.assignmentDescription}>{assignment.job?.description || 'No description available'}</Text>
 
       <View style={styles.assignmentDetails}>
+        {/* ✅ Add facility name */}
+        <View style={styles.assignmentDetail}>
+          <FontAwesomeIcon icon="hospital" size={16} color={Colors.textTertiary} />
+          <Text style={styles.assignmentDetailText}>{assignment.job?.facilityName || 'Facility not specified'}</Text>
+        </View>
+
         <View style={styles.assignmentDetail}>
           <FontAwesomeIcon icon="map-marker-alt" size={16} color={Colors.textTertiary} />
           <Text style={styles.assignmentDetailText}>{assignment.job?.location || 'Location not specified'}</Text>
         </View>
+
+        {/* ✅ Add department */}
+        <View style={styles.assignmentDetail}>
+          <FontAwesomeIcon icon="building" size={16} color={Colors.textTertiary} />
+          <Text style={styles.assignmentDetailText}>{assignment.job?.department || 'Department not specified'}</Text>
+        </View>
+
+        {/* ✅ Add specialization for doctors */}
+        {assignment.job?.specialization && (
+          <View style={styles.assignmentDetail}>
+            <FontAwesomeIcon icon="user-md" size={16} color={Colors.textTertiary} />
+            <Text style={styles.assignmentDetailText}>{assignment.job.specialization}</Text>
+          </View>
+        )}
 
         <View style={styles.assignmentDetail}>
           <FontAwesomeIcon icon="calendar" size={16} color={Colors.textTertiary} />

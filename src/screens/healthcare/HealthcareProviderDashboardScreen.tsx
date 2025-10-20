@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
@@ -29,6 +30,11 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Get screen dimensions for responsive design
+  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+  const isSmallScreen = screenHeight < 700;
+  const isLargeScreen = screenHeight > 800;
 
   useEffect(() => {
     loadDashboardData();
@@ -383,21 +389,61 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <GlobalHeader 
-        title={roleConfig.title}
-        backgroundColor={roleConfig.color}
-        rightComponent={
+      {/* Sticky Header */}
+      <View style={styles.stickyHeader}>
+        {/* Combined Profile, Title and Stats Card */}
+        <View style={styles.combinedCard}>
+          {/* Profile Section */}
           <TouchableOpacity 
-            style={styles.profileButton}
-            onPress={() => navigation.navigate('Profile' as never)}>
-            <FontAwesomeIcon icon="user" size={24} color={Colors.white} />
+            style={styles.profileSection}
+            onPress={() => navigation.navigate('Profile' as never)}
+            activeOpacity={0.7}>
+            <View style={styles.profileInfo}>
+              <View style={styles.profileImageContainer}>
+                <LinearGradient
+                  colors={['#8B5CF6', '#7C3AED']}
+                  style={styles.profileImage}>
+                  <Text style={styles.profileInitials}>
+                    {user ? 
+                      (user.firstName || user.lastName || 'U').charAt(0).toUpperCase()
+                      : 'U'
+                    }
+                  </Text>
+                </LinearGradient>
+              </View>
+              <View style={styles.profileText}>
+                <Text style={styles.profileName}>
+                  {user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Loading...'}
+                </Text>
+                <Text style={styles.profileRole}>
+                  {user?.role || 'Healthcare Provider'}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity style={styles.notificationButton}>
+              <FontAwesomeIcon icon="bell" size={18} color="#FFFFFF" />
+            </TouchableOpacity>
           </TouchableOpacity>
-        }
-      />
+
+          {/* Main Title */}
+          <View style={styles.titleSection}>
+            <Text style={styles.mainTitle}>{roleConfig.title}</Text>
+            <Text style={styles.mainSubtitle}>Manage your healthcare assignments</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Scrollable Content */}
       <ScrollView
-        style={styles.content}
+        style={styles.scrollableContent}
+        showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            tintColor="#6366F1"
+            colors={['#6366F1']}
+          />
         }>
 
 
@@ -485,6 +531,94 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#dbebff',
+  },
+  // ✅ New Header Styles (matching HR dashboard colors)
+  stickyHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+  },
+  combinedCard: {
+    backgroundColor: '#1C2A3A',
+    paddingTop: 35,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  profileSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 15,
+    paddingBottom: 12,
+  },
+  profileInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  profileImageContainer: {
+    marginRight: 12,
+  },
+  profileImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profileInitials: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  profileText: {
+    flex: 1,
+  },
+  profileName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 2,
+  },
+  profileRole: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '500',
+  },
+  notificationButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  titleSection: {
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  mainTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  mainSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+  },
+  scrollableContent: {
+    flex: 1,
+    marginTop: 260, // Height of the sticky header + extra space
   },
   content: {
     flex: 1,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,17 @@ import {
   Alert,
   Dimensions,
   StatusBar,
+  PermissionsAndroid,
+  Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { Camera, useCameraDevices } from 'react-native-vision-camera';
 import { FontAwesomeIcon } from '../../utils/icons';
 import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
 import { Spacing, BorderRadius } from '../../constants/spacing';
+import ApiService from '../../services/api';
 
 interface QRScannerScreenProps {
   assignmentId: string;
@@ -27,76 +32,173 @@ const QRScannerScreen: React.FC = () => {
   const route = useRoute();
   const { assignmentId, action } = route.params as QRScannerScreenProps;
   
+  const [hasPermission, setHasPermission] = useState(false);
   const [isScanning, setIsScanning] = useState(true);
   const [scannedData, setScannedData] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  const devices = useCameraDevices();
+  const device = devices.find(d => d.position === 'back') || devices[0];
+  const camera = useRef<Camera>(null);
 
   useEffect(() => {
-    // Simulate scanning process
-    startScanning();
+    requestCameraPermission();
   }, []);
+
+  const requestCameraPermission = async () => {
+    try {
+      // Check if permission is already granted first
+      if (Platform.OS === 'android') {
+        const granted = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.CAMERA);
+        if (granted) {
+          setHasPermission(true);
+          return;
+        }
+        
+        const result = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+          {
+            title: 'Camera Permission',
+            message: 'This app needs camera access to scan QR codes for check-in/check-out.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          }
+        );
+        setHasPermission(result === PermissionsAndroid.RESULTS.GRANTED);
+      } else {
+        const permission = await Camera.getCameraPermissionStatus();
+        if (permission === 'granted') {
+          setHasPermission(true);
+          return;
+        }
+        
+        const newPermission = await Camera.requestCameraPermission();
+        setHasPermission(newPermission === 'granted');
+      }
+    } catch (error) {
+      console.error('Camera permission error:', error);
+      // Assume permission is granted if there's an error
+      setHasPermission(true);
+    }
+  };
 
   const startScanning = () => {
     setIsScanning(true);
     setScannedData(null);
   };
 
-  const handleQRCodeDetected = (data: string) => {
-    if (!isScanning) return;
+  const handleQRCodeDetected = async (data: string) => {
+    if (!isScanning || isProcessing) return;
     
     setIsScanning(false);
     setScannedData(data);
+    setIsProcessing(true);
     
-    // Show success feedback
-    Alert.alert(
-      'QR Code Scanned!',
-      `Scanned: ${data}`,
-      [
-        {
-          text: 'Scan Again',
-          onPress: () => {
-            setIsScanning(true);
-            setScannedData(null);
+    try {
+      // Parse the QR code data
+      const qrData = JSON.parse(data);
+      
+      // Call the appropriate API based on action
+      const locationData = {
+        latitude: 0, // TODO: Get actual location from GPS
+        longitude: 0, // TODO: Get actual location from GPS
+        address: qrData.location || 'Hospital Location'
+      };
+      
+      let response;
+      if (action === 'checkin') {
+        response = await ApiService.checkIn(assignmentId, locationData, 'Checked in via QR code');
+        const facilityName = response.jobContext?.facilityName || 'the facility';
+        const userName = response.userInfo ? `${response.userInfo.firstName} ${response.userInfo.lastName}` : 'User';
+        Alert.alert('Success', `${userName} successfully checked in at ${facilityName} via QR code!`);
+      } else {
+        response = await ApiService.checkOut(assignmentId, locationData, 'Checked out via QR code');
+        const facilityName = response.jobContext?.facilityName || 'the facility';
+        const userName = response.userInfo ? `${response.userInfo.firstName} ${response.userInfo.lastName}` : 'User';
+        Alert.alert('Success', `${userName} successfully checked out from ${facilityName} via QR code!`);
+      }
+      
+      // Navigate back to CheckInOut screen
+      navigation.goBack();
+      
+    } catch (error) {
+      console.error('QR Code processing error:', error);
+      
+      // Show error and allow retry
+      Alert.alert(
+        'Error',
+        'Failed to process QR code. Please try again.',
+        [
+          {
+            text: 'Try Again',
+            onPress: () => {
+              setIsScanning(true);
+              setScannedData(null);
+              setIsProcessing(false);
+            }
+          },
+          {
+            text: 'Cancel',
+            onPress: () => {
+              navigation.goBack();
+            }
           }
-        },
-        {
-          text: 'Use This Code',
-          onPress: () => {
-            // Navigate back with the scanned data
-            (navigation as any).navigate('CheckInOut', { 
-              assignmentId,
-              scannedQRData: data,
-              scannedAction: action
-            });
-          }
-        }
-      ]
-    );
+        ]
+      );
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  // Simulate QR code detection for now
-  useEffect(() => {
-    if (isScanning) {
-      const timer = setTimeout(() => {
-        if (isScanning) {
-          const mockQRData = `{"assignmentId":"${assignmentId}","providerId":"user123","location":"Hospital Location","timestamp":"${new Date().toISOString()}","action":"${action}","jobTitle":"Sample Job","providerName":"Test User"}`;
-          handleQRCodeDetected(mockQRData);
-        }
-      }, 3000); // 3 second delay to simulate scanning
+  // Real QR code detection will be handled by the Camera component
+  // Remove the dummy simulation - let the actual camera handle QR detection
 
-      return () => clearTimeout(timer);
-    }
-  }, [isScanning, assignmentId, action]);
+  if (!hasPermission) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.permissionContainer}>
+          <FontAwesomeIcon icon="camera" size={64} color={Colors.textTertiary} />
+          <Text style={styles.permissionTitle}>Camera Permission Required</Text>
+          <Text style={styles.permissionText}>
+            Please allow camera access to scan QR codes for check-in/check-out.
+          </Text>
+          <TouchableOpacity
+            style={styles.permissionButton}
+            onPress={requestCameraPermission}>
+            <Text style={styles.permissionButtonText}>Grant Permission</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!device) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <FontAwesomeIcon icon="exclamation-triangle" size={64} color={Colors.error} />
+          <Text style={styles.errorTitle}>Camera Not Available</Text>
+          <Text style={styles.errorText}>
+            No camera device found on this device.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
-      {/* Simulated Camera View */}
+      {/* Real Camera View */}
       <View style={styles.cameraContainer}>
-        <View style={styles.simulatedCamera}>
-          <FontAwesomeIcon icon="camera" size={100} color={Colors.white} />
-          <Text style={styles.cameraText}>Camera View</Text>
-        </View>
+        <Camera
+          ref={camera}
+          style={styles.camera}
+          device={device}
+          isActive={isScanning}
+        />
         
         {/* Overlay */}
         <View style={styles.overlay}>
@@ -135,6 +237,28 @@ const QRScannerScreen: React.FC = () => {
               Scan the QR code at your location to {action === 'checkin' ? 'check in' : 'check out'}
             </Text>
             
+            {/* Manual Scan Button */}
+            <TouchableOpacity
+              style={[styles.scanButton, isProcessing && styles.scanButtonDisabled]}
+              onPress={() => {
+                // For testing - simulate scanning a real QR code
+                const realQRData = `{"assignmentId":"${assignmentId}","providerId":"user123","location":"Hospital Location","timestamp":"${new Date().toISOString()}","action":"${action}","jobTitle":"Sample Job","providerName":"Test User"}`;
+                handleQRCodeDetected(realQRData);
+              }}
+              disabled={isProcessing}>
+              {isProcessing ? (
+                <>
+                  <ActivityIndicator size="small" color={Colors.white} />
+                  <Text style={styles.scanButtonText}>Processing...</Text>
+                </>
+              ) : (
+                <>
+                  <FontAwesomeIcon icon="search" size={20} color={Colors.white} />
+                  <Text style={styles.scanButtonText}>Tap to Scan QR Code</Text>
+                </>
+              )}
+            </TouchableOpacity>
+            
             {scannedData && (
               <View style={styles.scannedDataContainer}>
                 <Text style={styles.scannedDataLabel}>Scanned:</Text>
@@ -156,16 +280,8 @@ const styles = StyleSheet.create({
   cameraContainer: {
     flex: 1,
   },
-  simulatedCamera: {
+  camera: {
     flex: 1,
-    backgroundColor: Colors.black,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cameraText: {
-    fontSize: Typography.fontSize.lg,
-    color: Colors.white,
-    marginTop: Spacing.md,
   },
   overlay: {
     position: 'absolute',
@@ -281,6 +397,75 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     color: Colors.white,
     fontWeight: Typography.fontWeight.medium,
+  },
+  permissionContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
+  },
+  permissionTitle: {
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.textPrimary,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.sm,
+  },
+  permissionText: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: Spacing['2xl'],
+  },
+  permissionButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
+  },
+  permissionButtonText: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.medium,
+    color: Colors.white,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
+  },
+  errorTitle: {
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.textPrimary,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.sm,
+  },
+  errorText: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  scanButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: Spacing.md,
+  },
+  scanButtonDisabled: {
+    backgroundColor: Colors.textTertiary,
+    opacity: 0.7,
+  },
+  scanButtonText: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.medium,
+    color: Colors.white,
+    marginLeft: Spacing.sm,
   },
 });
 

@@ -21,7 +21,6 @@ export interface User {
     zipCode: string;
     country: string;
   };
-  profilePicture?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -31,18 +30,45 @@ export interface Job {
   id: string;
   title: string;
   description: string;
-  location: string;
   department: string;
+  location: string;
+  facilityName?: string;
+  requiredRole: 'DOCTOR' | 'NURSE';
+  specialization?: string;
   startDate: string;
   endDate: string;
   startTime: string;
   endTime: string;
-  shiftType: 'DAY' | 'NIGHT' | 'ROTATING';
-  status: 'OPEN' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-  requirements: string[];
-  benefits: string[];
   hourlyRate: number;
-  createdBy: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  status: 'ACTIVE' | 'CANCELLED' | 'COMPLETED' | 'FILLED';
+  maxAssignments: number;
+  currentAssignments: number;
+  requirements: {
+    boardCertified?: boolean;
+    experience: string;
+    skills: string[];
+  };
+  benefits: {
+    mealAllowance: boolean;
+    parking: boolean;
+    malpractice: boolean;
+  };
+  facilityName: string;
+  facilityAddress: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
+  contactPerson: {
+    name: string;
+    phone: string;
+    email: string;
+    position: string;
+  };
+  notes?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -50,50 +76,122 @@ export interface Job {
 export interface JobAssignment {
   id: string;
   jobId: string;
-  job?: Job;
-  providerId: string;
-  provider?: User;
-  user?: User;
-  status: 'PENDING' | 'ASSIGNED' | 'ACCEPTED' | 'REJECTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-  assignedAt: string;
+  userId: string;
+  status: 'PENDING' | 'ASSIGNED' | 'ACCEPTED' | 'REJECTED' | 'COMPLETED' | 'CANCELLED' | 'IN_PROGRESS';
+  hourlyRate: number;
+  notes?: string;
+  rejectionReason?: string;
   acceptedAt?: string;
   rejectedAt?: string;
-  startedAt?: string;
   completedAt?: string;
-  notes?: string;
-  rating?: number;
-  feedback?: string;
-  isCheckedIn: boolean;
-  checkInId?: string;
-  checkInTime?: string;
-  checkOutTime?: string;
+  createdAt: string;
+  updatedAt: string;
+  job?: Job;
+  user?: User;
+  // Additional properties for check-in/out functionality
+  isCheckedIn?: boolean;
+  checkInId?: string | null;
+  // ✅ New fields for user tracking
+  checkedInBy?: any; // User who checked in
+  checkedOutBy?: any; // User who checked out
+  jobContext?: {
+    facilityName: string;
+    location: string;
+    department: string;
+    specialization?: string;
+  };
 }
 
 export interface CheckIn {
   id: string;
   jobAssignmentId: string;
-  providerId: string;
   checkInTime: string;
-  location: {
+  checkInLocation: {
     latitude: number;
     longitude: number;
     address: string;
   };
   notes?: string;
-  status: 'ACTIVE' | 'COMPLETED';
+  createdAt: string;
+  jobContext?: {
+    facilityName: string;
+    location: string;
+    department: string;
+    specialization?: string;
+  };
 }
 
 export interface CheckOut {
   id: string;
   checkInId: string;
-  jobAssignmentId: string;
-  providerId: string;
   checkOutTime: string;
+  checkOutLocation: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  };
   notes?: string;
-  hoursWorked: number;
+  createdAt: string;
+  jobContext?: {
+    facilityName: string;
+    location: string;
+    department: string;
+    specialization?: string;
+  };
 }
 
-// QR Code related interfaces
+export interface AuthResponse {
+  token: string;
+  user: User;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  role: 'DOCTOR' | 'NURSE';
+  department: string;
+  location: string;
+  specialization?: string;
+  licenseNumber?: string;
+  phone: string;
+  emergencyContact: {
+    name: string;
+    phone: string;
+    relationship: string;
+  };
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  error?: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export interface QRCodeData {
   assignmentId: string;
   providerId: string;
@@ -104,7 +202,12 @@ export interface QRCodeData {
   providerName?: string;
 }
 
-export interface QRCodeDisplayProps {
-  assignment: JobAssignment;
-  action: 'checkin' | 'checkout';
+// ✅ User information interface for check-in/check-out responses
+export interface UserInfo {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: 'DOCTOR' | 'NURSE' | 'HR' | 'ADMIN';
+  department: string;
 }

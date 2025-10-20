@@ -317,8 +317,8 @@ class ApiService {
     }
   }
 
-  async checkIn(jobAssignmentId: string, location: { latitude: number; longitude: number; address: string }, notes?: string): Promise<CheckIn> {
-    const response: AxiosResponse<CheckIn> = await this.api.post('/staff/check-in', {
+  async checkIn(jobAssignmentId: string, location: { latitude: number; longitude: number; address: string }, notes?: string): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post('/staff/check-in', {
       jobAssignmentId,
       location,
       notes,
@@ -331,8 +331,8 @@ class ApiService {
     return this.checkIn(checkInData.jobAssignmentId, checkInData.location, checkInData.notes);
   }
 
-  async checkOut(jobAssignmentId: string, location: { latitude: number; longitude: number; address: string }, notes?: string): Promise<CheckOut> {
-    const response: AxiosResponse<CheckOut> = await this.api.post('/staff/check-out', {
+  async checkOut(jobAssignmentId: string, location: { latitude: number; longitude: number; address: string }, notes?: string): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post('/staff/check-out', {
       jobAssignmentId,
       location,
       notes,

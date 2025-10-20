@@ -194,13 +194,18 @@ const MainNavigator = ({ user }: { user: User }) => {
     }
   };
 
+  // Create a proper component for the Main screen
+  const MainScreen = () => {
+    return getTabNavigator();
+  };
+
   return (
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
         cardStyle: { backgroundColor: Colors.background },
       }}>
-      <Stack.Screen name="Main" component={getTabNavigator} />
+      <Stack.Screen name="Main" component={MainScreen} />
       <Stack.Screen 
         name="Profile" 
         component={ProfileScreen}
