@@ -94,6 +94,8 @@ import { faGraduationCap } from '@fortawesome/free-solid-svg-icons/faGraduationC
 import { faUtensils } from '@fortawesome/free-solid-svg-icons/faUtensils';
 import { faParking } from '@fortawesome/free-solid-svg-icons/faParking';
 import { faShieldAlt } from '@fortawesome/free-solid-svg-icons/faShieldAlt';
+import { faQrcode } from '@fortawesome/free-solid-svg-icons/faQrcode';
+import { faCamera } from '@fortawesome/free-solid-svg-icons/faCamera';
 
 // Add all icons to the library
 library.add(
@@ -189,6 +191,8 @@ library.add(
   faUtensils as any,
   faParking as any,
   faShieldAlt as any,
+  faQrcode as any,
+  faCamera as any,
 );
 
 export { FontAwesomeIcon };

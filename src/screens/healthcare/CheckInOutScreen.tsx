@@ -8,8 +8,12 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, CommonActions, useNavigationContainerRef } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RouteProp } from '@react-navigation/native';
+import { RootStackParamList } from '../../navigation/AppNavigator';
 import { FontAwesomeIcon } from '../../utils/icons';
 import GlobalHeader from '../../components/GlobalHeader';
 
@@ -19,16 +23,31 @@ import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import { JobAssignment, User } from '../../types';
 import ApiService from '../../services/api';
 
+type CheckInOutScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CheckInOut'>;
+type CheckInOutScreenRouteProp = RouteProp<RootStackParamList, 'CheckInOut'>;
+
 const CheckInOutScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<CheckInOutScreenNavigationProp>();
+  const route = useRoute<CheckInOutScreenRouteProp>();
   const [confirmedAssignments, setConfirmedAssignments] = useState<JobAssignment[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showActionSheet, setShowActionSheet] = useState(false);
+  const [currentAssignment, setCurrentAssignment] = useState<JobAssignment | null>(null);
+  const [actionType, setActionType] = useState<'checkin' | 'checkout' | null>(null);
 
   useEffect(() => {
     loadConfirmedAssignments();
   }, []);
+
+  // Handle scanned QR data when returning from QR scanner
+  useEffect(() => {
+    if (route.params && route.params.scannedQRData && route.params.scannedAction && route.params.assignmentId) {
+      const { scannedQRData, scannedAction, assignmentId } = route.params;
+      handleQRCodeScanned(scannedQRData, assignmentId, scannedAction);
+    }
+  }, [route.params]);
 
   const loadConfirmedAssignments = async () => {
     try {
@@ -39,13 +58,13 @@ const CheckInOutScreen: React.FC = () => {
       // Load assignments for the user
       const assignmentsData = await ApiService.getMyAssignments();
 
-      // Filter for assignments that can be checked in/out (ASSIGNED or IN_PROGRESS)
+      // Filter for assignments that can be checked in/out (ASSIGNED, ACCEPTED, or IN_PROGRESS)
       console.log('🔍 All assignments:', assignmentsData.data);
       console.log('📊 Assignment statuses:', assignmentsData.data.map(a => ({ id: a.id, status: a.status })));
       const confirmed = assignmentsData.data.filter(assignment => 
-        assignment.status === 'ASSIGNED' || assignment.status === 'IN_PROGRESS'
+        (assignment.status as any) === 'ASSIGNED' || assignment.status === 'ACCEPTED' || assignment.status === 'IN_PROGRESS'
       );
-      console.log('✅ Confirmed assignments (ASSIGNED or IN_PROGRESS):', confirmed);
+      console.log('✅ Confirmed assignments (ASSIGNED, ACCEPTED, or IN_PROGRESS):', confirmed);
 
       // ✅ Add check-in status to each assignment
       const assignmentsWithCheckInStatus = await Promise.all(
@@ -81,78 +100,127 @@ const CheckInOutScreen: React.FC = () => {
   };
 
   const handleCheckIn = async (assignment: JobAssignment) => {
-    Alert.alert(
-      'Check In',
-      `Are you ready to check in for ${assignment.job.title}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Check In',
-          onPress: async () => {
-            setIsProcessing(true);
-            try {
-              const checkInData = {
-                jobAssignmentId: assignment.id,
-                location: {
-                  latitude: 0,
-                  longitude: 0,
-                  address: assignment.job.location || 'Hospital Location'
-                },
-                notes: 'Checked in for shift',
-              };
-  
-               // ✅ Use the unified endpoint
-               await ApiService.checkIn(checkInData.jobAssignmentId, checkInData.location, checkInData.notes);
-  
-              Alert.alert('Success', 'Successfully checked in!');
-              loadConfirmedAssignments();
-            } catch (error) {
-              console.error('Check-in error:', error);
-              Alert.alert('Error', error.message || 'Failed to check in. Please try again.');
-            } finally {
-              setIsProcessing(false);
-            }
-          },
+    setCurrentAssignment(assignment);
+    setActionType('checkin');
+    setShowActionSheet(true);
+  };
+
+  const handleManualCheckIn = async () => {
+    if (!currentAssignment) return;
+    
+    setIsProcessing(true);
+    try {
+      const checkInData = {
+        jobAssignmentId: currentAssignment.id,
+        location: {
+          latitude: 0,
+          longitude: 0,
+          address: currentAssignment.job?.location || 'Hospital Location'
         },
-      ]
-    );
+        notes: 'Checked in for shift',
+      };
+
+      // ✅ Use the unified endpoint
+      await ApiService.checkIn(checkInData.jobAssignmentId, checkInData.location, checkInData.notes);
+
+      Alert.alert('Success', 'Successfully checked in!');
+      loadConfirmedAssignments();
+      setShowActionSheet(false);
+    } catch (error) {
+      console.error('Check-in error:', error);
+      Alert.alert('Error', (error as any)?.message || 'Failed to check in. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleGenerateQRCode = () => {
+    if (!currentAssignment || !actionType) return;
+    
+    (navigation as any).navigate('QRCodeDisplay', {
+      assignment: currentAssignment,
+      action: actionType
+    });
+    setShowActionSheet(false);
+  };
+
+  const handleScanQRCode = () => {
+    if (!currentAssignment || !actionType) return;
+    
+    (navigation as any).navigate('QRScanner', {
+      assignmentId: currentAssignment.id,
+      action: actionType
+    });
+    setShowActionSheet(false);
+  };
+
+  const handleQRCodeScanned = async (qrData: string, assignmentId: string, action: 'checkin' | 'checkout') => {
+    setIsProcessing(true);
+    try {
+      // Find the assignment
+      const assignment = confirmedAssignments.find(a => a.id === assignmentId);
+      if (!assignment) {
+        Alert.alert('Error', 'Assignment not found');
+        return;
+      }
+
+      const locationData = {
+        latitude: 0, // TODO: Extract from QR code or get GPS
+        longitude: 0, // TODO: Extract from QR code or get GPS
+        address: assignment.job?.location || 'Hospital Location'
+      };
+
+      const notes = `QR Code scanned: ${qrData}`;
+
+      if (action === 'checkin') {
+        await ApiService.checkIn(assignmentId, locationData, notes);
+        Alert.alert('Success', 'Successfully checked in via QR code!');
+      } else {
+        await ApiService.checkOut(assignmentId, locationData, notes);
+        Alert.alert('Success', 'Successfully checked out via QR code!');
+      }
+
+      loadConfirmedAssignments();
+    } catch (error) {
+      console.error('QR Code check-in/out error:', error);
+      Alert.alert('Error', (error as any)?.message || 'Failed to process QR code. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleCheckOut = async (assignment: JobAssignment) => {
-    Alert.alert(
-      'Check Out',
-      `Are you ready to check out from ${assignment.job.title}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Check Out',
-          onPress: async () => {
-            setIsProcessing(true);
-            try {
-              const checkOutData = {
-                jobAssignmentId: assignment.id,
-                location: {
-                  latitude: 0, // TODO: Get actual location
-                  longitude: 0, // TODO: Get actual location
-                  address: assignment.job.location || 'Hospital Location'
-                },
-                notes: 'Checked out after shift', // ✅ Non-empty notes
-              };
+    setCurrentAssignment(assignment);
+    setActionType('checkout');
+    setShowActionSheet(true);
+  };
 
-              // ✅ Use the unified endpoint
-              await ApiService.checkOut(checkOutData.jobAssignmentId, checkOutData.location, checkOutData.notes);
-
-              Alert.alert('Success', 'Successfully checked out!');
-              loadConfirmedAssignments(); // Refresh the list
-            } catch (error) {
-              Alert.alert('Error', 'Failed to check out. Please try again.');
-            } finally {
-              setIsProcessing(false);
-            }
-          },
+  const handleManualCheckOut = async () => {
+    if (!currentAssignment) return;
+    
+    setIsProcessing(true);
+    try {
+      const checkOutData = {
+        jobAssignmentId: currentAssignment.id,
+        location: {
+          latitude: 0, // TODO: Get actual location
+          longitude: 0, // TODO: Get actual location
+          address: currentAssignment.job?.location || 'Hospital Location'
         },
-      ]
-    );
+        notes: 'Checked out after shift', // ✅ Non-empty notes
+      };
+
+      // ✅ Use the unified endpoint
+      await ApiService.checkOut(checkOutData.jobAssignmentId, checkOutData.location, checkOutData.notes);
+
+      Alert.alert('Success', 'Successfully checked out!');
+      loadConfirmedAssignments(); // Refresh the list
+      setShowActionSheet(false);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to check out. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -198,31 +266,34 @@ const CheckInOutScreen: React.FC = () => {
   const AssignmentCard = ({ assignment }: { assignment: JobAssignment }) => (
     <View style={styles.assignmentCard}>
       <View style={styles.assignmentHeader}>
-        <Text style={styles.assignmentTitle}>{assignment.job.title}</Text>
+        <Text style={styles.assignmentTitle}>{assignment.job?.title || 'Assignment'}</Text>
         <View style={[styles.assignmentStatus, { backgroundColor: Colors.success }]}>
           <Text style={styles.assignmentStatusText}>Active</Text>
         </View>
       </View>
 
-      <Text style={styles.assignmentDescription}>{assignment.job.description}</Text>
+      <Text style={styles.assignmentDescription}>{assignment.job?.description || 'No description available'}</Text>
 
       <View style={styles.assignmentDetails}>
         <View style={styles.assignmentDetail}>
           <FontAwesomeIcon icon="map-marker-alt" size={16} color={Colors.textTertiary} />
-          <Text style={styles.assignmentDetailText}>{assignment.job.location}</Text>
+          <Text style={styles.assignmentDetailText}>{assignment.job?.location || 'Location not specified'}</Text>
         </View>
 
         <View style={styles.assignmentDetail}>
           <FontAwesomeIcon icon="calendar" size={16} color={Colors.textTertiary} />
           <Text style={styles.assignmentDetailText}>
-            {formatDate(assignment.job.startDate)}
+            {assignment.job?.startDate ? formatDate(assignment.job.startDate) : 'Date not specified'}
           </Text>
         </View>
 
         <View style={styles.assignmentDetail}>
           <FontAwesomeIcon icon="clock" size={16} color={Colors.textTertiary} />
           <Text style={styles.assignmentDetailText}>
-            {formatTime(assignment.job.startTime)} - {formatTime(assignment.job.endTime)}
+            {assignment.job?.startTime && assignment.job?.endTime 
+              ? `${formatTime(assignment.job.startTime)} - ${formatTime(assignment.job.endTime)}`
+              : 'Time not specified'
+            }
           </Text>
         </View>
       </View>
@@ -244,21 +315,23 @@ const CheckInOutScreen: React.FC = () => {
             );
           }
           
-          // If status is ASSIGNED and not checked in, show Check In
-          if (assignment.status === 'ASSIGNED' && !assignment.isCheckedIn) {
+          // If status is ASSIGNED or ACCEPTED and not checked in, show Check In
+          if (((assignment.status as any) === 'ASSIGNED' || assignment.status === 'ACCEPTED') && !assignment.isCheckedIn) {
             return (
               <TouchableOpacity
-                style={[styles.checkInButton, { backgroundColor: Colors.success }]}
+                style={[styles.checkInButton, { backgroundColor: (assignment.status as any) === 'ASSIGNED' ? Colors.warning : Colors.success }]}
                 onPress={() => handleCheckIn(assignment)}
                 disabled={isProcessing}>
                 <FontAwesomeIcon icon="sign-in-alt" size={16} color={Colors.white} />
-                <Text style={styles.checkInButtonText}>Check In</Text>
+                <Text style={styles.checkInButtonText}>
+                  {(assignment.status as any) === 'ASSIGNED' ? 'Accept & Check In' : 'Check In'}
+                </Text>
               </TouchableOpacity>
             );
           }
           
-          // If status is ASSIGNED and checked in, show Check Out
-          if (assignment.status === 'ASSIGNED' && assignment.isCheckedIn) {
+          // If status is ASSIGNED or ACCEPTED and checked in, show Check Out
+          if (((assignment.status as any) === 'ASSIGNED' || assignment.status === 'ACCEPTED') && assignment.isCheckedIn) {
             return (
               <TouchableOpacity
                 style={[styles.checkOutButton, { backgroundColor: Colors.error }]}
@@ -341,6 +414,63 @@ const CheckInOutScreen: React.FC = () => {
           </View>
         </View>
       )}
+
+      {/* Custom Action Sheet Modal */}
+      <Modal
+        visible={showActionSheet}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowActionSheet(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.actionSheet}>
+            <Text style={styles.actionSheetTitle}>
+              {actionType === 'checkin' ? 'Check In' : 'Check Out'}
+            </Text>
+            <Text style={styles.actionSheetSubtitle}>
+              How would you like to {actionType === 'checkin' ? 'check in' : 'check out'}?
+            </Text>
+            
+            <TouchableOpacity
+              style={styles.actionSheetButton}
+              onPress={actionType === 'checkin' ? handleManualCheckIn : handleManualCheckOut}
+            >
+              <FontAwesomeIcon 
+                icon={actionType === 'checkin' ? 'sign-in-alt' : 'sign-out-alt'} 
+                size={20} 
+                color={Colors.primary} 
+              />
+              <Text style={styles.actionSheetButtonText}>
+                Manual {actionType === 'checkin' ? 'Check In' : 'Check Out'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionSheetButton}
+              onPress={handleGenerateQRCode}
+            >
+              <FontAwesomeIcon icon="qrcode" size={20} color={Colors.primary} />
+              <Text style={styles.actionSheetButtonText}>Generate QR Code</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionSheetButton}
+              onPress={handleScanQRCode}
+            >
+              <FontAwesomeIcon icon="camera" size={20} color={Colors.primary} />
+              <Text style={styles.actionSheetButtonText}>Scan QR Code</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionSheetButton, styles.cancelButton]}
+              onPress={() => setShowActionSheet(false)}
+            >
+              <FontAwesomeIcon icon="times" size={20} color={Colors.error} />
+              <Text style={[styles.actionSheetButtonText, styles.cancelButtonText]}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -529,6 +659,55 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     color: Colors.textPrimary,
     marginTop: Spacing.md,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  actionSheet: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: BorderRadius.lg,
+    borderTopRightRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xl,
+  },
+  actionSheetTitle: {
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: Spacing.xs,
+  },
+  actionSheetSubtitle: {
+    fontSize: Typography.fontSize.base,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+  },
+  actionSheetButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.background,
+  },
+  actionSheetButtonText: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.medium,
+    color: Colors.textPrimary,
+    marginLeft: Spacing.md,
+  },
+  cancelButton: {
+    backgroundColor: Colors.error + '10',
+    borderWidth: 1,
+    borderColor: Colors.error,
+  },
+  cancelButtonText: {
+    color: Colors.error,
   },
 });
 

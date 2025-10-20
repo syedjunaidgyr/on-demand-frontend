@@ -22,6 +22,8 @@ import AssignmentScreen from '../screens/healthcare/AssignmentScreen';
 import AssignmentDetailsScreen from '../screens/healthcare/AssignmentDetailsScreen';
 import MyAssignmentsScreen from '../screens/healthcare/MyAssignmentsScreen';
 import CheckInOutScreen from '../screens/healthcare/CheckInOutScreen';
+import QRScannerScreen from '../screens/healthcare/QRScannerScreen';
+import QRCodeDisplayScreen from '../screens/healthcare/QRCodeDisplayScreen';
 
 // Common Screens
 import ProfileScreen from '../screens/common/ProfileScreen';
@@ -58,9 +60,11 @@ export type RootStackParamList = {
   Profile: undefined;
   JobDetails: { jobId?: string; job?: Job };
   CreateJob: undefined;
-  CheckInOut: { assignmentId: string };
+  CheckInOut: { assignmentId?: string; scannedQRData?: string; scannedAction?: 'checkin' | 'checkout' };
   JobAssignment: { jobId: string };
   AssignmentDetails: { assignmentId: string };
+  QRScanner: { assignmentId: string; action: 'checkin' | 'checkout' };
+  QRCodeDisplay: { assignment: JobAssignment; action: 'checkin' | 'checkout' };
 };
 
 export type AuthStackParamList = {
@@ -255,6 +259,22 @@ const MainNavigator = ({ user }: { user: User }) => {
           title: 'Assignment Details',
           headerStyle: { backgroundColor: Colors.primary },
           headerTintColor: Colors.white,
+        }}
+      />
+      <Stack.Screen 
+        name="QRScanner" 
+        component={QRScannerScreen}
+        options={{
+          headerShown: false, // We handle our own header in the scanner
+          title: 'QR Scanner',
+        }}
+      />
+      <Stack.Screen 
+        name="QRCodeDisplay" 
+        component={QRCodeDisplayScreen}
+        options={{
+          headerShown: false, // We handle our own header
+          title: 'QR Code Display',
         }}
       />
     </Stack.Navigator>

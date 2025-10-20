@@ -83,8 +83,11 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
       }
 
       setAvailableJobs(availableData?.data || []);
+      console.log('✅ Available jobs loaded successfully:', availableData);
       setUpcomingJobs(upcomingData || []);
+      console.log('✅ Upcoming jobs loaded successfully:', upcomingData);
       setMyAssignments(assignmentsData?.data || []);
+      console.log('✅ Assignments loaded successfully:', assignmentsData);
       setWorkStatus(statusData);
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
@@ -420,7 +423,7 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
               icon="clock"
               title="Check In/Out"
               subtitle="Track your time"
-              onPress={() => navigation.navigate('CheckInOut' as never)}
+              onPress={() => (navigation as any).navigate('CheckInOut')}
               color={roleConfig.color}
             />
             <QuickAction
