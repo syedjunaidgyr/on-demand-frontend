@@ -17,7 +17,8 @@ const API_CONFIG = {
   PHYSICAL_DEVICE: 'http://192.168.1.4:3000/api/v1', // Your actual IP
   
   // Production URL (when you deploy your backend)
-  PRODUCTION: 'https://192.168.1.4:3000/api/v1',
+  // For local testing, use HTTP. For real production, use HTTPS
+  PRODUCTION: 'http://192.168.1.4:3000/api/v1',
 };
 
 // Auto-detect the best URL based on platform and environment

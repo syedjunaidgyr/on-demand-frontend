@@ -87,6 +87,8 @@ android {
         ndk {
             abiFilters "armeabi-v7a", "x86", "arm64-v8a", "x86_64"
         }
+        // Allow cleartext traffic for development
+        manifestPlaceholders = [usesCleartextTraffic: "true"]
     }
     
     // Add font configuration
