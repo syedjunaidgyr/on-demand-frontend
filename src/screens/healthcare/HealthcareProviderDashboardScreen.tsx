@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-  Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
@@ -30,11 +29,6 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  
-  // Get screen dimensions for responsive design
-  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-  const isSmallScreen = screenHeight < 700;
-  const isLargeScreen = screenHeight > 800;
 
   useEffect(() => {
     loadDashboardData();
@@ -157,20 +151,30 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
     }
   };
 
-  const QuickAction = ({ icon, title, subtitle, onPress, color = Colors.primary }: any) => (
-    <TouchableOpacity style={styles.quickAction} onPress={onPress} activeOpacity={0.9}>
-      <View style={styles.quickActionCard}>
-        <View style={styles.quickActionHeader}>
-          <View style={[styles.quickActionIcon, { backgroundColor: color }]}>
-            <FontAwesomeIcon icon={icon} size={20} color={Colors.white} />
+  // ✨ NEW: Horizontal Quick Action Component
+  const QuickActionHorizontal = ({ icon, title, subtitle, onPress, gradient }: any) => (
+    <View style={styles.quickActionShadowContainer}>
+      <TouchableOpacity onPress={onPress} activeOpacity={1}>
+        <LinearGradient
+          colors={gradient}
+          style={styles.quickActionHorizontal}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}>
+          <View style={styles.quickActionContent}>
+            <View style={styles.quickActionHorizontalIcon}>
+              <FontAwesomeIcon icon={icon} size={24} color="#FFFFFF" />
+            </View>
+            <View style={styles.quickActionTextContainer}>
+              <Text style={styles.quickActionHorizontalTitle}>{title}</Text>
+              <Text style={styles.quickActionHorizontalSubtitle}>{subtitle}</Text>
+            </View>
           </View>
-        </View>
-        <View style={styles.quickActionContent}>
-          <Text style={styles.quickActionTitle}>{title}</Text>
-          {subtitle && <Text style={styles.quickActionSubtitle}>{subtitle}</Text>}
-        </View>
-      </View>
-    </TouchableOpacity>
+          <View style={styles.quickActionArrow}>
+            <FontAwesomeIcon icon="arrow-right" size={14} color="rgba(255, 255, 255, 0.7)" />
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
+    </View>
   );
 
   const JobCard = ({ job }: { job: Job }) => {
@@ -235,7 +239,6 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
               </View>
             </View>
           </View>
-          {/* <Text style={styles.jobDescription}>{job.description}</Text> */}
           <View style={styles.jobDetails}>
             <View style={styles.jobDetail}>
               <View style={styles.jobDetailIcon}>
@@ -317,7 +320,6 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
     };
 
     const handleAssignmentPress = () => {
-      // Navigate to assignment details or check-in/out screen
       (navigation as any).navigate('CheckInOut', { assignmentId: assignment.id });
     };
 
@@ -330,7 +332,6 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
               <Text style={styles.assignmentStatusText}>{getAssignmentStatusText(assignment.status)}</Text>
             </View>
           </View>
-          {/* <Text style={styles.assignmentDescription}>{assignment.job?.description || 'No description available'}</Text> */}
           <View style={styles.assignmentDetails}>
             <View style={styles.assignmentDetail}>
               <View style={styles.assignmentDetailIcon}>
@@ -374,6 +375,8 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
     );
   };
 
+  const roleConfig = getRoleConfig();
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -385,13 +388,10 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
     );
   }
 
-  const roleConfig = getRoleConfig();
-
   return (
     <View style={styles.container}>
       {/* Sticky Header */}
       <View style={styles.stickyHeader}>
-        {/* Combined Profile, Title and Stats Card */}
         <View style={styles.combinedCard}>
           {/* Profile Section */}
           <TouchableOpacity 
@@ -428,7 +428,9 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
           {/* Main Title */}
           <View style={styles.titleSection}>
             <Text style={styles.mainTitle}>{roleConfig.title}</Text>
-            <Text style={styles.mainSubtitle}>Manage your healthcare assignments</Text>
+            <Text style={styles.mainSubtitle}>
+              {user?.role === 'DOCTOR' ? 'Manage your medical assignments and patient care' : 'Manage your nursing assignments and patient care'}
+            </Text>
           </View>
         </View>
       </View>
@@ -446,40 +448,54 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
           />
         }>
 
-
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.quickActionsContainer}>
-            <QuickAction
-              icon="search"
+        {/* ✨ NEW: Horizontal Quick Actions */}
+        <View style={[styles.section, styles.firstSection]}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Quick Actions</Text>
+          </View>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.quickActionsScroll}
+            decelerationRate="fast"
+            snapToInterval={182}
+            snapToAlignment="start">
+            <QuickActionHorizontal
+              icon="briefcase"
               title="Job Assignments"
-              subtitle="View assigned jobs"
+              subtitle={`${availableJobs.length} Available`}
               onPress={() => navigation.navigate('Assignments' as never)}
-              color={roleConfig.color}
+              gradient={['#6366F1', '#4F46E5']}
             />
-            <QuickAction
-              icon="calendar"
+            <QuickActionHorizontal
+              icon="calendar-check"
               title="My Jobs"
-              subtitle="Manage assignments"
+              subtitle={`${myAssignments.length} Active`}
               onPress={() => navigation.navigate('MyAssignments' as never)}
-              color={roleConfig.color}
+              gradient={['#10B981', '#059669']}
             />
-            <QuickAction
+            <QuickActionHorizontal
               icon="clock"
               title="Check In/Out"
-              subtitle="Track your time"
+              subtitle="Track Time"
               onPress={() => (navigation as any).navigate('CheckInOut')}
-              color={roleConfig.color}
+              gradient={['#F59E0B', '#D97706']}
             />
-            <QuickAction
-              icon="chart-bar"
+            <QuickActionHorizontal
+              icon="chart-line"
               title="Reports"
-              subtitle="View analytics"
+              subtitle="View Stats"
               onPress={() => navigation.navigate('Reports' as never)}
-              color={roleConfig.color}
+              gradient={['#8B5CF6', '#7C3AED']}
             />
-          </View>
+            <QuickActionHorizontal
+              icon="user-md"
+              title="Profile"
+              subtitle="Settings"
+              onPress={() => navigation.navigate('Profile' as never)}
+              gradient={['#EC4899', '#DB2777']}
+            />
+          </ScrollView>
         </View>
 
         {/* Available Jobs */}
@@ -501,7 +517,6 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
             </View>
           )}
         </View>
-
 
         {/* My Assignments */}
         <View style={styles.section}>
@@ -530,9 +545,8 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#dbebff',
+    backgroundColor: '#ffffff',
   },
-  // ✅ New Header Styles (matching HR dashboard colors)
   stickyHeader: {
     position: 'absolute',
     top: 0,
@@ -540,9 +554,35 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 1000,
   },
+  scrollableContent: {
+    flex: 1,
+    marginTop: 200,
+    paddingBottom: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  profileButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   combinedCard: {
     backgroundColor: '#1C2A3A',
     paddingTop: 35,
+    paddingBottom: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -563,7 +603,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileImageContainer: {
-    marginRight: 12,
+    marginRight: 16,
   },
   profileImage: {
     width: 50,
@@ -573,21 +613,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   profileInitials: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '700',
     color: '#FFFFFF',
   },
   profileText: {
     flex: 1,
   },
   profileName: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 2,
   },
   profileRole: {
-    fontSize: 14,
+    fontSize: 12,
     color: 'rgba(255, 255, 255, 0.8)',
     fontWeight: '500',
   },
@@ -595,43 +635,28 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   titleSection: {
-    alignItems: 'center',
     paddingHorizontal: 20,
     paddingBottom: 20,
   },
   mainTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#FFFFFF',
-    textAlign: 'center',
-    marginBottom: 4,
+    letterSpacing: -0.5,
   },
   mainSubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: 'rgba(255, 255, 255, 0.8)',
-    textAlign: 'center',
+    fontWeight: '500',
+    marginTop: 4,
   },
-  scrollableContent: {
-    flex: 1,
-    marginTop: 260, // Height of the sticky header + extra space
-  },
-  content: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: Spacing.md,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
+  firstSection: {
+    marginTop: -20,
   },
   header: {
     paddingVertical: Spacing.xl,
@@ -652,22 +677,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     color: Colors.white,
     opacity: 0.9,
-   
   },
-  profileButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-
   statusDot: {
     width: 8,
     height: 8,
@@ -682,8 +692,8 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   section: {
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
+    paddingHorizontal: 16,
+    marginBottom: 16,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -707,84 +717,86 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     fontWeight: Typography.fontWeight.medium,
   },
-  quickActionsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 0,
-    paddingHorizontal: 4,
+
+  // ✨ NEW: Horizontal Quick Actions Styles
+  quickActionsScroll: {
+    paddingHorizontal: 1,
+    paddingVertical: 2,
+    paddingRight: 20,
   },
-  quickAction: {
-    width: '48%',
-    marginBottom: Spacing.md,
-  },
-  quickActionCard: {
-    backgroundColor: Colors.white,
-    borderRadius: 20,
-    padding: Spacing.lg,
+  quickActionShadowContainer: {
+    marginRight: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 15 },
+    shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.25,
-    shadowRadius: 25,
-    elevation: 20,
-    height: 170,
-    borderWidth: 1,
-    borderColor: '#E8E8E8',
-    transform: [{ scale: 1.02 }],
+    shadowRadius: 20,
+    elevation: 15,
   },
-  quickActionHeader: {
-    alignItems: 'flex-start',
-    marginBottom: Spacing.md,
-  },
-  quickActionIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 10,
-    transform: [{ scale: .80 }],
-    alignSelf: 'flex-start',
+  quickActionHorizontal: {
+    width: 170,
+    height: 190,
+    borderRadius: 24,
+    padding: 20,
+    justifyContent: 'space-between',
+    position: 'relative',
   },
   quickActionContent: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
   },
-  quickActionTitle: {
-    fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.sm,
-    letterSpacing: 0.3,
-    lineHeight: 22,
-    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+  quickActionTextContainer: {
+    marginTop: 12,
+  },
+  quickActionHorizontalIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  quickActionHorizontalTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 4,
+    letterSpacing: -0.3,
+    textShadowColor: 'rgba(0, 0, 0, 0.15)',
     textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    textShadowRadius: 3,
   },
-  quickActionSubtitle: {
-    fontSize: Typography.fontSize.xs,
-    color: Colors.textSecondary,
-    fontWeight: Typography.fontWeight.medium,
+  quickActionHorizontalSubtitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.9)',
     letterSpacing: 0.2,
-    lineHeight: 18,
-    textShadowColor: 'rgba(0, 0, 0, 0.05)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 1,
   },
+  quickActionArrow: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
   jobCard: {
     backgroundColor: Colors.white,
     borderRadius: 20,
-    marginBottom: Spacing.lg,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
     shadowRadius: 16,
     elevation: 12,
-    marginHorizontal: 2,
+    marginHorizontal: 0,
     marginVertical: 4,
   },
   jobCardInner: {
@@ -911,13 +923,13 @@ const styles = StyleSheet.create({
   assignmentCard: {
     backgroundColor: Colors.white,
     borderRadius: 20,
-    marginBottom: Spacing.lg,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
     shadowRadius: 16,
     elevation: 12,
-    marginHorizontal: 4,
+    marginHorizontal: 0,
     marginVertical: 4,
   },
   assignmentCardInner: {
@@ -1044,7 +1056,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing['3xl'],
     backgroundColor: Colors.white,
     borderRadius: 20,
-    marginHorizontal: 4,
+    marginHorizontal: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,

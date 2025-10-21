@@ -312,8 +312,12 @@ const CheckInOutScreen: React.FC = () => {
     <View style={styles.assignmentCard}>
       <View style={styles.assignmentHeader}>
         <Text style={styles.assignmentTitle}>{assignment.job?.title || 'Assignment'}</Text>
-        <View style={[styles.assignmentStatus, { backgroundColor: Colors.success }]}>
-          <Text style={styles.assignmentStatusText}>Active</Text>
+        <View style={[styles.assignmentStatus, { 
+          backgroundColor: assignment.status === 'COMPLETED' ? Colors.info : Colors.success 
+        }]}>
+          <Text style={styles.assignmentStatusText}>
+            {assignment.status === 'COMPLETED' ? 'Completed' : 'Active'}
+          </Text>
         </View>
       </View>
 
@@ -392,6 +396,16 @@ const CheckInOutScreen: React.FC = () => {
                   {(assignment.status as any) === 'ASSIGNED' ? 'Accept & Check In' : 'Check In'}
                 </Text>
               </TouchableOpacity>
+            );
+          }
+          
+          // If status is COMPLETED, show completion message (no button)
+          if (assignment.status === 'COMPLETED') {
+            return (
+              <View style={styles.completionStatus}>
+                <FontAwesomeIcon icon="check-circle" size={16} color={Colors.success} />
+                <Text style={styles.completionStatusText}>Staff has been checked out</Text>
+              </View>
             );
           }
           
@@ -773,6 +787,23 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     color: Colors.error,
+  },
+  completionStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    backgroundColor: Colors.success + '10',
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.success + '30',
+  },
+  completionStatusText: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.medium,
+    color: Colors.success,
+    marginLeft: Spacing.sm,
   },
 });
 
