@@ -9,6 +9,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
@@ -90,10 +91,10 @@ const HRDashboardScreen: React.FC = () => {
       const jobsResponse = await ApiService.getAllJobs();
       console.log('📋 Jobs Response:', jobsResponse);
       
-      const jobs = jobsResponse.jobs || jobsResponse.data || [];
+      const jobs = (jobsResponse as any).jobs || jobsResponse.data || [];
       const totalJobs = jobs.length;
-      const activeJobs = jobs.filter(job => job.status === 'ACTIVE').length;
-      const assignedJobs = jobs.filter(job => (job.assignments?.length || 0) > 0).length;
+      const activeJobs = jobs.filter((job: any) => job.status === 'ACTIVE').length;
+      const assignedJobs = jobs.filter((job: any) => (job.assignments?.length || 0) > 0).length;
       
       console.log('📊 Job Stats:', { totalJobs, activeJobs, assignedJobs });
       
@@ -207,22 +208,75 @@ const HRDashboardScreen: React.FC = () => {
     icon: string;
     gradient: string[];
     onPress: () => void;
+  }) => {
+    const scaleAnim = new Animated.Value(1);
+
+    const handlePressIn = () => {
+      Animated.spring(scaleAnim, {
+        toValue: 0.95,
+        useNativeDriver: true,
+        speed: 50,
+        bounciness: 4,
+      }).start();
+    };
+
+    const handlePressOut = () => {
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        speed: 50,
+        bounciness: 4,
+      }).start();
+    };
+
+    return (
+      <TouchableOpacity 
+        style={styles.quickActionWrapper} 
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={1}>
+        <Animated.View style={[
+          styles.quickActionCard,
+          { transform: [{ scale: scaleAnim }] }
+        ]}>
+          <LinearGradient
+            colors={gradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.quickActionGradient}>
+            <FontAwesomeIcon icon={icon} size={26} color="#FFFFFF" />
+          </LinearGradient>
+          <Text style={styles.quickActionTitle}>{title}</Text>
+          <Text style={styles.quickActionSubtitle}>{subtitle}</Text>
+        </Animated.View>
+      </TouchableOpacity>
+    );
+  };
+
+  const SimpleStatCard = ({ 
+    title, 
+    value, 
+    icon,
+    onPress,
+    iconBgColor = '#1C2A3A'
+  }: {
+    title: string;
+    value: number;
+    icon: string;
+    onPress?: () => void;
+    iconBgColor?: string;
   }) => (
     <TouchableOpacity 
-      style={styles.quickActionWrapper} 
+      style={styles.simpleStatCard}
       onPress={onPress}
-      activeOpacity={0.8}>
-      <View style={styles.quickActionCard}>
-        <LinearGradient
-          colors={gradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.quickActionGradient}>
-          <FontAwesomeIcon icon={icon} size={24} color="#FFFFFF" />
-        </LinearGradient>
-        <Text style={styles.quickActionTitle}>{title}</Text>
-        <Text style={styles.quickActionSubtitle}>{subtitle}</Text>
+      disabled={!onPress}
+      activeOpacity={0.7}>
+      <View style={[styles.simpleStatIcon, { backgroundColor: iconBgColor }]}>
+        <FontAwesomeIcon icon={icon} size={20} color="#FFFFFF" />
       </View>
+      <Text style={styles.simpleStatValue}>{value.toLocaleString()}</Text>
+      <Text style={styles.simpleStatTitle}>{title}</Text>
     </TouchableOpacity>
   );
 
@@ -324,88 +378,108 @@ const HRDashboardScreen: React.FC = () => {
           />
         }>
 
-        {/* Overview Stats Grid */}
-        <View style={[styles.section, styles.firstSection]}>
+        {/* Overview Stats Grid - Horizontal Scrolling */}
+        <View style={[styles.section, styles.firstSection, styles.overviewSection]}>
           <Text style={styles.sectionTitle}>Overview</Text>
-          <View style={styles.statsGrid}>
-            <StatCard
-              title="Total Jobs"
-              value={stats?.jobs?.total || 0}
-              icon="briefcase"
-              gradient={['#0891B2', '#0E7490']}
-              onPress={() => (navigation as any).navigate('HRJobs')}
-            />
-            <StatCard
-              title="Active Jobs"
-              value={stats?.jobs?.active || 0}
-              icon="play"
-              gradient={['#1F2937', '#374151']}
-            />
-            <StatCard
-              title="Assigned Jobs"
-              value={stats?.jobs?.assigned || 0}
-              icon="user-check"
-              gradient={['#2563EB', '#3B82F6']}
-            />
-            <StatCard
-              title="In Progress"
-              value={stats?.jobs?.inProgress || 0}
-              icon="sync"
-              gradient={['#EC4899', '#BE185D']}
-            />
-            <StatCard
-              title="Completed Jobs"
-              value={stats?.jobs?.completed || 0}
-              icon="check-circle"
-              gradient={['#10B981', '#059669']}
-            />
-            <StatCard
-              title="Cancelled Jobs"
-              value={stats?.jobs?.cancelled || 0}
-              icon="times-circle"
-              gradient={['#EF4444', '#DC2626']}
-            />
-            <StatCard
-              title="Total Staff"
-              value={stats?.staff?.total || 0}
-              icon="users"
-              gradient={['#8B5CF6', '#7C3AED']}
-              onPress={() => (navigation as any).navigate('HRUsers')}
-            />
-            <StatCard
-              title="Total Assignments"
-              value={stats?.assignments?.total || 0}
-              icon="list"
-              gradient={['#F59E0B', '#D97706']}
-            />
-            <StatCard
-              title="Pending"
-              value={stats?.assignments?.pending || 0}
-              icon="clock"
-              gradient={['#F97316', '#EA580C']}
-            />
-            <StatCard
-              title="Accepted"
-              value={stats?.assignments?.accepted || 0}
-              icon="check"
-              gradient={['#14B8A6', '#0D9488']}
-            />
-            <StatCard
-              title="In Progress"
-              value={stats?.assignments?.inProgress || 0}
-              icon="sync"
-              gradient={['#06B6D4', '#0891B2']}
-            />
-            <StatCard
-              title="Completed"
-              value={stats?.assignments?.completed || 0}
-              icon="check-circle"
-              gradient={['#22C55E', '#16A34A']}
-            />
-          </View>
+          
+          {/* Row 1 - Jobs Stats */}
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            scrollEventThrottle={16}
+            style={styles.horizontalScroll}
+            contentContainerStyle={styles.horizontalScrollContent}>
+            <View style={styles.statsRow}>
+              <SimpleStatCard
+                title="Total Jobs"
+                value={stats?.jobs?.total || 0}
+                icon="briefcase"
+                iconBgColor="#3B82F6"
+                onPress={() => (navigation as any).navigate('HRJobs')}
+              />
+              <SimpleStatCard
+                title="Active Jobs"
+                value={stats?.jobs?.active || 0}
+                icon="play"
+                iconBgColor="#10B981"
+              />
+              <SimpleStatCard
+                title="Assigned Jobs"
+                value={stats?.jobs?.assigned || 0}
+                icon="user-check"
+                iconBgColor="#8B5CF6"
+              />
+              <SimpleStatCard
+                title="In Progress"
+                value={stats?.jobs?.inProgress || 0}
+                icon="sync"
+                iconBgColor="#F59E0B"
+              />
+              <SimpleStatCard
+                title="Completed"
+                value={stats?.jobs?.completed || 0}
+                icon="check-circle"
+                iconBgColor="#059669"
+              />
+              <SimpleStatCard
+                title="Cancelled"
+                value={stats?.jobs?.cancelled || 0}
+                icon="times-circle"
+                iconBgColor="#EF4444"
+              />
+            </View>
+          </ScrollView>
+
+          {/* Row 2 - Assignments Stats */}
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            scrollEventThrottle={16}
+            style={[styles.horizontalScroll, { marginTop: 16 }]}
+            contentContainerStyle={styles.horizontalScrollContent}>
+            <View style={styles.statsRow}>
+              <SimpleStatCard
+                title="Total Staff"
+                value={stats?.staff?.total || 0}
+                icon="users"
+                iconBgColor="#6366F1"
+                onPress={() => (navigation as any).navigate('HRUsers')}
+              />
+              <SimpleStatCard
+                title="Total Assignments"
+                value={stats?.assignments?.total || 0}
+                icon="list"
+                iconBgColor="#7C3AED"
+              />
+              <SimpleStatCard
+                title="Pending"
+                value={stats?.assignments?.pending || 0}
+                icon="clock"
+                iconBgColor="#F59E0B"
+              />
+              <SimpleStatCard
+                title="Accepted"
+                value={stats?.assignments?.accepted || 0}
+                icon="check"
+                iconBgColor="#10B981"
+              />
+              <SimpleStatCard
+                title="In Progress"
+                value={stats?.assignments?.inProgress || 0}
+                icon="sync"
+                iconBgColor="#3B82F6"
+              />
+              <SimpleStatCard
+                title="Completed"
+                value={stats?.assignments?.completed || 0}
+                icon="check-circle"
+                iconBgColor="#059669"
+              />
+            </View>
+          </ScrollView>
         </View>
 
-        {/* Quick Actions */}
+        {/* Quick Actions - Enhanced Design */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
@@ -592,7 +666,7 @@ const styles = StyleSheet.create({
   },
   scrollableContent: {
     flex: 1,
-    marginTop: 260, // Height of the sticky header + extra space
+    marginTop: 260,
   },
   loadingContainer: {
     flex: 1,
@@ -782,6 +856,9 @@ const styles = StyleSheet.create({
     paddingTop: 30,
     marginTop: 0,
   },
+  overviewSection: {
+    marginBottom: 12,
+  },
   lastSection: {
     marginBottom: 24,
   },
@@ -795,13 +872,14 @@ const styles = StyleSheet.create({
   sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 16,
   },
   viewAllText: {
     fontSize: 14,
     color: '#6366F1',
     fontWeight: '600',
+    marginTop: 2,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -870,41 +948,51 @@ const styles = StyleSheet.create({
   quickActionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginHorizontal: -6,
+    gap: 12,
   },
   quickActionWrapper: {
-    width: '50%',
-    paddingHorizontal: 6,
-    marginBottom: 12,
+    flex: 1,
+    maxWidth: '48%',
+    minWidth: 160,
   },
   quickActionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 20,
+    padding: 24,
     alignItems: 'center',
+    minHeight: 180,
+    justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.04)',
   },
   quickActionGradient: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+    width: 64,
+    height: 64,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   quickActionTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     color: '#111827',
-    marginBottom: 4,
+    marginBottom: 6,
     textAlign: 'center',
+    letterSpacing: -0.2,
   },
   quickActionSubtitle: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#6B7280',
     fontWeight: '500',
     textAlign: 'center',
@@ -1014,6 +1102,54 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#9CA3AF',
     textAlign: 'center',
+  },
+  simpleStatCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: '#DADADA',
+    minWidth: 140,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  simpleStatIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#1C2A3A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  simpleStatValue: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 6,
+  },
+  simpleStatTitle: {
+    fontSize: 12,
+    color: '#000000',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  horizontalScroll: {
+    marginHorizontal: -20,
+    paddingHorizontal: 20,
+  },
+  horizontalScrollContent: {
+    paddingBottom: 8,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingRight: 20,
   },
 });
 

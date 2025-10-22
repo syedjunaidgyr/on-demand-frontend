@@ -359,6 +359,13 @@ const JobAssignmentScreen: React.FC = () => {
                 <Text style={styles.jobDetailText}>{job.specialization}</Text>
               </View>
             )}
+            
+            {job?.hourlyRate && (
+              <View style={styles.jobDetail}>
+                <FontAwesomeIcon icon="rupee-sign" size={16} color={Colors.success} />
+                <Text style={styles.jobDetailText}>₹{job.hourlyRate}/hour</Text>
+              </View>
+            )}
           </View>
           
           <View style={styles.scheduleInfo}>

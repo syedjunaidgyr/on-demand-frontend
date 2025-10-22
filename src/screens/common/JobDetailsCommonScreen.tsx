@@ -222,7 +222,7 @@ const JobDetailsCommonScreen: React.FC = () => {
         <View style={styles.section}>
           <View style={styles.overviewCard}>
             <View style={styles.rateContainer}>
-              <Text style={styles.rateAmount}>${job.hourlyRate}</Text>
+              <Text style={styles.rateAmount}>₹{job.hourlyRate}</Text>
               <Text style={styles.rateLabel}>per hour</Text>
             </View>
             <View style={styles.overviewDetails}>

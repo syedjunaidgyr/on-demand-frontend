@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { FontAwesomeIcon } from '../../utils/icons';
@@ -55,6 +56,71 @@ const InputField = ({
     />
   </View>
 );
+
+// Date input component with native picker
+const DateField = ({
+  label,
+  value,
+  onChange,
+  placeholder = 'YYYY-MM-DD',
+}: {
+  label: string;
+  value: string;
+  onChange: (text: string) => void;
+  placeholder?: string;
+}) => {
+  const [show, setShow] = useState(false);
+
+  const parseDateString = (dateString: string): Date => {
+    // Expecting YYYY-MM-DD; fallback to today
+    const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (match) {
+      const year = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10) - 1;
+      const day = parseInt(match[3], 10);
+      return new Date(year, month, day);
+    }
+    return new Date();
+  };
+
+  const formatDate = (date: Date): string => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  return (
+    <View style={styles.inputContainer}>
+      <Text style={styles.inputLabel}>{label}</Text>
+      <TouchableOpacity onPress={() => setShow(true)} activeOpacity={0.8}>
+        <TextInput
+          style={styles.textInput}
+          placeholder={placeholder}
+          placeholderTextColor={Colors.textTertiary}
+          value={value}
+          editable={false}
+          pointerEvents="none"
+        />
+      </TouchableOpacity>
+      {show && (
+        <DateTimePicker
+          value={value ? parseDateString(value) : new Date()}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={(event: any, selectedDate?: Date) => {
+            if (Platform.OS === 'android') {
+              setShow(false);
+            }
+            if (selectedDate) {
+              onChange(formatDate(selectedDate));
+            }
+          }}
+        />
+      )}
+    </View>
+  );
+};
 
 // Dropdown components
 const DepartmentDropdown = ({ 
@@ -547,8 +613,16 @@ const CreateJobScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView style={styles.flex1} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="always" keyboardDismissMode="none">
+      <KeyboardAvoidingView 
+        style={styles.flex1} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false} 
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        contentContainerStyle={styles.scrollContent}>
         <View style={styles.formContainer}>
           <Text style={styles.sectionTitle}>Job Details</Text>
           
@@ -659,18 +733,18 @@ const CreateJobScreen: React.FC = () => {
 
           <View style={styles.row}>
             <View style={styles.halfWidth}>
-              <InputField
+              <DateField
                 label="Start Date"
                 value={formData.startDate}
-                onChangeText={(text) => handleInputChange('startDate', text)}
+                onChange={(text) => handleInputChange('startDate', text)}
                 placeholder="YYYY-MM-DD"
               />
             </View>
             <View style={styles.halfWidth}>
-              <InputField
+              <DateField
                 label="End Date"
                 value={formData.endDate}
-                onChangeText={(text) => handleInputChange('endDate', text)}
+                onChange={(text) => handleInputChange('endDate', text)}
                 placeholder="YYYY-MM-DD"
               />
             </View>
@@ -955,6 +1029,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 100,
   },
   flex1: {
     flex: 1,

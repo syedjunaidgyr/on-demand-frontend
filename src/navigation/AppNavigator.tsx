@@ -355,14 +355,12 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 const AppNavigator = () => {
   const { isAuthenticated, user, isLoading } = useAuth();
 
-  if (isLoading) {
-    // You can add a loading screen here
-    return null;
-  }
-
   return (
     <NavigationContainer>
-      {isAuthenticated && user ? (
+      {isLoading ? (
+        // You can add a loading screen here
+        null
+      ) : isAuthenticated && user ? (
         <MainNavigator user={user} />
       ) : (
         <AuthNavigator />

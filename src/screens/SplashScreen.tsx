@@ -214,14 +214,17 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationFinish }) => {
           {/* Logo */}
           <View style={styles.logoContainer}>
             <Image 
-              source={require('../assets/logo.png')} 
+              source={require('../assets/logo2.png')} 
               style={styles.logo}
               resizeMode="contain"
             />
           </View>
 
           {/* App Name */}
-          <Text style={styles.appName}>On Demand</Text>
+          <Text style={styles.appName}>Locum</Text>
+          
+          {/* Subtitle */}
+          <Text style={styles.subtitle}>(On Demand)</Text>
           
           {/* Tagline */}
           <Text style={styles.tagline}>Clinical Professionals</Text>
@@ -321,6 +324,15 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
+  },
+  subtitle: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.medium,
+    color: Colors.white,
+    textAlign: 'center',
+    opacity: 0.9,
+    marginBottom: Spacing.sm,
+    letterSpacing: 1,
   },
   tagline: {
     fontSize: Typography.fontSize.lg,

@@ -16,8 +16,8 @@ const API_CONFIG = {
   // Example: 'http://192.168.1.100:3000/api/v1'
   PHYSICAL_DEVICE: 'http://192.168.1.4:3000/api/v1', // Your actual IP
   
-  // Production URL (when you deploy your backend)
-  // For local testing, use HTTP. For real production, use HTTPS
+  // Production URL - KEEP AS HTTP for local testing
+  // Change this to HTTPS only when you deploy to a real server
   PRODUCTION: 'http://192.168.1.4:3000/api/v1',
 };
 

@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
+  RefreshControl,
 } from 'react-native';
 import { useNavigation, useRoute, CommonActions, useNavigationContainerRef } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -33,6 +34,7 @@ const CheckInOutScreen: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [showActionSheet, setShowActionSheet] = useState(false);
   const [currentAssignment, setCurrentAssignment] = useState<JobAssignment | null>(null);
   const [actionType, setActionType] = useState<'checkin' | 'checkout' | null>(null);
@@ -40,6 +42,16 @@ const CheckInOutScreen: React.FC = () => {
   useEffect(() => {
     loadConfirmedAssignments();
   }, []);
+
+  // Update native header based on role
+  useEffect(() => {
+    const roleConfig = getRoleConfig();
+    navigation.setOptions({
+      title: roleConfig.title,
+      headerStyle: { backgroundColor: roleConfig.color },
+      headerTintColor: Colors.white,
+    });
+  }, [user]);
 
   // Handle scanned QR data when returning from QR scanner
   useEffect(() => {
@@ -97,6 +109,12 @@ const CheckInOutScreen: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadConfirmedAssignments();
+    setRefreshing(false);
   };
 
   const handleCheckIn = async (assignment: JobAssignment) => {
@@ -202,6 +220,7 @@ const CheckInOutScreen: React.FC = () => {
         Alert.alert('Success', 'Successfully checked out via QR code!');
       }
 
+      // ✅ Reload the screen data to get fresh data from server
       loadConfirmedAssignments();
     } catch (error) {
       console.error('QR Code check-in/out error:', error);
@@ -260,6 +279,11 @@ const CheckInOutScreen: React.FC = () => {
       setConfirmedAssignments(updatedAssignments);
       
       setShowActionSheet(false);
+      
+      // ✅ Reload the screen data to get fresh data from server
+      setTimeout(() => {
+        loadConfirmedAssignments();
+      }, 1000);
     } catch (error) {
       console.error('Check-out error:', error);
       Alert.alert('Error', (error as any)?.message || 'Failed to check out. Please try again.');
@@ -290,16 +314,16 @@ const CheckInOutScreen: React.FC = () => {
     if (!user) return { color: Colors.primary, title: 'Check In/Out' };
 
     switch (user.role) {
-      case 'DOCTOR':
-        return {
-          color: Colors.doctor,
-          title: 'Doctor Check In/Out'
-        };
-      case 'NURSE':
-        return {
-          color: Colors.nurse,
-          title: 'Nurse Check In/Out'
-        };
+      // case 'DOCTOR':
+      //   return {
+      //     color: Colors.doctor,
+      //     title: 'Doctor Check In/Out'
+      //   };
+      // case 'NURSE':
+      //   return {
+      //     color: Colors.nurse,
+      //     title: 'Nurse Check In/Out'
+      //   };
       default:
         return {
           color: Colors.primary,
@@ -371,8 +395,18 @@ const CheckInOutScreen: React.FC = () => {
         {(() => {
           console.log('🎨 Rendering button for assignment:', assignment.id, 'status:', assignment.status, 'isCheckedIn:', assignment.isCheckedIn);
           
-          // If status is IN_PROGRESS, you're already checked in - show Check Out
-          if (assignment.status === 'IN_PROGRESS') {
+          // If status is COMPLETED, show completion message (no button)
+          if (assignment.status === 'COMPLETED') {
+            return (
+              <View style={styles.completionStatus}>
+                <FontAwesomeIcon icon="check-circle" size={16} color={Colors.success} />
+                <Text style={styles.completionStatusText}>Staff has been checked out</Text>
+              </View>
+            );
+          }
+          
+          // If status is IN_PROGRESS OR if checked in, show Check Out button
+          if (assignment.status === 'IN_PROGRESS' || assignment.isCheckedIn) {
             return (
               <TouchableOpacity
                 style={[styles.checkOutButton, { backgroundColor: Colors.error }]}
@@ -399,46 +433,17 @@ const CheckInOutScreen: React.FC = () => {
             );
           }
           
-          // If status is COMPLETED, show completion message (no button)
-          if (assignment.status === 'COMPLETED') {
-            return (
-              <View style={styles.completionStatus}>
-                <FontAwesomeIcon icon="check-circle" size={16} color={Colors.success} />
-                <Text style={styles.completionStatusText}>Staff has been checked out</Text>
-              </View>
-            );
-          }
-          
-          // If status is ASSIGNED or ACCEPTED and checked in, show Check Out
-          if (((assignment.status as any) === 'ASSIGNED' || assignment.status === 'ACCEPTED') && assignment.isCheckedIn) {
-            return (
-              <TouchableOpacity
-                style={[styles.checkOutButton, { backgroundColor: Colors.error }]}
-                onPress={() => handleCheckOut(assignment)}
-                disabled={isProcessing}>
-                <FontAwesomeIcon icon="sign-out-alt" size={16} color={Colors.white} />
-                <Text style={styles.checkOutButtonText}>Check Out</Text>
-              </TouchableOpacity>
-            );
-          }
-          
-          // Default fallback
-          return null;
+          // Default fallback - show Check In button
+          return (
+            <TouchableOpacity
+              style={[styles.checkInButton, { backgroundColor: Colors.success }]}
+              onPress={() => handleCheckIn(assignment)}
+              disabled={isProcessing}>
+              <FontAwesomeIcon icon="sign-in-alt" size={16} color={Colors.white} />
+              <Text style={styles.checkInButtonText}>Check In</Text>
+            </TouchableOpacity>
+          );
         })()}
-        
-        {/* Temporary debug button - remove this later */}
-        <TouchableOpacity
-          style={[styles.checkInButton, { backgroundColor: Colors.warning, marginTop: 8 }]}
-          onPress={() => {
-            console.log('🔄 Toggling check-in status for assignment:', assignment.id);
-            // This is just for testing - in real app, this would be handled by backend
-            const updatedAssignments = confirmedAssignments.map(a => 
-              a.id === assignment.id ? { ...a, isCheckedIn: !a.isCheckedIn } : a
-            );
-            setConfirmedAssignments(updatedAssignments);
-          }}>
-          <Text style={styles.checkInButtonText}>Toggle Status (Debug)</Text>
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -458,12 +463,16 @@ const CheckInOutScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <GlobalHeader 
-        title={roleConfig.title}
-        backgroundColor={roleConfig.color}
-        onBackPress={() => navigation.goBack()}
-      />
-      <ScrollView style={styles.content}>
+      <ScrollView 
+        style={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[Colors.primary]}
+            tintColor={Colors.primary}
+          />
+        }>
         {confirmedAssignments.length > 0 ? (
           confirmedAssignments.map((assignment) => (
             <AssignmentCard key={assignment.id} assignment={assignment} />
@@ -510,7 +519,7 @@ const CheckInOutScreen: React.FC = () => {
               How would you like to {actionType === 'checkin' ? 'check in' : 'check out'}?
             </Text>
             
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={styles.actionSheetButton}
               onPress={actionType === 'checkin' ? handleManualCheckIn : handleManualCheckOut}
             >
@@ -522,7 +531,7 @@ const CheckInOutScreen: React.FC = () => {
               <Text style={styles.actionSheetButtonText}>
                 Manual {actionType === 'checkin' ? 'Check In' : 'Check Out'}
               </Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             <TouchableOpacity
               style={styles.actionSheetButton}

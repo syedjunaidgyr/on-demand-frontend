@@ -51,8 +51,10 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
           ? await ApiService.getAvailableJobs()
           : await ApiService.getNurseAvailableJobs();
         console.log('✅ Available jobs loaded successfully');
-      } catch (error) {
+        console.log('📊 Available jobs response:', availableData);
+      } catch (error: any) {
         console.error('❌ Failed to load available jobs:', error);
+        console.error('❌ Error details:', error.response?.data || error.message);
       }
 
       try {
@@ -84,10 +86,13 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
 
       setAvailableJobs(availableData?.data || []);
       console.log('✅ Available jobs loaded successfully:', availableData);
+      console.log('📊 Available jobs count:', availableData?.data?.length || 0);
       setUpcomingJobs(upcomingData || []);
       console.log('✅ Upcoming jobs loaded successfully:', upcomingData);
+      console.log('📊 Upcoming jobs count:', upcomingData?.length || 0);
       setMyAssignments(assignmentsData?.data || []);
       console.log('✅ Assignments loaded successfully:', assignmentsData);
+      console.log('📊 Assignments count:', assignmentsData?.data?.length || 0);
       setWorkStatus(statusData);
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
@@ -152,17 +157,13 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
   };
 
   // ✨ NEW: Horizontal Quick Action Component
-  const QuickActionHorizontal = ({ icon, title, subtitle, onPress, gradient }: any) => (
+  const QuickActionHorizontal = ({ icon, title, subtitle, onPress, gradient, iconColor }: any) => (
     <View style={styles.quickActionShadowContainer}>
       <TouchableOpacity onPress={onPress} activeOpacity={1}>
-        <LinearGradient
-          colors={gradient}
-          style={styles.quickActionHorizontal}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}>
+        <View style={styles.quickActionHorizontal}>
           <View style={styles.quickActionContent}>
-            <View style={styles.quickActionHorizontalIcon}>
-              <FontAwesomeIcon icon={icon} size={24} color="#FFFFFF" />
+            <View style={[styles.quickActionHorizontalIcon, { borderColor: iconColor || '#E5E7EB', borderWidth: 1, backgroundColor: '#FFFFFF' }]}>
+              <FontAwesomeIcon icon={icon} size={24} color={iconColor || Colors.primary} />
             </View>
             <View style={styles.quickActionTextContainer}>
               <Text style={styles.quickActionHorizontalTitle}>{title}</Text>
@@ -170,54 +171,45 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
             </View>
           </View>
           <View style={styles.quickActionArrow}>
-            <FontAwesomeIcon icon="arrow-right" size={14} color="rgba(255, 255, 255, 0.7)" />
+            <FontAwesomeIcon icon="arrow-right" size={14} color={iconColor || Colors.textSecondary} />
           </View>
-        </LinearGradient>
+        </View>
       </TouchableOpacity>
     </View>
   );
 
   const JobCard = ({ job }: { job: Job }) => {
+    // Debug: Log job data to see what fields are available
+    console.log('🔍 Job data:', JSON.stringify(job, null, 2));
+    console.log('🔍 Job title:', job?.title);
+    console.log('🔍 Job description:', job?.description);
+    console.log('🔍 Job hourlyRate:', job?.hourlyRate);
+    
     const getPriorityColor = (priority: string) => {
       switch (priority) {
         case 'URGENT':
-          return '#EF4444';
+          return Colors.error;
         case 'HIGH':
-          return '#F59E0B';
+          return Colors.warning;
         case 'MEDIUM':
-          return '#3B82F6';
+          return Colors.info;
         case 'LOW':
-          return '#10B981';
+          return Colors.success;
         default:
-          return '#10B981';
-      }
-    };
-
-    const getPriorityGradient = (priority: string) => {
-      switch (priority) {
-        case 'URGENT':
-          return ['#EF4444', '#DC2626'];
-        case 'HIGH':
-          return ['#F59E0B', '#D97706'];
-        case 'MEDIUM':
-          return ['#3B82F6', '#2563EB'];
-        case 'LOW':
-          return ['#10B981', '#059669'];
-        default:
-          return ['#10B981', '#059669'];
+          return Colors.success;
       }
     };
 
     const getStatusColor = (status: string) => {
       switch (status) {
         case 'ACTIVE':
-          return '#10B981';
+          return Colors.primary;
         case 'FILLED':
-          return '#6B7280';
+          return Colors.textTertiary;
         case 'CANCELLED':
-          return '#EF4444';
+          return Colors.error;
         default:
-          return '#10B981';
+          return Colors.success;
       }
     };
 
@@ -239,120 +231,97 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
     };
 
     return (
-      <TouchableOpacity 
-        style={styles.enhancedJobCard} 
-        activeOpacity={0.95} 
-        onPress={handleJobPress}>
-        <LinearGradient
-          colors={['#FFFFFF', '#F9FAFB']}
-          style={styles.jobCardGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}>
-          
-          {/* Header with Title and Badges */}
-          <View style={styles.enhancedJobHeader}>
-            <View style={styles.jobTitleContainer}>
-              <View style={styles.jobIconContainer}>
-                <LinearGradient
-                  colors={['#6366F1', '#4F46E5']}
-                  style={styles.jobIconGradient}>
-                  <FontAwesomeIcon icon="briefcase" size={18} color="#FFFFFF" />
-                </LinearGradient>
-              </View>
-              <Text style={styles.enhancedJobTitle} numberOfLines={2}>
-                {job.title}
-              </Text>
-            </View>
-            
-            <View style={styles.badgeContainer}>
+      <TouchableOpacity style={styles.jobCard} activeOpacity={0.9} onPress={handleJobPress}>
+        <View style={styles.jobCardInner}>
+          <View style={styles.jobHeader}>
+            <Text style={styles.jobTitle}>{job.title}</Text>
+            <View style={styles.jobHeaderRight}>
               {job.priority === 'URGENT' && (
-                <LinearGradient
-                  colors={getPriorityGradient(job.priority)}
-                  style={styles.priorityBadgeGradient}>
-                  <FontAwesomeIcon icon="exclamation-circle" size={10} color="#FFFFFF" />
-                  <Text style={styles.priorityTextNew}>{job.priority}</Text>
-                </LinearGradient>
+                <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(job.priority) }]}>
+                  <Text style={styles.priorityText}>{job.priority}</Text>
+                </View>
               )}
-              <View style={[styles.statusBadge, { backgroundColor: getStatusColor(job.status) }]}>
-                <View style={styles.statusDotBadge} />
-                <Text style={styles.statusBadgeText}>{getStatusText(job.status)}</Text>
+              <View style={[styles.jobStatus, { backgroundColor: getStatusColor(job.status) }]}>
+                <Text style={styles.jobStatusText}>{getStatusText(job.status)}</Text>
               </View>
             </View>
           </View>
-
-          {/* Info Grid */}
-          <View style={styles.infoGrid}>
-            <View style={styles.infoItem}>
-              <View style={styles.infoIconWrapper}>
-                <FontAwesomeIcon icon="map-marker-alt" size={14} color="#6366F1" />
+          {(job.description && job.description.trim()) && (
+            <Text style={styles.jobDescription} numberOfLines={3}>
+              {job.description}
+            </Text>
+          )}
+          {job.facilityName && (
+            <View style={styles.jobDetail}>
+              <View style={styles.jobDetailIcon}>
+                <FontAwesomeIcon icon="hospital" size={14} color={Colors.primary} />
               </View>
-              <View style={styles.infoTextContainer}>
-                <Text style={styles.infoLabel}>Location</Text>
-                <Text style={styles.infoValue} numberOfLines={1}>{job.location}</Text>
-              </View>
-            </View>
-
-            <View style={styles.infoItem}>
-              <View style={styles.infoIconWrapper}>
-                <FontAwesomeIcon icon="calendar" size={14} color="#10B981" />
-              </View>
-              <View style={styles.infoTextContainer}>
-                <Text style={styles.infoLabel}>Date</Text>
-                <Text style={styles.infoValue}>{formatDate(job.startDate)}</Text>
-              </View>
-            </View>
-
-            <View style={styles.infoItem}>
-              <View style={styles.infoIconWrapper}>
-                <FontAwesomeIcon icon="clock" size={14} color="#F59E0B" />
-              </View>
-              <View style={styles.infoTextContainer}>
-                <Text style={styles.infoLabel}>Time</Text>
-                <Text style={styles.infoValue}>
-                  {formatTime(job.startTime)} - {formatTime(job.endTime)}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.infoItem}>
-              <View style={styles.infoIconWrapper}>
-                <FontAwesomeIcon icon="building" size={14} color="#8B5CF6" />
-              </View>
-              <View style={styles.infoTextContainer}>
-                <Text style={styles.infoLabel}>Department</Text>
-                <Text style={styles.infoValue} numberOfLines={1}>{job.department}</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Specialization Tag if exists */}
-          {job.specialization && (
-            <View style={styles.specializationContainer}>
-              <View style={styles.specializationTag}>
-                <FontAwesomeIcon icon="stethoscope" size={12} color="#6366F1" />
-                <Text style={styles.specializationText}>{job.specialization}</Text>
-              </View>
+              <Text style={styles.jobDetailText}>{job.facilityName}</Text>
             </View>
           )}
-
-          {/* Footer with Pay Rate and Action */}
-          <View style={styles.enhancedJobFooter}>
-            <LinearGradient
-              colors={['#10B981', '#059669']}
-              style={styles.payRateContainer}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}>
-              <FontAwesomeIcon icon="rupee-sign" size={16} color="#FFFFFF" />
-              <Text style={styles.payRateAmount}>{job.hourlyRate}</Text>
-              <Text style={styles.payRatePeriod}>/hour</Text>
-            </LinearGradient>
-            
-            <View style={styles.viewDetailsButton}>
-              <Text style={styles.viewDetailsText}>View Details</Text>
-              <FontAwesomeIcon icon="arrow-right" size={12} color="#6366F1" />
+          <View style={styles.jobDetails}>
+            <View style={styles.jobDetail}>
+              <View style={styles.jobDetailIcon}>
+                <FontAwesomeIcon icon="map-marker-alt" size={14} color={Colors.primary} />
+              </View>
+              <Text style={styles.jobDetailText}>{job.location}</Text>
+            </View>
+            <View style={styles.jobDetail}>
+              <View style={styles.jobDetailIcon}>
+                <FontAwesomeIcon icon="clock" size={14} color={Colors.primary} />
+              </View>
+              <Text style={styles.jobDetailText}>
+                {formatDate(job.startDate)} at {formatTime(job.startTime)}
+              </Text>
+            </View>
+            <View style={styles.jobDetail}>
+              <View style={styles.jobDetailIcon}>
+                <FontAwesomeIcon icon="building" size={14} color={Colors.primary} />
+              </View>
+              <Text style={styles.jobDetailText}>{job.department}</Text>
+            </View>
+            {job.specialization && (
+              <View style={styles.jobDetail}>
+                <View style={styles.jobDetailIcon}>
+                  <FontAwesomeIcon icon="stethoscope" size={14} color={Colors.primary} />
+                </View>
+                <Text style={styles.jobDetailText}>{job.specialization}</Text>
+              </View>
+            )}
+            {job.facilityAddress && (
+              <View style={styles.jobDetail}>
+                <View style={styles.jobDetailIcon}>
+                  <FontAwesomeIcon icon="map-pin" size={14} color={Colors.primary} />
+                </View>
+                <Text style={styles.jobDetailText}>
+                  {job.facilityAddress.street}, {job.facilityAddress.city}
+                </Text>
+              </View>
+            )}
+            {job.hourlyRate && (
+              <View style={styles.jobDetail}>
+                <View style={styles.jobDetailIcon}>
+                  <FontAwesomeIcon icon="rupee-sign" size={14} color={Colors.success} />
+                </View>
+                <Text style={styles.jobDetailText}>
+                  ₹{job.hourlyRate}/hour
+                </Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.jobCardFooter}>
+            <View style={styles.jobDurationContainer}>
+              <Text style={styles.jobDuration}>
+                {formatTime(job.startTime)} - {formatTime(job.endTime)}
+              </Text>
+            </View>
+            <View style={styles.jobFooterRight}>
+              <Text style={styles.jobDate}>
+                {formatDate(job.startDate)}
+              </Text>
             </View>
           </View>
-        </LinearGradient>
+        </View>
       </TouchableOpacity>
     );
   };
@@ -361,17 +330,17 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
     const getAssignmentStatusColor = (status: string) => {
       switch (status) {
         case 'ACCEPTED':
-          return ['#10B981', '#059669'];
+          return Colors.primary;
         case 'PENDING':
-          return ['#F59E0B', '#D97706'];
+          return Colors.warning;
         case 'COMPLETED':
-          return ['#3B82F6', '#2563EB'];
+          return Colors.info;
         case 'CANCELLED':
-          return ['#EF4444', '#DC2626'];
+          return Colors.error;
         case 'REJECTED':
-          return ['#6B7280', '#4B5563'];
+          return Colors.textTertiary;
         default:
-          return ['#3B82F6', '#2563EB'];
+          return Colors.info;
       }
     };
 
@@ -392,160 +361,62 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
       }
     };
 
-    const getStatusIcon = (status: string) => {
-      switch (status) {
-        case 'ACCEPTED':
-          return 'check-circle';
-        case 'PENDING':
-          return 'clock';
-        case 'COMPLETED':
-          return 'check';
-        case 'CANCELLED':
-          return 'times';
-        case 'REJECTED':
-          return 'ban';
-        default:
-          return 'check-circle';
-      }
-    };
-
-    const getProgressPercentage = (status: string) => {
-      switch (status) {
-        case 'ACCEPTED':
-          return 40;
-        case 'PENDING':
-          return 20;
-        case 'COMPLETED':
-          return 100;
-        case 'CANCELLED':
-          return 0;
-        case 'REJECTED':
-          return 0;
-        default:
-          return 40;
-      }
-    };
-
     const handleAssignmentPress = () => {
-      (navigation as any).navigate('CheckInOut', { assignmentId: assignment.id });
+      if (assignment.status === 'ASSIGNED' || assignment.status === 'IN_PROGRESS') {
+        (navigation as any).navigate('CheckInOut', { assignmentId: assignment.id });
+      } else {
+        (navigation as any).navigate('AssignmentDetails', { assignmentId: assignment.id });
+      }
     };
-
-    const progress = getProgressPercentage(assignment.status);
 
     return (
-      <TouchableOpacity 
-        style={styles.enhancedAssignmentCard} 
-        activeOpacity={0.95} 
-        onPress={handleAssignmentPress}>
-        <LinearGradient
-          colors={['#FFFFFF', '#F9FAFB']}
-          style={styles.assignmentCardGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}>
-          
-          {/* Header */}
-          <View style={styles.enhancedAssignmentHeader}>
-            <View style={styles.assignmentTitleContainer}>
-              <View style={styles.assignmentIconContainer}>
-                <LinearGradient
-                  colors={getAssignmentStatusColor(assignment.status)}
-                  style={styles.assignmentIconGradient}>
-                  <FontAwesomeIcon icon={getStatusIcon(assignment.status)} size={18} color="#FFFFFF" />
-                </LinearGradient>
-              </View>
-              <View style={styles.assignmentTitleTextContainer}>
-                <Text style={styles.enhancedAssignmentTitle} numberOfLines={2}>
-                  {assignment.job?.title || 'Unknown Job'}
-                </Text>
-                <Text style={styles.assignmentSubtitle}>
-                  Assignment #{assignment.id.toString().slice(0, 8)}
-                </Text>
-              </View>
-            </View>
-            
-            <LinearGradient
-              colors={getAssignmentStatusColor(assignment.status)}
-              style={styles.assignmentStatusBadge}>
-              <Text style={styles.assignmentStatusBadgeText}>
-                {getAssignmentStatusText(assignment.status)}
-              </Text>
-            </LinearGradient>
-          </View>
-
-          {/* Progress Bar */}
-          <View style={styles.progressSection}>
-            <View style={styles.progressBarContainer}>
-              <View style={styles.progressBarBg}>
-                <LinearGradient
-                  colors={getAssignmentStatusColor(assignment.status)}
-                  style={[styles.progressBarFill, { width: `${progress}%` }]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}>
-                  <View style={styles.progressShine} />
-                </LinearGradient>
-              </View>
-            </View>
-            <Text style={styles.progressPercentage}>{progress}%</Text>
-          </View>
-
-          {/* Info Cards */}
-          <View style={styles.assignmentInfoGrid}>
-            <View style={styles.assignmentInfoCard}>
-              <View style={[styles.assignmentInfoIcon, { backgroundColor: '#EEF2FF' }]}>
-                <FontAwesomeIcon icon="map-marker-alt" size={16} color="#6366F1" />
-              </View>
-              <Text style={styles.assignmentInfoLabel}>Location</Text>
-              <Text style={styles.assignmentInfoValue} numberOfLines={1}>
-                {assignment.job?.location || 'Unknown Location'}
-              </Text>
-            </View>
-
-            <View style={styles.assignmentInfoCard}>
-              <View style={[styles.assignmentInfoIcon, { backgroundColor: '#F0FDF4' }]}>
-                <FontAwesomeIcon icon="calendar-check" size={16} color="#10B981" />
-              </View>
-              <Text style={styles.assignmentInfoLabel}>Schedule</Text>
-              <Text style={styles.assignmentInfoValue} numberOfLines={1}>
-                {assignment.job ? formatDate(assignment.job.startDate) : 'N/A'}
-              </Text>
-            </View>
-
-            <View style={styles.assignmentInfoCard}>
-              <View style={[styles.assignmentInfoIcon, { backgroundColor: '#FFF7ED' }]}>
-                <FontAwesomeIcon icon="clock" size={16} color="#F59E0B" />
-              </View>
-              <Text style={styles.assignmentInfoLabel}>Time</Text>
-              <Text style={styles.assignmentInfoValue} numberOfLines={1}>
-                {assignment.job ? formatTime(assignment.job.startTime) : 'N/A'}
-              </Text>
-            </View>
-
-            <View style={styles.assignmentInfoCard}>
-              <View style={[styles.assignmentInfoIcon, { backgroundColor: '#ECFDF5' }]}>
-                <FontAwesomeIcon icon="rupee-sign" size={16} color="#10B981" />
-              </View>
-              <Text style={styles.assignmentInfoLabel}>Rate</Text>
-              <Text style={styles.assignmentInfoValue}>
-                ₹{assignment.hourlyRate || assignment.job?.hourlyRate || 0}/hr
-              </Text>
+      <TouchableOpacity style={styles.assignmentCard} activeOpacity={0.9} onPress={handleAssignmentPress}>
+        <View style={styles.assignmentCardInner}>
+          <View style={styles.assignmentHeader}>
+            <Text style={styles.assignmentTitle}>{assignment.job?.title || 'Unknown Job'}</Text>
+            <View style={[styles.assignmentStatus, { backgroundColor: getAssignmentStatusColor(assignment.status) }]}>
+              <Text style={styles.assignmentStatusText}>{getAssignmentStatusText(assignment.status)}</Text>
             </View>
           </View>
-
-          {/* Footer Action */}
-          {assignment.status === 'ACCEPTED' && (
-            <View style={styles.assignmentFooterAction}>
-              <LinearGradient
-                colors={['#6366F1', '#4F46E5']}
-                style={styles.checkInButton}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}>
-                <FontAwesomeIcon icon="fingerprint" size={16} color="#FFFFFF" />
-                <Text style={styles.checkInButtonText}>Check In / Check Out</Text>
-                <FontAwesomeIcon icon="arrow-right" size={14} color="#FFFFFF" />
-              </LinearGradient>
+          <View style={styles.assignmentDetails}>
+            <View style={styles.assignmentDetail}>
+              <View style={styles.assignmentDetailIcon}>
+                <FontAwesomeIcon icon="map-marker-alt" size={14} color={Colors.primary} />
+              </View>
+              <Text style={styles.assignmentDetailText}>{assignment.job?.location || 'Unknown Location'}</Text>
             </View>
-          )}
-        </LinearGradient>
+            <View style={styles.assignmentDetail}>
+              <View style={styles.assignmentDetailIcon}>
+                <FontAwesomeIcon icon="clock" size={14} color={Colors.primary} />
+              </View>
+              <Text style={styles.assignmentDetailText}>
+                {assignment.job ? `${formatDate(assignment.job.startDate)} at ${formatTime(assignment.job.startTime)}` : 'Date not available'}
+              </Text>
+            </View>
+            <View style={styles.assignmentDetail}>
+              <View style={styles.assignmentDetailIcon}>
+                <FontAwesomeIcon icon="rupee-sign" size={14} color={Colors.success} />
+              </View>
+              <Text style={styles.assignmentDetailText}>{assignment.hourlyRate || assignment.job?.hourlyRate || 0}/hour</Text>
+            </View>
+          </View>
+          <View style={styles.assignmentCardFooter}>
+            <View style={styles.assignmentProgress}>
+              <View style={styles.progressBar}>
+                <View style={[styles.progressFill, { width: assignment.status === 'COMPLETED' ? '100%' : '75%' }]} />
+              </View>
+              <Text style={styles.progressText}>
+                {assignment.status === 'COMPLETED' ? '100% Complete' : '75% Complete'}
+              </Text>
+            </View>
+            {(assignment.status === 'ASSIGNED' || assignment.status === 'IN_PROGRESS') && (
+              <View style={styles.assignmentAction}>
+                <FontAwesomeIcon icon="check-circle" size={16} color={Colors.primary} />
+                <Text style={styles.assignmentActionText}>Check In/Out</Text>
+              </View>
+            )}
+          </View>
+        </View>
       </TouchableOpacity>
     );
   };
@@ -636,32 +507,37 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
             snapToInterval={182}
             snapToAlignment="start">
             <QuickActionHorizontal
+              icon="calendar-check"
+              title="Job Assignments"
+              subtitle={`${myAssignments.length} Active`}
+              onPress={() => navigation.navigate('Assignments' as never)}
+              gradient={['#6366F1', '#4F46E5']}
+              iconColor="#4F46E5"
+            />
+            {/* <QuickActionHorizontal
               icon="briefcase"
               title="Job Assignments"
               subtitle={`${availableJobs.length} Available`}
-              onPress={() => navigation.navigate('Assignments' as never)}
-              gradient={['#6366F1', '#4F46E5']}
-            />
-            <QuickActionHorizontal
-              icon="calendar-check"
-              title="My Jobs"
-              subtitle={`${myAssignments.length} Active`}
               onPress={() => navigation.navigate('MyAssignments' as never)}
               gradient={['#10B981', '#059669']}
-            />
-            <QuickActionHorizontal
-              icon="clock"
-              title="Check In/Out"
-              subtitle="Track Time"
-              onPress={() => (navigation as any).navigate('CheckInOut')}
-              gradient={['#F59E0B', '#D97706']}
-            />
+            /> */}
+            {myAssignments && myAssignments.length > 0 && (
+              <QuickActionHorizontal
+                icon="clock"
+                title="Check In/Out"
+                subtitle={`${myAssignments.filter(a => a.status === 'ASSIGNED' || a.status === 'IN_PROGRESS').length} Active`}
+                onPress={() => (navigation as any).navigate('CheckInOut')}
+                gradient={['#F59E0B', '#D97706']}
+                iconColor="#D97706"
+              />
+            )}
             <QuickActionHorizontal
               icon="chart-line"
               title="Reports"
               subtitle="View Stats"
               onPress={() => navigation.navigate('Reports' as never)}
               gradient={['#8B5CF6', '#7C3AED']}
+              iconColor="#7C3AED"
             />
             <QuickActionHorizontal
               icon="user-md"
@@ -669,18 +545,26 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
               subtitle="Settings"
               onPress={() => navigation.navigate('Profile' as never)}
               gradient={['#EC4899', '#DB2777']}
+              iconColor="#DB2777"
             />
           </ScrollView>
         </View>
 
         {/* Available Jobs */}
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Job Assignments</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Assignments' as never)}>
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
+          {(() => {
+            console.log('🎯 Rendering Job Assignments section');
+            console.log('🎯 availableJobs array:', availableJobs);
+            console.log('🎯 availableJobs length:', availableJobs?.length);
+            console.log('🎯 availableJobs type:', typeof availableJobs);
+            return null;
+          })()}
           {availableJobs && availableJobs.length > 0 ? (
             availableJobs.slice(0, 3).map((job) => (
               <JobCard key={job.id} job={job} />
@@ -691,12 +575,12 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
               <Text style={styles.emptyStateText}>No available jobs at the moment</Text>
             </View>
           )}
-        </View>
+        </View> */}
 
         {/* My Assignments */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>My Assignments</Text>
+            <Text style={styles.sectionTitle}>Job Assignments</Text>
             <TouchableOpacity onPress={() => navigation.navigate('MyAssignments' as never)}>
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
@@ -915,6 +799,9 @@ const styles = StyleSheet.create({
     padding: 20,
     justifyContent: 'space-between',
     position: 'relative',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DADADA',
   },
   quickActionContent: {
     flex: 1,
@@ -927,28 +814,25 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: '#F5F5F5',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
   },
   quickActionHorizontalTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.textPrimary,
     marginBottom: 4,
     letterSpacing: -0.3,
-    textShadowColor: 'rgba(0, 0, 0, 0.15)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
   },
   quickActionHorizontalSubtitle: {
     fontSize: 13,
     fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: Colors.textSecondary,
     letterSpacing: 0.2,
   },
   quickActionArrow: {
@@ -958,7 +842,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: '#F5F5F5',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1095,6 +979,14 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.xs,
     textAlignVertical: 'center',
     lineHeight: 20,
+  },
+  jobDurationContainer: {
+    flex: 1,
+  },
+  jobDate: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+    fontWeight: Typography.fontWeight.medium,
   },
   assignmentCard: {
     backgroundColor: Colors.white,
@@ -1244,383 +1136,6 @@ const styles = StyleSheet.create({
     color: Colors.textTertiary,
     marginTop: Spacing.md,
     textAlign: 'center',
-  },
-
-  // Enhanced Job Card Styles
-  enhancedJobCard: {
-    marginBottom: 16,
-    marginHorizontal: 2,
-    shadowColor: '#1C2A3A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 10,
-    borderRadius: 24,
-    overflow: 'hidden',
-  },
-  jobCardGradient: {
-    borderRadius: 24,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.1)',
-  },
-  enhancedJobHeader: {
-    marginBottom: 20,
-  },
-  jobTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  jobIconContainer: {
-    marginRight: 12,
-  },
-  jobIconGradient: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  enhancedJobTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1F2937',
-    flex: 1,
-    lineHeight: 24,
-  },
-  badgeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  priorityBadgeGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    gap: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  priorityTextNew: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    gap: 4,
-  },
-  statusDotBadge: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#FFFFFF',
-  },
-  statusBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  infoGrid: {
-    gap: 12,
-    marginBottom: 16,
-  },
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  infoIconWrapper: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  infoTextContainer: {
-    flex: 1,
-  },
-  infoLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#6B7280',
-    marginBottom: 2,
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
-  infoValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1F2937',
-  },
-  specializationContainer: {
-    marginBottom: 16,
-  },
-  specializationTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: '#EEF2FF',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: '#C7D2FE',
-  },
-  specializationText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6366F1',
-  },
-  enhancedJobFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    paddingTop: 16,
-  },
-  payRateContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 6,
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  payRateAmount: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  payRatePeriod: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.9)',
-  },
-  viewDetailsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  viewDetailsText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6366F1',
-  },
-
-  // Enhanced Assignment Card Styles
-  enhancedAssignmentCard: {
-    marginBottom: 16,
-    marginHorizontal: 2,
-    shadowColor: '#1C2A3A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 10,
-    borderRadius: 24,
-    overflow: 'hidden',
-  },
-  assignmentCardGradient: {
-    borderRadius: 24,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.1)',
-  },
-  enhancedAssignmentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  },
-  assignmentTitleContainer: {
-    flexDirection: 'row',
-    flex: 1,
-    marginRight: 12,
-  },
-  assignmentIconContainer: {
-    marginRight: 12,
-  },
-  assignmentIconGradient: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  assignmentTitleTextContainer: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  enhancedAssignmentTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1F2937',
-    lineHeight: 22,
-    marginBottom: 4,
-  },
-  assignmentSubtitle: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#6B7280',
-  },
-  assignmentStatusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  assignmentStatusBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
-  },
-  progressSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-    gap: 12,
-  },
-  progressBarContainer: {
-    flex: 1,
-  },
-  progressBarBg: {
-    height: 8,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: 4,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  progressShine: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
-  },
-  progressPercentage: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1F2937',
-    minWidth: 45,
-    textAlign: 'right',
-  },
-  assignmentInfoGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 16,
-  },
-  assignmentInfoCard: {
-    flex: 1,
-    minWidth: '47%',
-    backgroundColor: '#FFFFFF',
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  assignmentInfoIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  assignmentInfoLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#6B7280',
-    marginBottom: 4,
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
-  assignmentInfoValue: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  assignmentFooterAction: {
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    paddingTop: 16,
-  },
-  checkInButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 14,
-    gap: 10,
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  checkInButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: 0.3,
   },
 });
 
