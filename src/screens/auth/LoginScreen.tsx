@@ -7,9 +7,6 @@ import {
   StyleSheet,
   Image,
   Dimensions,
-  Platform,
-  KeyboardAvoidingView,
-  ScrollView,
   SafeAreaView,
   Alert,
   ActivityIndicator,
@@ -114,125 +111,120 @@ const LoginScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}>
-        <TouchableWithoutFeedback onPress={dismissKeyboard}>
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled">
-            
-            {/* Logo Section */}
-            <View style={styles.logoContainer}>
-              <View style={styles.logoPlaceholder}>
-                <View style={styles.logoWrapper}>
-                  <Image 
-                    source={require('../../assets/logo.png')} 
-                    style={styles.logo}
-                    resizeMode="cover"
-                  />
-                </View>
-                <Text style={styles.logoText}>Locum</Text>
-                <Text style={styles.logoSubtext}>(On Demand)</Text>
-                <Text style={styles.logoSubtext2}>Clinical Professionals</Text>
+      <TouchableWithoutFeedback onPress={dismissKeyboard}>
+        <View style={styles.content}>
+          {/* Top Spacer */}
+          <View style={styles.topSpacer} />
+          
+          {/* Logo Section */}
+          <View style={styles.logoContainer}>
+            <View style={styles.logoPlaceholder}>
+              <View style={styles.logoWrapper}>
+                <Image 
+                  source={require('../../assets/logo.png')} 
+                  style={styles.logo}
+                  resizeMode="cover"
+                />
+              </View>
+              <Text style={styles.logoText}>Locum</Text>
+              <Text style={styles.logoSubtext}>(On Demand)</Text>
+              <Text style={styles.logoSubtext2}>Clinical Professionals</Text>
+            </View>
+          </View>
+
+          {/* Welcome Card */}
+          <View style={styles.card}>
+            <Text style={styles.welcomeText}>Welcome Back!</Text>
+            <Text style={styles.subtitleText}>Sign in to continue</Text>
+
+            {/* Email Input */}
+            <View style={styles.inputContainer}>
+              <View style={styles.inputWrapper}>
+                <FontAwesomeIcon icon="envelope" size={18} color={Colors.textTertiary} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email Address"
+                  placeholderTextColor={Colors.textTertiary}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="next"
+                />
               </View>
             </View>
 
-            {/* Welcome Card */}
-            <View style={styles.card}>
-              <Text style={styles.welcomeText}>Welcome Back!</Text>
-              <Text style={styles.subtitleText}>Sign in to continue</Text>
-
-              {/* Email Input */}
-              <View style={styles.inputContainer}>
-                <View style={styles.inputWrapper}>
-                  <FontAwesomeIcon icon="envelope" size={18} color={Colors.textTertiary} style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Email Address"
-                    placeholderTextColor={Colors.textTertiary}
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    returnKeyType="next"
+            {/* Password Input */}
+            <View style={styles.inputContainer}>
+              <View style={styles.inputWrapper}>
+                <FontAwesomeIcon icon="lock" size={18} color={Colors.textTertiary} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  placeholderTextColor={Colors.textTertiary}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="done"
+                  onSubmitEditing={handleLogin}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.eyeIcon}>
+                  <FontAwesomeIcon
+                    icon={showPassword ? "eye-slash" : "eye"}
+                    size={18}
+                    color={Colors.textTertiary}
                   />
-                </View>
+                </TouchableOpacity>
               </View>
-
-              {/* Password Input */}
-              <View style={styles.inputContainer}>
-                <View style={styles.inputWrapper}>
-                  <FontAwesomeIcon icon="lock" size={18} color={Colors.textTertiary} style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Password"
-                    placeholderTextColor={Colors.textTertiary}
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    returnKeyType="done"
-                    onSubmitEditing={handleLogin}
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowPassword(!showPassword)}
-                    style={styles.eyeIcon}>
-                    <FontAwesomeIcon
-                      icon={showPassword ? "eye-slash" : "eye"}
-                      size={18}
-                      color={Colors.textTertiary}
-                    />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {/* Sign In Button */}
-              <TouchableOpacity
-                style={[styles.signInButton, isLoading && styles.signInButtonDisabled]}
-                onPress={handleLogin}
-                disabled={isLoading}>
-                {isLoading ? (
-                  <ActivityIndicator color={Colors.white} />
-                ) : (
-                  <Text style={styles.signInButtonText}>Sign In</Text>
-                )}
-              </TouchableOpacity>
-
-              {retryMessage ? (
-                <Text style={styles.retryMessage}>{retryMessage}</Text>
-              ) : null}
-
             </View>
 
-            {/* Don't have account - Outside Card */}
+            {/* Sign In Button */}
             <TouchableOpacity
-              style={styles.accountLinkContainer}
-              onPress={navigateToRegister}>
-              <Text style={styles.accountLinkText}>
-                Don't have an account?{' '}
-                <Text style={styles.signUpLink}>Sign Up</Text>
-              </Text>
+              style={[styles.signInButton, isLoading && styles.signInButtonDisabled]}
+              onPress={handleLogin}
+              disabled={isLoading}>
+              {isLoading ? (
+                <ActivityIndicator color={Colors.white} />
+              ) : (
+                <Text style={styles.signInButtonText}>Sign In</Text>
+              )}
             </TouchableOpacity>
 
-            {/* Spacer for powered by */}
-            <View style={styles.spacer} />
-          </ScrollView>
-        </TouchableWithoutFeedback>
+            {retryMessage ? (
+              <Text style={styles.retryMessage}>{retryMessage}</Text>
+            ) : null}
 
-        {/* Powered By Section - Bottom Right Corner */}
-        <View style={styles.poweredByContainer}>
-          <Text style={styles.poweredByText}>Powered by</Text>
-          <Image
-            source={require('../../assets/footer_logo.png')}
-            style={styles.companyLogo}
-            resizeMode="contain"
-          />
+          </View>
+
+          {/* Don't have account - Outside Card */}
+          <View style={styles.accountLinkContainer}>
+            <Text style={styles.accountLinkText}>
+              Don't have an account?{' '}
+            </Text>
+            <TouchableOpacity onPress={navigateToRegister}>
+              <Text style={styles.signUpLink}>Sign Up</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Bottom Spacer */}
+          <View style={styles.bottomSpacer} />
         </View>
-      </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
+
+      {/* Powered By Section - Fixed at bottom */}
+      <View style={styles.poweredByContainer}>
+        <Text style={styles.poweredByText}>Powered by</Text>
+        <Image
+          source={require('../../assets/footer_logo.png')}
+          style={styles.companyLogo}
+          resizeMode="contain"
+        />
+      </View>
     </SafeAreaView>
   );
 };
@@ -242,15 +234,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F5F5',
   },
-  keyboardView: {
+  content: {
     flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
     paddingHorizontal: width * 0.05,
-    paddingTop: height * 0.08,
-    paddingBottom: height * 0.15, // Add bottom padding for footer
-    justifyContent: 'center',
+  },
+  topSpacer: {
+    flex: 0.3,
+  },
+  bottomSpacer: {
+    flex: 0.4,
   },
   logoContainer: {
     alignItems: 'center',
@@ -282,18 +274,20 @@ const styles = StyleSheet.create({
   },
   logoText: {
     fontSize: width * 0.07,
-    fontWeight: Typography.fontWeight.bold,
+    fontFamily: Typography.fontFamily.bold, // DM Sans Bold
     color: Colors.primary,
     letterSpacing: 1,
     marginTop: 3,
   },
   logoSubtext: {
     fontSize: width * 0.035,
+    fontFamily: Typography.fontFamily.regular, // DM Sans Regular
     color: Colors.textSecondary,
     marginTop: 1,
   },
   logoSubtext2: {
     fontSize: width * 0.035,
+    fontFamily: Typography.fontFamily.regular, // DM Sans Regular
     color: Colors.textSecondary,
     marginTop: 1,
   },
@@ -308,13 +302,14 @@ const styles = StyleSheet.create({
   },
   welcomeText: {
     fontSize: width * 0.065,
-    fontWeight: Typography.fontWeight.bold,
+    fontFamily: Typography.fontFamily.bold, // DM Sans Bold for headers
     color: Colors.textPrimary,
     marginBottom: 8,
     textAlign: 'center',
   },
   subtitleText: {
     fontSize: width * 0.04,
+    fontFamily: Typography.fontFamily.regular, // DM Sans Regular for subtitles
     color: Colors.textSecondary,
     textAlign: 'center',
     marginBottom: height * 0.03,
@@ -339,6 +334,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular, // DM Sans Regular for input text
     color: Colors.textPrimary,
     paddingVertical: 0,
   },
@@ -361,47 +357,34 @@ const styles = StyleSheet.create({
   signInButtonText: {
     color: Colors.white,
     fontSize: width * 0.045,
-    fontWeight: Typography.fontWeight.bold,
+    fontFamily: Typography.fontFamily.medium, // DM Sans Medium for button text
+    fontWeight: Typography.fontWeight.medium,
   },
   retryMessage: {
     fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular, // DM Sans Regular
     color: Colors.warning,
     textAlign: 'center',
     marginTop: Spacing.sm,
     fontStyle: 'italic',
   },
-  divider: {
+  accountLinkContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: height * 0.02,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.border,
-  },
-  dividerText: {
-    marginHorizontal: Spacing.md,
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textTertiary,
-  },
-  accountLinkContainer: {
-    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 12,
     marginTop: 16,
     marginHorizontal: width * 0.08,
   },
   accountLinkText: {
     fontSize: width * 0.035,
-    color: Colors.textSecondary,
+    fontFamily: Typography.fontFamily.regular, // DM Sans Regular
+    color: '#000000',
   },
   signUpLink: {
     color: Colors.primary,
-    fontWeight: Typography.fontWeight.bold,
-  },
-  spacer: {
-    flex: 1,
-    minHeight: height * 0.05,
+    fontFamily: Typography.fontFamily.medium, // DM Sans Medium
+    fontWeight: Typography.fontWeight.medium,
   },
   poweredByContainer: {
     position: 'absolute',
@@ -409,12 +392,12 @@ const styles = StyleSheet.create({
     right: IS_VERY_SMALL_DEVICE ? width * 0.03 : width * 0.02,
     flexDirection: 'row',
     alignItems: 'center',
-    maxWidth: width * 0.4, // Prevent overflow on small screens
+    maxWidth: width * 0.4,
   },
   poweredByText: {
     fontSize: IS_VERY_SMALL_DEVICE ? width * 0.025 : width * 0.03,
+    fontFamily: Typography.fontFamily.medium, // DM Sans Medium
     color: '#000000',
-    fontWeight: '600',
     marginRight: IS_VERY_SMALL_DEVICE ? -15 : -25,
   },
   companyLogo: {
