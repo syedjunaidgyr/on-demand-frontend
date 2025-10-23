@@ -19,6 +19,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { FontAwesomeIcon } from '../../utils/icons';
 
 import { Colors } from '../../constants/colors';
+import { Typography } from '../../constants/typography';
 import ApiService from '../../services/api';
 
 // Move InputField outside to prevent re-creation on each render
@@ -32,6 +33,7 @@ const InputField = ({
   icon,
   showEye = false,
   onToggleEye,
+  error,
 }: {
   label: string;
   value: string;
@@ -42,11 +44,12 @@ const InputField = ({
   icon: any;
   showEye?: boolean;
   onToggleEye?: () => void;
+  error?: string;
 }) => (
   <View style={styles.inputContainer}>
     <Text style={styles.inputLabel}>{label}</Text>
-    <View style={styles.inputWrapper}>
-      <FontAwesomeIcon icon={icon} size={20} color={Colors.textTertiary} style={styles.inputIcon} />
+    <View style={[styles.inputWrapper, error && styles.inputWrapperError]}>
+      <FontAwesomeIcon icon={icon} size={20} color={error ? Colors.error : Colors.textTertiary} style={styles.inputIcon} />
       <TextInput
         style={styles.textInput}
         placeholder={placeholder}
@@ -74,6 +77,7 @@ const InputField = ({
         </TouchableOpacity>
       )}
     </View>
+    {error && <Text style={styles.errorText}>{error}</Text>}
   </View>
 );
 
@@ -86,7 +90,8 @@ const HospitalDropdown = ({
   items, 
   placeholder, 
   loading, 
-  styles 
+  styles,
+  error
 }: {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -96,6 +101,7 @@ const HospitalDropdown = ({
   placeholder: string;
   loading: boolean;
   styles: any;
+  error?: string;
 }) => (
   <View style={styles.inputContainer}>
     <Text style={styles.inputLabel}>Hospital</Text>
@@ -107,7 +113,7 @@ const HospitalDropdown = ({
       setValue={setValue}
       placeholder={placeholder}
       loading={loading}
-      style={styles.dropdownStyle}
+      style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
       textStyle={styles.dropdownTextStyle}
       placeholderStyle={styles.dropdownPlaceholderStyle}
       dropDownContainerStyle={styles.dropdownContainerStyle}
@@ -118,6 +124,7 @@ const HospitalDropdown = ({
       zIndex={4000}
       zIndexInverse={1000}
     />
+    {error && <Text style={styles.errorText}>{error}</Text>}
   </View>
 );
 
@@ -130,7 +137,8 @@ const UnitDropdown = ({
   placeholder, 
   loading, 
   disabled,
-  styles 
+  styles,
+  error
 }: {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -141,6 +149,7 @@ const UnitDropdown = ({
   loading: boolean;
   disabled: boolean;
   styles: any;
+  error?: string;
 }) => (
   <View style={styles.inputContainer}>
     <Text style={styles.inputLabel}>Unit/Department</Text>
@@ -153,7 +162,7 @@ const UnitDropdown = ({
       placeholder={placeholder}
       loading={loading}
       disabled={disabled}
-      style={styles.dropdownStyle}
+      style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
       textStyle={styles.dropdownTextStyle}
       placeholderStyle={styles.dropdownPlaceholderStyle}
       dropDownContainerStyle={styles.dropdownContainerStyle}
@@ -164,6 +173,7 @@ const UnitDropdown = ({
       zIndex={3000}
       zIndexInverse={2000}
     />
+    {error && <Text style={styles.errorText}>{error}</Text>}
   </View>
 );
 
@@ -174,7 +184,8 @@ const DepartmentDropdown = ({
   setValue, 
   items, 
   placeholder, 
-  styles 
+  styles,
+  error
 }: {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -183,6 +194,7 @@ const DepartmentDropdown = ({
   items: Array<{label: string, value: string}>;
   placeholder: string;
   styles: any;
+  error?: string;
 }) => (
   <View style={styles.inputContainer}>
     <Text style={styles.inputLabel}>Department</Text>
@@ -193,7 +205,7 @@ const DepartmentDropdown = ({
       setOpen={setOpen}
       setValue={setValue}
       placeholder={placeholder}
-      style={styles.dropdownStyle}
+      style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
       textStyle={styles.dropdownTextStyle}
       placeholderStyle={styles.dropdownPlaceholderStyle}
       dropDownContainerStyle={styles.dropdownContainerStyle}
@@ -204,6 +216,7 @@ const DepartmentDropdown = ({
       zIndex={2000}
       zIndexInverse={3000}
     />
+    {error && <Text style={styles.errorText}>{error}</Text>}
   </View>
 );
 
@@ -214,7 +227,8 @@ const SpecializationDropdown = ({
   setValue, 
   items, 
   placeholder, 
-  styles 
+  styles,
+  error
 }: {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -223,6 +237,7 @@ const SpecializationDropdown = ({
   items: Array<{label: string, value: string}>;
   placeholder: string;
   styles: any;
+  error?: string;
 }) => (
   <View style={styles.inputContainer}>
     <Text style={styles.inputLabel}>Specialization</Text>
@@ -233,7 +248,7 @@ const SpecializationDropdown = ({
       setOpen={setOpen}
       setValue={setValue}
       placeholder={placeholder}
-      style={styles.dropdownStyle}
+      style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
       textStyle={styles.dropdownTextStyle}
       placeholderStyle={styles.dropdownPlaceholderStyle}
       dropDownContainerStyle={styles.dropdownContainerStyle}
@@ -244,6 +259,139 @@ const SpecializationDropdown = ({
       zIndex={1000}
       zIndexInverse={4000}
     />
+    {error && <Text style={styles.errorText}>{error}</Text>}
+  </View>
+);
+
+const RelationshipDropdown = ({ 
+  open, 
+  setOpen, 
+  value, 
+  setValue, 
+  items, 
+  placeholder, 
+  styles,
+  error
+}: {
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  value: string;
+  setValue: (callback: (prev: string) => string) => void;
+  items: Array<{label: string, value: string}>;
+  placeholder: string;
+  styles: any;
+  error?: string;
+}) => (
+  <View style={styles.inputContainer}>
+    <Text style={styles.inputLabel}>Relationship</Text>
+    <DropDownPicker
+      open={open}
+      value={value}
+      items={items}
+      setOpen={setOpen}
+      setValue={setValue}
+      placeholder={placeholder}
+      style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
+      textStyle={styles.dropdownTextStyle}
+      placeholderStyle={[styles.dropdownPlaceholderStyle, styles.relationshipPlaceholderStyle]}
+      dropDownContainerStyle={styles.dropdownContainerStyle}
+      listItemLabelStyle={styles.dropdownListItemStyle}
+      closeAfterSelecting={true}
+      searchable={false}
+      listMode="SCROLLVIEW"
+      zIndex={500}
+      zIndexInverse={5000}
+    />
+    {error && <Text style={styles.errorText}>{error}</Text>}
+  </View>
+);
+
+const StateDropdown = ({ 
+  open, 
+  setOpen, 
+  value, 
+  setValue, 
+  items, 
+  placeholder, 
+  styles,
+  error
+}: {
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  value: string;
+  setValue: (callback: (prev: string) => string) => void;
+  items: Array<{label: string, value: string}>;
+  placeholder: string;
+  styles: any;
+  error?: string;
+}) => (
+  <View style={styles.inputContainer}>
+    <Text style={styles.inputLabel}>State</Text>
+    <DropDownPicker
+      open={open}
+      value={value}
+      items={items}
+      setOpen={setOpen}
+      setValue={setValue}
+      placeholder={placeholder}
+      style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
+      textStyle={styles.dropdownTextStyle}
+      placeholderStyle={styles.dropdownPlaceholderStyle}
+      dropDownContainerStyle={styles.dropdownContainerStyle}
+      listItemLabelStyle={styles.dropdownListItemStyle}
+      closeAfterSelecting={true}
+      searchable={false}
+      listMode="SCROLLVIEW"
+      zIndex={400}
+      zIndexInverse={4600}
+    />
+    {error && <Text style={styles.errorText}>{error}</Text>}
+  </View>
+);
+
+const CityDropdown = ({ 
+  open, 
+  setOpen, 
+  value, 
+  setValue, 
+  items, 
+  placeholder, 
+  styles,
+  error,
+  disabled
+}: {
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  value: string;
+  setValue: (callback: (prev: string) => string) => void;
+  items: Array<{label: string, value: string}>;
+  placeholder: string;
+  styles: any;
+  error?: string;
+  disabled?: boolean;
+}) => (
+  <View style={styles.inputContainer}>
+    <Text style={styles.inputLabel}>City</Text>
+    <DropDownPicker
+      open={open}
+      value={value}
+      items={items}
+      setOpen={setOpen}
+      setValue={setValue}
+      placeholder={placeholder}
+      disabled={disabled}
+      style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
+      textStyle={styles.dropdownTextStyle}
+      placeholderStyle={styles.dropdownPlaceholderStyle}
+      dropDownContainerStyle={styles.dropdownContainerStyle}
+      listItemLabelStyle={styles.dropdownListItemStyle}
+      closeAfterSelecting={true}
+      searchable={false}
+      listMode="SCROLLVIEW"
+      zIndex={300}
+      zIndexInverse={4700}
+    />
+    {error && <Text style={styles.errorText}>{error}</Text>}
   </View>
 );
 
@@ -280,11 +428,133 @@ const RegisterScreen: React.FC = () => {
   const [loadingHospitals, setLoadingHospitals] = useState(false);
   const [loadingUnits, setLoadingUnits] = useState(false);
   
+  
+  // Validation errors state
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+  
+  // Validation functions
+  const validateEmail = (email: string) => {
+    if (!email) return 'Email is required';
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return 'Please enter a valid email address';
+    return '';
+  };
+
+  const validatePassword = (password: string) => {
+    if (!password) return 'Password is required';
+    if (password.length < 8) return 'Password must be at least 8 characters long';
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+      return 'Password must contain uppercase, lowercase, and number';
+    }
+    return '';
+  };
+
+  const validateConfirmPassword = (confirmPassword: string, password: string) => {
+    if (!confirmPassword) return 'Please confirm your password';
+    if (password !== confirmPassword) return 'Passwords do not match';
+    return '';
+  };
+
+  const validateName = (name: string, fieldName: string) => {
+    if (!name.trim()) return `${fieldName} is required`;
+    if (name.trim().length < 2) return `${fieldName} must be at least 2 characters long`;
+    return '';
+  };
+
+  const validatePhone = (phone: string) => {
+    if (!phone.trim()) return 'Phone number is required';
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
+      return 'Please enter a valid 10-digit phone number';
+    }
+    return '';
+  };
+
+  const validateLicenseNumber = (licenseNumber: string) => {
+    if (!licenseNumber.trim()) return 'License number is required';
+    if (licenseNumber.trim().length < 5) return 'License number must be at least 5 characters long';
+    return '';
+  };
+
+  const validateLocation = (location: string) => {
+    if (!location.trim()) return 'Location is required';
+    return '';
+  };
+
+  const validateDepartment = (department: string) => {
+    if (!department) return 'Please select your department';
+    return '';
+  };
+
+  const validateSpecialization = (specialization: string, role: string) => {
+    if (role === 'DOCTOR' && !specialization) {
+      return 'Please select your specialization';
+    }
+    return '';
+  };
+
+  const validateAddress = (address: string, fieldName: string) => {
+    if (!address.trim()) return `${fieldName} is required`;
+    if (fieldName === 'Street Address' && address.trim().length < 5) {
+      return 'Please enter a complete street address';
+    }
+    return '';
+  };
+
+  const validateZipCode = (zipCode: string) => {
+    if (!zipCode.trim()) return 'PIN code is required';
+    const pinRegex = /^\d{6}$/;
+    if (!pinRegex.test(zipCode.trim())) {
+      return 'Please enter a valid PIN code (6 digits)';
+    }
+    return '';
+  };
+
+  const validateEmergencyContact = (contact: string, fieldName: string) => {
+    if (!contact.trim()) return `${fieldName} is required`;
+    if (fieldName === 'Contact Name' && contact.trim().length < 2) {
+      return 'Contact name must be at least 2 characters long';
+    }
+    if (fieldName === 'Contact Phone') {
+      const phoneRegex = /^\d{10}$/;
+      if (!phoneRegex.test(contact.replace(/\s/g, ''))) {
+        return 'Please enter a valid 10-digit phone number';
+      }
+    }
+    return '';
+  };
+
+  const validateHospitalAssignment = (hospitalId: string, unitCode: string) => {
+    if (hospitalId && !unitCode) {
+      return 'Please select a unit when a hospital is selected';
+    }
+    return '';
+  };
+
+  const validateUnitCode = (unitCode: string, hospitalId: string) => {
+    if (hospitalId && !unitCode) {
+      return 'Please select a unit';
+    }
+    return '';
+  };
+
+  // Update validation errors
+  const updateValidationError = (field: string, error: string) => {
+    setValidationErrors(prev => ({
+      ...prev,
+      [field]: error
+    }));
+  };
+
+
   // Dropdown states
   const [hospitalDropdownOpen, setHospitalDropdownOpen] = useState(false);
   const [unitDropdownOpen, setUnitDropdownOpen] = useState(false);
   const [departmentDropdownOpen, setDepartmentDropdownOpen] = useState(false);
   const [specializationDropdownOpen, setSpecializationDropdownOpen] = useState(false);
+  const [relationshipDropdownOpen, setRelationshipDropdownOpen] = useState(false);
+  const [stateDropdownOpen, setStateDropdownOpen] = useState(false);
+  const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
   
   // Success modal state
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -313,6 +583,51 @@ const RegisterScreen: React.FC = () => {
     'Physiotherapy',
   ];
 
+  // Relationship options for emergency contact
+  const relationshipOptions = [
+    'Spouse',
+    'Parent',
+    'Sibling',
+    'Child',
+    'Friend',
+    'Relative',
+    'Other',
+  ];
+
+  // Indian states and cities mapping
+  const stateCityMapping: Record<string, string[]> = {
+    'Andhra Pradesh': ['Hyderabad', 'Visakhapatnam', 'Vijayawada', 'Guntur', 'Nellore'],
+    'Arunachal Pradesh': ['Itanagar', 'Naharlagun', 'Pasighat'],
+    'Assam': ['Guwahati', 'Silchar', 'Dibrugarh', 'Jorhat'],
+    'Bihar': ['Patna', 'Gaya', 'Bhagalpur', 'Muzaffarpur'],
+    'Chhattisgarh': ['Raipur', 'Bhilai', 'Bilaspur', 'Korba'],
+    'Goa': ['Panaji', 'Margao', 'Vasco da Gama'],
+    'Gujarat': ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Bhavnagar'],
+    'Haryana': ['Gurgaon', 'Faridabad', 'Panipat', 'Ambala'],
+    'Himachal Pradesh': ['Shimla', 'Mandi', 'Solan', 'Dharamshala'],
+    'Jharkhand': ['Ranchi', 'Jamshedpur', 'Dhanbad', 'Bokaro'],
+    'Karnataka': ['Bangalore', 'Mysore', 'Hubli', 'Mangalore', 'Belgaum'],
+    'Kerala': ['Thiruvananthapuram', 'Kochi', 'Kozhikode', 'Thrissur'],
+    'Madhya Pradesh': ['Bhopal', 'Indore', 'Gwalior', 'Jabalpur'],
+    'Maharashtra': ['Mumbai', 'Pune', 'Nagpur', 'Nashik', 'Aurangabad'],
+    'Manipur': ['Imphal', 'Thoubal', 'Bishnupur'],
+    'Meghalaya': ['Shillong', 'Tura', 'Jowai'],
+    'Mizoram': ['Aizawl', 'Lunglei', 'Champhai'],
+    'Nagaland': ['Kohima', 'Dimapur', 'Mokokchung'],
+    'Odisha': ['Bhubaneswar', 'Cuttack', 'Rourkela', 'Berhampur'],
+    'Punjab': ['Chandigarh', 'Ludhiana', 'Amritsar', 'Jalandhar'],
+    'Rajasthan': ['Jaipur', 'Jodhpur', 'Udaipur', 'Kota', 'Ajmer'],
+    'Sikkim': ['Gangtok', 'Namchi', 'Mangan'],
+    'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli'],
+    'Telangana': ['Hyderabad', 'Warangal', 'Nizamabad', 'Khammam'],
+    'Tripura': ['Agartala', 'Dharmanagar', 'Udaipur'],
+    'Uttar Pradesh': ['Lucknow', 'Kanpur', 'Agra', 'Varanasi', 'Allahabad'],
+    'Uttarakhand': ['Dehradun', 'Haridwar', 'Roorkee', 'Rishikesh'],
+    'West Bengal': ['Kolkata', 'Howrah', 'Durgapur', 'Asansol'],
+    'Delhi': ['New Delhi', 'Central Delhi', 'North Delhi', 'South Delhi'],
+    'Puducherry': ['Puducherry', 'Karaikal', 'Mahe', 'Yanam'],
+  };
+
   // Department-specific specializations mapping
   const departmentSpecializations: Record<string, string[]> = {
     'Emergency Medicine': ['Trauma Care', 'Critical Care', 'Accident & Emergency', 'Emergency Surgery'],
@@ -339,34 +654,86 @@ const RegisterScreen: React.FC = () => {
 
   const handleEmailChange = useCallback((value: string) => {
     setFormData(prev => ({ ...prev, email: value }));
+    const error = validateEmail(value);
+    updateValidationError('email', error);
   }, []);
 
   const handlePasswordChange = useCallback((value: string) => {
     setFormData(prev => ({ ...prev, password: value }));
-  }, []);
+    const error = validatePassword(value);
+    updateValidationError('password', error);
+    
+    // Also validate confirm password if it exists
+    if (formData.confirmPassword) {
+      const confirmError = validateConfirmPassword(formData.confirmPassword, value);
+      updateValidationError('confirmPassword', confirmError);
+    }
+  }, [formData.confirmPassword]);
+
+  const handleConfirmPasswordChange = useCallback((value: string) => {
+    setFormData(prev => ({ ...prev, confirmPassword: value }));
+    const error = validateConfirmPassword(value, formData.password);
+    updateValidationError('confirmPassword', error);
+  }, [formData.password]);
 
   const handleFirstNameChange = useCallback((value: string) => {
     setFormData(prev => ({ ...prev, firstName: value }));
+    const error = validateName(value, 'First name');
+    updateValidationError('firstName', error);
   }, []);
 
   const handleLastNameChange = useCallback((value: string) => {
     setFormData(prev => ({ ...prev, lastName: value }));
+    const error = validateName(value, 'Last name');
+    updateValidationError('lastName', error);
   }, []);
 
   const handleLocationChange = useCallback((value: string) => {
     setFormData(prev => ({ ...prev, location: value }));
+    const error = validateLocation(value);
+    updateValidationError('location', error);
   }, []);
 
   const handlePhoneChange = useCallback((value: string) => {
     setFormData(prev => ({ ...prev, phone: value }));
+    const error = validatePhone(value);
+    updateValidationError('phone', error);
   }, []);
 
   const handleLicenseNumberChange = useCallback((value: string) => {
     setFormData(prev => ({ ...prev, licenseNumber: value }));
+    const error = validateLicenseNumber(value);
+    updateValidationError('licenseNumber', error);
   }, []);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Validate the field
+    let error = '';
+    switch (field) {
+      case 'department':
+        error = validateDepartment(value);
+        break;
+      case 'specialization':
+        error = validateSpecialization(value, formData.role);
+        break;
+      case 'role':
+        // When role changes, validate specialization if it's doctor
+        if (value === 'DOCTOR' && formData.specialization) {
+          updateValidationError('specialization', validateSpecialization(formData.specialization, value));
+        }
+        break;
+      default:
+        break;
+    }
+    
+    if (error) {
+      updateValidationError(field, error);
+    } else {
+      // Clear error if validation passes
+      updateValidationError(field, '');
+    }
     
     // If hospital changes, reset unit and load new units
     if (field === 'hospitalId') {
@@ -375,11 +742,32 @@ const RegisterScreen: React.FC = () => {
       if (value) {
         loadUnits(parseInt(value));
       }
+      // Validate hospital assignment
+      const hospitalError = validateHospitalAssignment(value, '');
+      updateValidationError('hospitalAssignment', hospitalError);
+      // Clear unit error since unit is reset
+      updateValidationError('unitCode', '');
+    }
+    
+    // If unit changes, validate unit
+    if (field === 'unitCode') {
+      const unitError = validateUnitCode(value, formData.hospitalId);
+      updateValidationError('unitCode', unitError);
+      // Also validate hospital assignment
+      const hospitalError = validateHospitalAssignment(formData.hospitalId, value);
+      updateValidationError('hospitalAssignment', hospitalError);
     }
     
     // If department changes, reset specialization
     if (field === 'department') {
       setFormData(prev => ({ ...prev, department: value, specialization: '' }));
+      updateValidationError('specialization', '');
+    }
+    
+    // If state changes, reset city
+    if (field === 'state') {
+      setFormData(prev => ({ ...prev, state: value, city: '' }));
+      updateValidationError('city', '');
     }
   };
 
@@ -439,153 +827,46 @@ const RegisterScreen: React.FC = () => {
 
 
   const validateForm = () => {
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!formData.email) {
-      Alert.alert('Validation Error', 'Please enter your email address');
-      return false;
-    }
-    if (!emailRegex.test(formData.email)) {
-      Alert.alert('Validation Error', 'Please enter a valid email address');
-      return false;
-    }
-
-    // Password validation
-    if (!formData.password) {
-      Alert.alert('Validation Error', 'Please enter a password');
-        return false;
-      }
-    if (formData.password.length < 8) {
-      Alert.alert('Validation Error', 'Password must be at least 8 characters long');
-      return false;
-    }
-    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      Alert.alert('Validation Error', 'Password must contain at least one uppercase letter, one lowercase letter, and one number');
-      return false;
-    }
-
-    // Confirm password validation
-    if (!formData.confirmPassword) {
-      Alert.alert('Validation Error', 'Please confirm your password');
-      return false;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      Alert.alert('Validation Error', 'Passwords do not match');
-      return false;
-    }
-
-    // Name validation
-    if (!formData.firstName.trim()) {
-      Alert.alert('Validation Error', 'Please enter your first name');
-      return false;
-    }
-    if (formData.firstName.trim().length < 2) {
-      Alert.alert('Validation Error', 'First name must be at least 2 characters long');
-      return false;
-    }
-    if (!formData.lastName.trim()) {
-      Alert.alert('Validation Error', 'Please enter your last name');
-      return false;
-    }
-    if (formData.lastName.trim().length < 2) {
-      Alert.alert('Validation Error', 'Last name must be at least 2 characters long');
-      return false;
-    }
-
-    // Department validation
-    if (!formData.department) {
-      Alert.alert('Validation Error', 'Please select your department');
-      return false;
-    }
-
-    // Location validation
-    if (!formData.location.trim()) {
-      Alert.alert('Validation Error', 'Please enter your location');
-      return false;
-    }
-
-    // Phone validation
-    const phoneRegex = /^\+?[\d\s\-\(\)]{10,}$/;
-    if (!formData.phone.trim()) {
-      Alert.alert('Validation Error', 'Please enter your phone number');
-      return false;
-    }
-    if (!phoneRegex.test(formData.phone.replace(/\s/g, ''))) {
-      Alert.alert('Validation Error', 'Please enter a valid phone number');
-      return false;
-    }
-
-    // Doctor-specific validations
+    // Validate all fields and collect errors
+    const errors: {[key: string]: string} = {};
+    
+    errors.email = validateEmail(formData.email);
+    errors.password = validatePassword(formData.password);
+    errors.confirmPassword = validateConfirmPassword(formData.confirmPassword, formData.password);
+    errors.firstName = validateName(formData.firstName, 'First name');
+    errors.lastName = validateName(formData.lastName, 'Last name');
+    errors.department = validateDepartment(formData.department);
+    errors.location = validateLocation(formData.location);
+    errors.phone = validatePhone(formData.phone);
+    
     if (formData.role === 'DOCTOR') {
-      if (!formData.specialization) {
-        Alert.alert('Validation Error', 'Please select your specialization');
-        return false;
-      }
-      if (!formData.licenseNumber.trim()) {
-        Alert.alert('Validation Error', 'Please enter your medical license number');
-        return false;
-      }
-      if (formData.licenseNumber.trim().length < 5) {
-        Alert.alert('Validation Error', 'License number must be at least 5 characters long');
-        return false;
-      }
+      errors.specialization = validateSpecialization(formData.specialization, formData.role);
+      errors.licenseNumber = validateLicenseNumber(formData.licenseNumber);
     }
-
-    // Hospital assignment validation (optional but if provided, must be complete)
-    if (formData.hospitalId && !formData.unitCode) {
-      Alert.alert('Validation Error', 'Please select a unit when a hospital is selected');
+    
+    errors.emergencyContactName = validateEmergencyContact(formData.emergencyContactName, 'Contact Name');
+    errors.emergencyContactPhone = validateEmergencyContact(formData.emergencyContactPhone, 'Contact Phone');
+    errors.emergencyContactRelationship = validateEmergencyContact(formData.emergencyContactRelationship, 'Relationship');
+    
+    errors.street = validateAddress(formData.street, 'Street Address');
+    errors.city = validateAddress(formData.city, 'City');
+    errors.state = validateAddress(formData.state, 'State');
+    errors.zipCode = validateZipCode(formData.zipCode);
+    
+    errors.hospitalAssignment = validateHospitalAssignment(formData.hospitalId, formData.unitCode);
+    errors.unitCode = validateUnitCode(formData.unitCode, formData.hospitalId);
+    
+    // Update validation errors state
+    setValidationErrors(errors);
+    
+    // Check if there are any errors
+    const hasErrors = Object.values(errors).some(error => error !== '');
+    
+    if (hasErrors) {
+      Alert.alert('Validation Error', 'Please fix all validation errors before submitting.');
       return false;
     }
-
-    // Emergency contact validation
-    if (!formData.emergencyContactName.trim()) {
-      Alert.alert('Validation Error', 'Please enter emergency contact name');
-      return false;
-    }
-    if (formData.emergencyContactName.trim().length < 2) {
-      Alert.alert('Validation Error', 'Emergency contact name must be at least 2 characters long');
-      return false;
-    }
-    if (!formData.emergencyContactPhone.trim()) {
-      Alert.alert('Validation Error', 'Please enter emergency contact phone number');
-      return false;
-    }
-    if (!phoneRegex.test(formData.emergencyContactPhone.replace(/\s/g, ''))) {
-      Alert.alert('Validation Error', 'Please enter a valid emergency contact phone number');
-      return false;
-    }
-    if (!formData.emergencyContactRelationship.trim()) {
-      Alert.alert('Validation Error', 'Please enter emergency contact relationship');
-      return false;
-    }
-
-    // Address validation
-    if (!formData.street.trim()) {
-      Alert.alert('Validation Error', 'Please enter your street address');
-      return false;
-    }
-    if (formData.street.trim().length < 5) {
-      Alert.alert('Validation Error', 'Please enter a complete street address');
-      return false;
-    }
-    if (!formData.city.trim()) {
-      Alert.alert('Validation Error', 'Please enter your city');
-      return false;
-    }
-    if (!formData.state.trim()) {
-      Alert.alert('Validation Error', 'Please enter your state');
-      return false;
-    }
-    if (!formData.zipCode.trim()) {
-      Alert.alert('Validation Error', 'Please enter your PIN code');
-      return false;
-    }
-    const pinRegex = /^\d{6}$/;
-    if (!pinRegex.test(formData.zipCode.trim())) {
-      Alert.alert('Validation Error', 'Please enter a valid PIN code (6 digits)');
-      return false;
-    }
-
+    
     return true;
   };
 
@@ -698,28 +979,26 @@ const RegisterScreen: React.FC = () => {
           <View style={styles.roleSelector}>
             <TouchableOpacity
               style={[
-                styles.roleButton,
-                formData.role === 'DOCTOR' && styles.roleButtonActive,
+                styles.roleTab,
+                formData.role === 'DOCTOR' && styles.roleTabActive,
               ]}
               onPress={() => handleInputChange('role', 'DOCTOR')}>
-              <FontAwesomeIcon icon="user-md" size={24} color={formData.role === 'DOCTOR' ? Colors.white : Colors.primary} />
               <Text style={[
-                styles.roleButtonText,
-                formData.role === 'DOCTOR' && styles.roleButtonTextActive,
+                styles.roleTabText,
+                formData.role === 'DOCTOR' && styles.roleTabTextActive,
               ]}>
                 Doctor
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
-                styles.roleButton,
-                formData.role === 'NURSE' && styles.roleButtonActive,
+                styles.roleTab,
+                formData.role === 'NURSE' && styles.roleTabActive,
               ]}
               onPress={() => handleInputChange('role', 'NURSE')}>
-              <FontAwesomeIcon icon="stethoscope" size={24} color={formData.role === 'NURSE' ? Colors.white : Colors.primary} />
               <Text style={[
-                styles.roleButtonText,
-                formData.role === 'NURSE' && styles.roleButtonTextActive,
+                styles.roleTabText,
+                formData.role === 'NURSE' && styles.roleTabTextActive,
               ]}>
                 Nurse
               </Text>
@@ -733,6 +1012,7 @@ const RegisterScreen: React.FC = () => {
             placeholder="Enter your email"
             keyboardType="email-address"
             icon="envelope"
+            error={validationErrors.email}
           />
 
           <InputField
@@ -744,17 +1024,19 @@ const RegisterScreen: React.FC = () => {
             icon="lock"
             showEye={true}
             onToggleEye={() => setShowPassword(!showPassword)}
+            error={validationErrors.password}
           />
 
           <InputField
             label="Confirm Password"
             value={formData.confirmPassword}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, confirmPassword: text }))}
+            onChangeText={handleConfirmPasswordChange}
             placeholder="Confirm your password"
             secureTextEntry={!showConfirmPassword}
             icon="lock"
             showEye={true}
             onToggleEye={() => setShowConfirmPassword(!showConfirmPassword)}
+            error={validationErrors.confirmPassword}
           />
 
           <View style={styles.row}>
@@ -765,6 +1047,7 @@ const RegisterScreen: React.FC = () => {
                 onChangeText={handleFirstNameChange}
                 placeholder="First name"
                 icon="user"
+                error={validationErrors.firstName}
               />
             </View>
             <View style={styles.halfWidth}>
@@ -774,6 +1057,7 @@ const RegisterScreen: React.FC = () => {
                 onChangeText={handleLastNameChange}
                 placeholder="Last name"
                 icon="user"
+                error={validationErrors.lastName}
               />
             </View>
           </View>
@@ -799,6 +1083,7 @@ const RegisterScreen: React.FC = () => {
             }))}
             placeholder="Select your department"
             styles={styles}
+            error={validationErrors.department}
           />
 
           <InputField
@@ -807,6 +1092,7 @@ const RegisterScreen: React.FC = () => {
             onChangeText={handleLocationChange}
             placeholder="e.g., New York"
             icon="map-marker-alt"
+            error={validationErrors.location}
           />
 
           {formData.role === 'DOCTOR' && (
@@ -832,6 +1118,7 @@ const RegisterScreen: React.FC = () => {
                 }))}
                 placeholder="Select your specialization"
                 styles={styles}
+                error={validationErrors.specialization}
               />
               <InputField
                 label="License Number"
@@ -839,6 +1126,7 @@ const RegisterScreen: React.FC = () => {
                 onChangeText={handleLicenseNumberChange}
                 placeholder="Medical license number"
                 icon="file-medical"
+                error={validationErrors.licenseNumber}
               />
             </>
           )}
@@ -847,9 +1135,10 @@ const RegisterScreen: React.FC = () => {
             label="Phone Number"
             value={formData.phone}
             onChangeText={handlePhoneChange}
-            placeholder="+1234567890"
-            keyboardType="phone-pad"
+            placeholder="1234567890"
+            keyboardType="numeric"
             icon="phone"
+            error={validationErrors.phone}
           />
 
           <Text style={styles.sectionTitle}>Hospital Assignment</Text>
@@ -876,6 +1165,7 @@ const RegisterScreen: React.FC = () => {
             placeholder="Select a hospital"
             loading={loadingHospitals}
             styles={styles}
+            error={validationErrors.hospitalAssignment}
           />
 
           <UnitDropdown 
@@ -901,6 +1191,7 @@ const RegisterScreen: React.FC = () => {
             loading={loadingUnits}
             disabled={!formData.hospitalId || units.length === 0}
             styles={styles}
+            error={validationErrors.unitCode}
           />
           
         
@@ -909,9 +1200,14 @@ const RegisterScreen: React.FC = () => {
           <InputField
             label="Contact Name"
             value={formData.emergencyContactName}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, emergencyContactName: text }))}
+            onChangeText={(text) => {
+              setFormData(prev => ({ ...prev, emergencyContactName: text }));
+              const error = validateEmergencyContact(text, 'Contact Name');
+              updateValidationError('emergencyContactName', error);
+            }}
             placeholder="Emergency contact name"
             icon="user"
+            error={validationErrors.emergencyContactName}
           />
 
           <View style={styles.row}>
@@ -919,19 +1215,45 @@ const RegisterScreen: React.FC = () => {
               <InputField
                 label="Contact Phone"
                 value={formData.emergencyContactPhone}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, emergencyContactPhone: text }))}
-                placeholder="+1234567890"
-                keyboardType="phone-pad"
+                onChangeText={(text) => {
+                  setFormData(prev => ({ ...prev, emergencyContactPhone: text }));
+                  const error = validateEmergencyContact(text, 'Contact Phone');
+                  updateValidationError('emergencyContactPhone', error);
+                }}
+                placeholder="1234567890"
+                keyboardType="numeric"
                 icon="phone"
+                error={validationErrors.emergencyContactPhone}
               />
             </View>
             <View style={styles.halfWidth}>
-              <InputField
-                label="Relationship"
+              <RelationshipDropdown 
+                open={relationshipDropdownOpen}
+                setOpen={(open) => {
+                  setRelationshipDropdownOpen(open);
+                  if (open) {
+                    setHospitalDropdownOpen(false);
+                    setUnitDropdownOpen(false);
+                    setDepartmentDropdownOpen(false);
+                    setSpecializationDropdownOpen(false);
+                    setStateDropdownOpen(false);
+                    setCityDropdownOpen(false);
+                  }
+                }}
                 value={formData.emergencyContactRelationship}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, emergencyContactRelationship: text }))}
-                placeholder="e.g., Spouse"
-                icon="users"
+                setValue={(callback) => {
+                  const newValue = callback(formData.emergencyContactRelationship);
+                  setFormData(prev => ({ ...prev, emergencyContactRelationship: newValue }));
+                  const error = validateEmergencyContact(newValue, 'Relationship');
+                  updateValidationError('emergencyContactRelationship', error);
+                }}
+                items={relationshipOptions.map(option => ({
+                  label: option,
+                  value: option,
+                }))}
+                placeholder="Select"
+                styles={styles}
+                error={validationErrors.emergencyContactRelationship}
               />
             </View>
           </View>
@@ -940,28 +1262,74 @@ const RegisterScreen: React.FC = () => {
           <InputField
             label="Street Address"
             value={formData.street}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, street: text }))}
+            onChangeText={(text) => {
+              setFormData(prev => ({ ...prev, street: text }));
+              const error = validateAddress(text, 'Street Address');
+              updateValidationError('street', error);
+            }}
             placeholder="123 Main St"
-                icon="map-marker-alt"
+            icon="map-marker-alt"
+            error={validationErrors.street}
           />
 
           <View style={styles.row}>
             <View style={styles.halfWidth}>
-              <InputField
-                label="City"
-                value={formData.city}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, city: text }))}
-                placeholder="City"
-                icon="building"
+              <StateDropdown 
+                open={stateDropdownOpen}
+                setOpen={(open) => {
+                  setStateDropdownOpen(open);
+                  if (open) {
+                    setHospitalDropdownOpen(false);
+                    setUnitDropdownOpen(false);
+                    setDepartmentDropdownOpen(false);
+                    setSpecializationDropdownOpen(false);
+                    setRelationshipDropdownOpen(false);
+                    setCityDropdownOpen(false);
+                  }
+                }}
+                value={formData.state}
+                setValue={(callback) => {
+                  const newValue = callback(formData.state);
+                  handleInputChange('state', newValue);
+                }}
+                items={Object.keys(stateCityMapping).map(state => ({
+                  label: state,
+                  value: state,
+                }))}
+                placeholder="Select state"
+                styles={styles}
+                error={validationErrors.state}
               />
             </View>
             <View style={styles.halfWidth}>
-              <InputField
-                label="State"
-                value={formData.state}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, state: text }))}
-                placeholder="State"
-                icon="map-marker-alt"
+              <CityDropdown 
+                open={cityDropdownOpen}
+                setOpen={(open) => {
+                  setCityDropdownOpen(open);
+                  if (open) {
+                    setHospitalDropdownOpen(false);
+                    setUnitDropdownOpen(false);
+                    setDepartmentDropdownOpen(false);
+                    setSpecializationDropdownOpen(false);
+                    setRelationshipDropdownOpen(false);
+                    setStateDropdownOpen(false);
+                  }
+                }}
+                value={formData.city}
+                setValue={(callback) => {
+                  const newValue = callback(formData.city);
+                  setFormData(prev => ({ ...prev, city: newValue }));
+                  const error = validateAddress(newValue, 'City');
+                  updateValidationError('city', error);
+                }}
+                items={(stateCityMapping[formData.state] || []).map(city => ({
+                  label: city,
+                  value: city,
+                }))}
+                placeholder="Select city"
+                styles={styles}
+                error={validationErrors.city}
+                disabled={!formData.state}
               />
             </View>
           </View>
@@ -969,10 +1337,15 @@ const RegisterScreen: React.FC = () => {
           <InputField
             label="PIN Code"
             value={formData.zipCode}
-            onChangeText={(text) => setFormData(prev => ({ ...prev, zipCode: text }))}
+            onChangeText={(text) => {
+              setFormData(prev => ({ ...prev, zipCode: text }));
+              const error = validateZipCode(text);
+              updateValidationError('zipCode', error);
+            }}
             placeholder="123456"
             keyboardType="numeric"
             icon="map-marker-alt"
+            error={validationErrors.zipCode}
           />
 
           <TouchableOpacity
@@ -1004,7 +1377,7 @@ const RegisterScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.backgroundSecondary,
   },
   flex1: {
     flex: 1,
@@ -1033,7 +1406,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: Typography.fontFamily.bold,
     color: Colors.white,
     flex: 1,
     textAlign: 'center',
@@ -1043,60 +1416,69 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 24,
+    paddingTop: 0,
   },
   formContainer: {
-    paddingTop: 14,
+    paddingTop: 24,
     paddingBottom: 48,
+    paddingHorizontal: 0,
   },
   welcomeText: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: Typography.fontFamily.bold,
     color: Colors.textPrimary,
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitleText: {
     fontSize: 16,
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.textSecondary,
     textAlign: 'center',
     marginBottom: 40,
   },
   roleSelector: {
     flexDirection: 'row',
-    marginBottom: 20,
-    gap: 16,
+    marginBottom: 24,
+    marginTop: -15,
+    marginHorizontal: 0,
+    backgroundColor: 'transparent',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    padding: 6,
+    width: '100%',
+    alignSelf: 'stretch',
   },
-  roleButton: {
+  roleTab: {
     flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    borderWidth: 2,
-    marginTop: -20,
-    borderColor: Colors.primary,
-    backgroundColor: Colors.white,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+    minHeight: 48,
   },
-  roleButtonActive: {
-    backgroundColor: Colors.primary,
+  roleTabActive: {
+    backgroundColor: '#000000',
   },
-  roleButtonText: {
+  roleTabText: {
     fontSize: 16,
-    fontWeight: '500',
-    color: Colors.primary,
-    marginLeft: 8,
+    fontFamily: Typography.fontFamily.medium,
+    color: '#999999',
+    textAlign: 'center',
   },
-  roleButtonTextActive: {
-    color: Colors.white,
+  roleTabTextActive: {
+    color: '#FFFFFF',
+    fontFamily: Typography.fontFamily.bold,
   },
   inputContainer: {
     marginBottom: 16,
   },
   inputLabel: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: Typography.fontFamily.medium,
     color: Colors.textPrimary,
     marginBottom: 8,
   },
@@ -1110,17 +1492,28 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
+  inputWrapperError: {
+    borderColor: Colors.error,
+  },
   inputIcon: {
     marginRight: 8,
   },
   textInput: {
     flex: 1,
     fontSize: 16,
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.textPrimary,
     paddingVertical: 0,
   },
   eyeIcon: {
     padding: 4,
+  },
+  errorText: {
+    fontSize: 12,
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.error,
+    marginTop: 4,
+    marginLeft: 4,
   },
   row: {
     flexDirection: 'row',
@@ -1131,7 +1524,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: Typography.fontFamily.bold,
     color: Colors.textPrimary,
     marginTop: 24,
     marginBottom: 16,
@@ -1156,7 +1549,7 @@ const styles = StyleSheet.create({
   },
   registerButtonText: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: Typography.fontFamily.bold,
     color: Colors.white,
   },
   loginButton: {
@@ -1165,11 +1558,12 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     fontSize: 16,
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.textSecondary,
   },
   loginLinkText: {
     color: Colors.primary,
-    fontWeight: 'bold',
+    fontFamily: Typography.fontFamily.bold,
   },
   dropdownStyle: {
     backgroundColor: Colors.backgroundSecondary,
@@ -1178,13 +1572,23 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     minHeight: 50,
   },
+  dropdownStyleError: {
+    borderColor: Colors.error,
+  },
   dropdownTextStyle: {
     fontSize: 16,
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.textPrimary,
   },
   dropdownPlaceholderStyle: {
     fontSize: 16,
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.textTertiary,
+  },
+  relationshipPlaceholderStyle: {
+    textAlign: 'left',
+    paddingLeft: 0,
+    marginLeft: 0,
   },
   dropdownContainerStyle: {
     backgroundColor: Colors.white,
@@ -1202,6 +1606,7 @@ const styles = StyleSheet.create({
   },
   dropdownListItemStyle: {
     fontSize: 16,
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.textPrimary,
   },
   modalOverlay: {
@@ -1233,7 +1638,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: Typography.fontFamily.bold,
     color: '#333333',
     marginBottom: 20,
     textAlign: 'center',
@@ -1244,6 +1649,7 @@ const styles = StyleSheet.create({
   },
   modalMessage: {
     fontSize: 16,
+    fontFamily: Typography.fontFamily.regular,
     color: '#666666',
     textAlign: 'center',
     lineHeight: 22,
@@ -1261,7 +1667,7 @@ const styles = StyleSheet.create({
   },
   modalDoneButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: Typography.fontFamily.bold,
     color: Colors.white,
   },
   modalEditLink: {
@@ -1270,6 +1676,7 @@ const styles = StyleSheet.create({
   },
   modalEditLinkText: {
     fontSize: 14,
+    fontFamily: Typography.fontFamily.regular,
     color: '#999999',
     textAlign: 'center',
   },

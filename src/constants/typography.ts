@@ -1,19 +1,19 @@
 import { Platform } from 'react-native';
 
 export const Typography = {
-  // Font families
+  // Font families - Updated with DM Sans with fallbacks
   fontFamily: {
     regular: Platform.select({
-      ios: 'System',
-      android: 'Roboto',
+      ios: 'DMSans-Regular',
+      android: 'DMSans-Regular',
     }),
     medium: Platform.select({
-      ios: 'System',
-      android: 'Roboto-Medium',
+      ios: 'DMSans-Medium',
+      android: 'DMSans-Medium',
     }),
     bold: Platform.select({
-      ios: 'System',
-      android: 'Roboto-Bold',
+      ios: 'DMSans-Bold',
+      android: 'DMSans-Bold',
     }),
   },
 
@@ -49,5 +49,63 @@ export const Typography = {
     medium: '500' as const,
     semibold: '600' as const,
     bold: '700' as const,
+  },
+
+  // Predefined text styles for consistency (optional but recommended)
+  textStyles: {
+    header: {
+      fontFamily: Platform.select({
+        ios: 'DMSans-Bold',
+        android: 'DMSans-Bold',
+      }),
+      fontSize: 28,
+      lineHeight: 36,
+      fontWeight: '700' as const,
+    },
+    title: {
+      fontFamily: Platform.select({
+        ios: 'DMSans-Medium',
+        android: 'DMSans-Medium',
+      }),
+      fontSize: 20,
+      lineHeight: 28,
+      fontWeight: '500' as const,
+    },
+    subtitle: {
+      fontFamily: Platform.select({
+        ios: 'DMSans-Regular',
+        android: 'DMSans-Regular',
+      }),
+      fontSize: 16,
+      lineHeight: 24,
+      fontWeight: '400' as const,
+    },
+    body: {
+      fontFamily: Platform.select({
+        ios: 'DMSans-Regular',
+        android: 'DMSans-Regular',
+      }),
+      fontSize: 14,
+      lineHeight: 20,
+      fontWeight: '400' as const,
+    },
+    button: {
+      fontFamily: Platform.select({
+        ios: 'DMSans-Medium',
+        android: 'DMSans-Medium',
+      }),
+      fontSize: 16,
+      lineHeight: 24,
+      fontWeight: '500' as const,
+    },
+    caption: {
+      fontFamily: Platform.select({
+        ios: 'DMSans-Regular',
+        android: 'DMSans-Regular',
+      }),
+      fontSize: 12,
+      lineHeight: 16,
+      fontWeight: '400' as const,
+    },
   },
 };
