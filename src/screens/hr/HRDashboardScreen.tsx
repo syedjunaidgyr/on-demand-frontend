@@ -57,6 +57,7 @@ const HRDashboardScreen: React.FC = () => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const overviewScrollRef = React.useRef<ScrollView>(null);
   
   // Get screen dimensions for responsive design
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -133,6 +134,10 @@ const HRDashboardScreen: React.FC = () => {
     setRefreshing(true);
     await loadDashboardData();
     setRefreshing(false);
+  };
+
+  const scrollToEnd = () => {
+    overviewScrollRef.current?.scrollToEnd({ animated: true });
   };
 
   const formatDate = (dateString: string) => {
@@ -256,29 +261,33 @@ const HRDashboardScreen: React.FC = () => {
     );
   };
 
-  const SimpleStatCard = ({ 
+  const IconStatItem = ({ 
     title, 
     value, 
     icon,
     onPress,
-    iconBgColor = '#1C2A3A'
+    iconColor = '#3B82F6'
   }: {
     title: string;
     value: number;
     icon: string;
     onPress?: () => void;
-    iconBgColor?: string;
+    iconColor?: string;
   }) => (
     <TouchableOpacity 
-      style={styles.simpleStatCard}
+      style={styles.iconStatItem}
       onPress={onPress}
       disabled={!onPress}
       activeOpacity={0.7}>
-      <View style={[styles.simpleStatIcon, { backgroundColor: iconBgColor }]}>
-        <FontAwesomeIcon icon={icon} size={20} color="#FFFFFF" />
+      <View style={styles.iconStatContainer}>
+        <View style={[styles.iconStatIconWrapper, { backgroundColor: iconColor + '15' }]}>
+          <FontAwesomeIcon icon={icon} size={26} color={iconColor} />
+        </View>
+        <View style={styles.iconStatBadge}>
+          <Text style={styles.iconStatValue}>{value.toLocaleString()}</Text>
+        </View>
       </View>
-      <Text style={styles.simpleStatValue}>{value.toLocaleString()}</Text>
-      <Text style={styles.simpleStatTitle}>{title}</Text>
+      <Text style={styles.iconStatTitle}>{title}</Text>
     </TouchableOpacity>
   );
 
@@ -380,102 +389,97 @@ const HRDashboardScreen: React.FC = () => {
           />
         }>
 
-        {/* Overview Stats Grid - Horizontal Scrolling */}
+        {/* Overview Stats - Single Horizontal Row */}
         <View style={[styles.section, styles.firstSection, styles.overviewSection]}>
-          <Text style={styles.sectionTitle}>Overview</Text>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Overview</Text>
+            <TouchableOpacity onPress={scrollToEnd} style={styles.scrollToEndButton}>
+              <Text style={styles.viewAllText}>See All</Text>
+              <FontAwesomeIcon icon="arrow-right" size={14} color="#6366F1" />
+            </TouchableOpacity>
+          </View>
           
-          {/* Row 1 - Jobs Stats */}
           <ScrollView 
+            ref={overviewScrollRef}
             horizontal 
             showsHorizontalScrollIndicator={false}
             scrollEventThrottle={16}
-            style={styles.horizontalScroll}
-            contentContainerStyle={styles.horizontalScrollContent}>
-            <View style={styles.statsRow}>
-              <SimpleStatCard
+            style={styles.overviewScroll}
+            contentContainerStyle={styles.overviewScrollContent}>
+            <View style={styles.iconStatsRow}>
+              <IconStatItem
                 title="Total Jobs"
                 value={stats?.jobs?.total || 0}
                 icon="briefcase"
-                iconBgColor="#3B82F6"
+                iconColor="#3B82F6"
                 onPress={() => (navigation as any).navigate('HRJobs')}
               />
-              <SimpleStatCard
+              <IconStatItem
                 title="Active Jobs"
                 value={stats?.jobs?.active || 0}
                 icon="play"
-                iconBgColor="#10B981"
+                iconColor="#10B981"
               />
-              <SimpleStatCard
-                title="Assigned Jobs"
+              <IconStatItem
+                title="Assigned"
                 value={stats?.jobs?.assigned || 0}
                 icon="user-check"
-                iconBgColor="#8B5CF6"
+                iconColor="#8B5CF6"
               />
-              <SimpleStatCard
+              <IconStatItem
                 title="In Progress"
                 value={stats?.jobs?.inProgress || 0}
                 icon="sync"
-                iconBgColor="#F59E0B"
+                iconColor="#F59E0B"
               />
-              <SimpleStatCard
+              <IconStatItem
                 title="Completed"
                 value={stats?.jobs?.completed || 0}
                 icon="check-circle"
-                iconBgColor="#059669"
+                iconColor="#059669"
               />
-              <SimpleStatCard
+              <IconStatItem
                 title="Cancelled"
                 value={stats?.jobs?.cancelled || 0}
                 icon="times-circle"
-                iconBgColor="#EF4444"
+                iconColor="#EF4444"
               />
-            </View>
-          </ScrollView>
-
-          {/* Row 2 - Assignments Stats */}
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            scrollEventThrottle={16}
-            style={[styles.horizontalScroll, { marginTop: 16 }]}
-            contentContainerStyle={styles.horizontalScrollContent}>
-            <View style={styles.statsRow}>
-              <SimpleStatCard
+              <IconStatItem
                 title="Total Staff"
                 value={stats?.staff?.total || 0}
                 icon="users"
-                iconBgColor="#6366F1"
+                iconColor="#6366F1"
                 onPress={() => (navigation as any).navigate('HRUsers')}
               />
-              <SimpleStatCard
-                title="Total Assignments"
+              <IconStatItem
+                title="Assignments"
                 value={stats?.assignments?.total || 0}
                 icon="list"
-                iconBgColor="#7C3AED"
+                iconColor="#7C3AED"
               />
-              <SimpleStatCard
+              <IconStatItem
                 title="Pending"
                 value={stats?.assignments?.pending || 0}
                 icon="clock"
-                iconBgColor="#F59E0B"
+                iconColor="#F59E0B"
               />
-              <SimpleStatCard
+              <IconStatItem
                 title="Accepted"
                 value={stats?.assignments?.accepted || 0}
                 icon="check"
-                iconBgColor="#10B981"
+                iconColor="#10B981"
               />
-              <SimpleStatCard
-                title="In Progress"
+              <IconStatItem
+                title="Progress"
                 value={stats?.assignments?.inProgress || 0}
                 icon="sync"
-                iconBgColor="#3B82F6"
+                iconColor="#3B82F6"
               />
-              <SimpleStatCard
-                title="Completed"
+              <IconStatItem
+                title="Done"
                 value={stats?.assignments?.completed || 0}
                 icon="check-circle"
-                iconBgColor="#059669"
+                iconColor="#059669"
               />
             </View>
           </ScrollView>
@@ -870,11 +874,12 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   firstSection: {
-    paddingTop: 30,
+    paddingTop: 20,
     marginTop: 0,
   },
   overviewSection: {
-    marginBottom: 12,
+    marginBottom: 8,
+    paddingBottom: 0,
   },
   quickActionsSection: {
     paddingHorizontal: 20,
@@ -888,21 +893,25 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     // fontWeight: Typography.fontWeight.bold,
     color: '#111827',
-    marginBottom: 14,
+    marginBottom: 10,
     letterSpacing: -0.3,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: 12,
+  },
+  scrollToEndButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   viewAllText: {
     fontSize: 14,
     fontFamily: Typography.fontFamily.medium,
     color: '#6366F1',
     // fontWeight: Typography.fontWeight.semibold,
-    marginTop: 2,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -1139,55 +1148,65 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     textAlign: 'center',
   },
-  simpleStatCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 20,
+  iconStatItem: {
     alignItems: 'center',
-    marginRight: 12,
-    borderWidth: 1,
-    borderColor: '#DADADA',
-    minWidth: 140,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    minWidth: 85,
   },
-  simpleStatIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#1C2A3A',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  simpleStatValue: {
-    fontSize: 26,
-    fontFamily: Typography.fontFamily.bold,
-    // fontWeight: Typography.fontWeight.bold,
-    color: '#000000',
+  iconStatContainer: {
+    position: 'relative',
     marginBottom: 6,
   },
-  simpleStatTitle: {
+  iconStatIconWrapper: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconStatBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: '#1C2A3A',
+    borderRadius: 12,
+    minWidth: 28,
+    height: 24,
+    paddingHorizontal: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  iconStatValue: {
+    fontSize: 13,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#FFFFFF',
+  },
+  iconStatTitle: {
     fontSize: 12,
-    fontFamily: Typography.fontFamily.medium,
-    color: '#000000',
-    // fontWeight: Typography.fontWeight.semibold,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#374151',
     textAlign: 'center',
+    lineHeight: 15,
+    maxWidth: 80,
   },
-  horizontalScroll: {
+  overviewScroll: {
     marginHorizontal: -20,
-    paddingHorizontal: 20,
   },
-  horizontalScrollContent: {
-    paddingBottom: 8,
+  overviewScrollContent: {
+    paddingHorizontal: 6,
+    paddingBottom: 4,
   },
-  statsRow: {
+  iconStatsRow: {
     flexDirection: 'row',
-    gap: 8,
-    paddingRight: 20,
+    alignItems: 'center',
   },
 });
 

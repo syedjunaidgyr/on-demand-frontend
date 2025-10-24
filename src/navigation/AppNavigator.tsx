@@ -27,6 +27,7 @@ import QRCodeDisplayScreen from '../screens/healthcare/QRCodeDisplayScreen';
 
 // Common Screens
 import ProfileScreen from '../screens/common/ProfileScreen';
+import ProfileSettingsScreen from '../screens/common/ProfileSettingsScreen';
 import JobDetailsCommonScreen from '../screens/common/JobDetailsCommonScreen';
 
 // Test Components
@@ -61,6 +62,7 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   Profile: undefined;
+  ProfileSettings: undefined;
   JobDetails: { jobId?: string; job?: Job };
   CreateJob: undefined;
   CheckInOut: { assignmentId?: string; scannedQRData?: string; scannedAction?: 'checkin' | 'checkout' };
@@ -214,10 +216,14 @@ const MainNavigator = ({ user }: { user: User }) => {
         name="Profile" 
         component={ProfileScreen}
         options={{
-          headerShown: true,
-          title: 'Profile',
-          headerStyle: { backgroundColor: Colors.primary },
-          headerTintColor: Colors.white,
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="ProfileSettings" 
+        component={ProfileSettingsScreen}
+        options={{
+          headerShown: false,
         }}
       />
       <Stack.Screen 

@@ -8,14 +8,16 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Dimensions,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
+import LinearGradient from 'react-native-linear-gradient';
 import GlobalHeader from '../../components/GlobalHeader';
 
 import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
-import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import { User } from '../../types';
 import ApiService from '../../services/api';
 import { useAuth } from '../../navigation/AppNavigator';
@@ -25,6 +27,9 @@ const ProfileScreen: React.FC = () => {
   const { logout: authLogout } = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const { width: screenWidth } = Dimensions.get('window');
+  const isSmallScreen = screenWidth < 375;
 
   useEffect(() => {
     loadUserProfile();
@@ -68,18 +73,33 @@ const ProfileScreen: React.FC = () => {
     );
   };
 
+  const getRoleGradient = (role: string): string[] => {
+    switch (role) {
+      case 'DOCTOR':
+        return ['#3B82F6', '#2563EB'];
+      case 'NURSE':
+        return ['#10B981', '#059669'];
+      case 'HR':
+        return ['#8B5CF6', '#7C3AED'];
+      case 'ADMIN':
+        return ['#EF4444', '#DC2626'];
+      default:
+        return ['#6366F1', '#4F46E5'];
+    }
+  };
+
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'DOCTOR':
-        return Colors.doctor;
+        return '#3B82F6';
       case 'NURSE':
-        return Colors.nurse;
+        return '#10B981';
       case 'HR':
-        return Colors.hr;
+        return '#8B5CF6';
       case 'ADMIN':
-        return Colors.admin;
+        return '#EF4444';
       default:
-        return Colors.primary;
+        return '#6366F1';
     }
   };
 
@@ -100,95 +120,115 @@ const ProfileScreen: React.FC = () => {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color="#6366F1" />
           <Text style={styles.loadingText}>Loading profile...</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (!user) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <View style={styles.errorContainer}>
-          <FontAwesomeIcon icon="exclamation-triangle" size={48} color={Colors.error}  />
+          <FontAwesomeIcon icon="exclamation-triangle" size={48} color="#EF4444" />
           <Text style={styles.errorText}>Failed to load profile</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={[styles.avatarContainer, { backgroundColor: getRoleColor(user.role) }]}>
-            <FontAwesomeIcon icon={getRoleIcon(user.role)} size={40} color={Colors.white}  />
+    <View style={styles.container}>
+      {/* Header with Back Button and Settings */}
+      <GlobalHeader
+        title="Profile"
+        showBackButton={true}
+        backgroundColor="#1C2A3A"
+        titleColor="#FFFFFF"
+        onBackPress={() => navigation.goBack()}
+        rightComponent={
+          <TouchableOpacity 
+            style={styles.settingsButton}
+            onPress={() => (navigation as any).navigate('ProfileSettings')}>
+            <FontAwesomeIcon icon="cog" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        }
+      />
+
+      {/* Profile Info Section with Curved Bottom */}
+      <View style={styles.profileInfoSection}>
+        <View style={styles.profileHeader}>
+          <View style={styles.avatarContainer}>
+            <View style={styles.avatarCircle}>
+              <Image 
+                source={require('../../assets/logo.png')} 
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
+            </View>
           </View>
           <Text style={styles.userName}>{user.firstName} {user.lastName}</Text>
-          <View style={[styles.roleBadge, { backgroundColor: getRoleColor(user.role) }]}>
+          <View style={styles.roleBadge}>
             <Text style={styles.roleText}>{user.role}</Text>
           </View>
         </View>
+      </View>
 
-        {/* Profile Information */}
+      <ScrollView 
+        style={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContentContainer}>
+
+        {/* Personal Information */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Personal Information</Text>
           
           <View style={styles.infoCard}>
-            <View style={styles.infoRow}>
-              <FontAwesomeIcon icon="envelope" size={20} color={Colors.textTertiary}  />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Email</Text>
-                <Text style={styles.infoValue}>{user.email}</Text>
-              </View>
-            </View>
-
-            <View style={styles.infoRow}>
-              <FontAwesomeIcon icon="phone" size={20} color={Colors.textTertiary}  />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Phone</Text>
-                <Text style={styles.infoValue}>{user.phone}</Text>
-              </View>
-            </View>
-
-            <View style={styles.infoRow}>
-              <FontAwesomeIcon icon="building" size={20} color={Colors.textTertiary}  />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Department</Text>
-                <Text style={styles.infoValue}>{user.department}</Text>
-              </View>
-            </View>
-
-            <View style={styles.infoRow}>
-              <FontAwesomeIcon icon="map-marker-alt" size={20} color={Colors.textTertiary}  />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Location</Text>
-                <Text style={styles.infoValue}>{user.location}</Text>
-              </View>
-            </View>
-
+            <InfoItem 
+              icon="envelope" 
+              iconColor="#3B82F6"
+              label="Email" 
+              value={user.email} 
+            />
+            <InfoItem 
+              icon="phone" 
+              iconColor="#10B981"
+              label="Phone" 
+              value={user.phone} 
+            />
+            <InfoItem 
+              icon="building" 
+              iconColor="#8B5CF6"
+              label="Department" 
+              value={user.department} 
+            />
+            <InfoItem 
+              icon="map-marker-alt" 
+              iconColor="#F59E0B"
+              label="Location" 
+              value={user.location}
+              isLast={!user.specialization && !user.licenseNumber}
+            />
             {user.specialization && (
-              <View style={styles.infoRow}>
-                <FontAwesomeIcon icon="stethoscope" size={20} color={Colors.textTertiary}  />
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Specialization</Text>
-                  <Text style={styles.infoValue}>{user.specialization}</Text>
-                </View>
-              </View>
+              <InfoItem 
+                icon="stethoscope" 
+                iconColor="#EC4899"
+                label="Specialization" 
+                value={user.specialization}
+                isLast={!user.licenseNumber}
+              />
             )}
-
             {user.licenseNumber && (
-              <View style={styles.infoRow}>
-                <FontAwesomeIcon icon="user" size={20} color={Colors.textTertiary}  />
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>License Number</Text>
-                  <Text style={styles.infoValue}>{user.licenseNumber}</Text>
-                </View>
-              </View>
+              <InfoItem 
+                icon="id-card" 
+                iconColor="#06B6D4"
+                label="License Number" 
+                value={user.licenseNumber}
+                isLast
+              />
             )}
           </View>
         </View>
@@ -198,29 +238,25 @@ const ProfileScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>Emergency Contact</Text>
           
           <View style={styles.infoCard}>
-            <View style={styles.infoRow}>
-              <FontAwesomeIcon icon="user" size={20} color={Colors.textTertiary}  />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Name</Text>
-                <Text style={styles.infoValue}>{user.emergencyContact?.name || 'Not provided'}</Text>
-              </View>
-            </View>
-
-            <View style={styles.infoRow}>
-              <FontAwesomeIcon icon="phone" size={20} color={Colors.textTertiary}  />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Phone</Text>
-                <Text style={styles.infoValue}>{user.emergencyContact?.phone || 'Not provided'}</Text>
-              </View>
-            </View>
-
-            <View style={styles.infoRow}>
-              <FontAwesomeIcon icon="users" size={20} color={Colors.textTertiary}  />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Relationship</Text>
-                <Text style={styles.infoValue}>{user.emergencyContact?.relationship || 'Not provided'}</Text>
-              </View>
-            </View>
+            <InfoItem 
+              icon="user" 
+              iconColor="#EF4444"
+              label="Name" 
+              value={user.emergencyContact?.name || 'Not provided'} 
+            />
+            <InfoItem 
+              icon="phone" 
+              iconColor="#10B981"
+              label="Phone" 
+              value={user.emergencyContact?.phone || 'Not provided'} 
+            />
+            <InfoItem 
+              icon="users" 
+              iconColor="#8B5CF6"
+              label="Relationship" 
+              value={user.emergencyContact?.relationship || 'Not provided'}
+              isLast
+            />
           </View>
         </View>
 
@@ -229,189 +265,295 @@ const ProfileScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>Address</Text>
           
           <View style={styles.infoCard}>
-            <View style={styles.infoRow}>
-              <FontAwesomeIcon icon="home" size={20} color={Colors.textTertiary}  />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Street</Text>
-                <Text style={styles.infoValue}>{user.address?.street || 'Not provided'}</Text>
-              </View>
-            </View>
-
-            <View style={styles.infoRow}>
-              <FontAwesomeIcon icon="building" size={20} color={Colors.textTertiary}  />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>City</Text>
-                <Text style={styles.infoValue}>{user.address?.city || 'Not provided'}</Text>
-              </View>
-            </View>
-
-            <View style={styles.infoRow}>
-              <FontAwesomeIcon icon="map-marker-alt" size={20} color={Colors.textTertiary}  />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>State</Text>
-                <Text style={styles.infoValue}>{user.address?.state || 'Not provided'}</Text>
-              </View>
-            </View>
-
-            <View style={styles.infoRow}>
-              <FontAwesomeIcon icon="envelope" size={20} color={Colors.textTertiary}  />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>ZIP Code</Text>
-                <Text style={styles.infoValue}>{user.address?.zipCode || 'Not provided'}</Text>
-              </View>
-            </View>
+            <InfoItem 
+              icon="home" 
+              iconColor="#F59E0B"
+              label="Street" 
+              value={user.address?.street || 'Not provided'} 
+            />
+            <InfoItem 
+              icon="building" 
+              iconColor="#3B82F6"
+              label="City" 
+              value={user.address?.city || 'Not provided'} 
+            />
+            <InfoItem 
+              icon="map-marker-alt" 
+              iconColor="#8B5CF6"
+              label="State" 
+              value={user.address?.state || 'Not provided'} 
+            />
+            <InfoItem 
+              icon="map-marker-alt" 
+              iconColor="#06B6D4"
+              label="ZIP Code" 
+              value={user.address?.zipCode || 'Not provided'}
+              isLast
+            />
           </View>
         </View>
 
         {/* Actions */}
         <View style={styles.section}>
-          <TouchableOpacity style={styles.actionButton}>
-            <FontAwesomeIcon icon="edit" size={20} color={Colors.primary}  />
-            <Text style={styles.actionButtonText}>Edit Profile</Text>
-            <FontAwesomeIcon icon="arrow-right" size={20} color={Colors.textTertiary}  />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionButton}>
-            <FontAwesomeIcon icon="lock" size={20} color={Colors.primary}  />
-            <Text style={styles.actionButtonText}>Change Password</Text>
-            <FontAwesomeIcon icon="arrow-right" size={20} color={Colors.textTertiary}  />
-          </TouchableOpacity>
-
+        
+          
+        
+          
           <TouchableOpacity 
-            style={styles.actionButton} 
-            onPress={() => navigation.navigate('GeolocationTest' as never)}
-          >
-            <FontAwesomeIcon icon="map-marker-alt" size={20} color={Colors.primary}  />
-            <Text style={styles.actionButtonText}>Test Geolocation</Text>
-            <FontAwesomeIcon icon="arrow-right" size={20} color={Colors.textTertiary}  />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={[styles.actionButton, styles.logoutButton]} onPress={handleLogout}>
-              <FontAwesomeIcon icon="sign-out-alt" size={20} color={Colors.error}  />
-            <Text style={[styles.actionButtonText, styles.logoutButtonText]}>Logout</Text>
-            <FontAwesomeIcon icon="arrow-right" size={20} color={Colors.textTertiary}  />
+            style={styles.logoutButton} 
+            onPress={handleLogout}
+            activeOpacity={0.7}>
+            <View style={styles.logoutIconContainer}>
+              <FontAwesomeIcon icon="sign-out-alt" size={18} color="#FFFFFF" />
+            </View>
+            <Text style={styles.logoutButtonText}>Logout</Text>
+            <FontAwesomeIcon icon="arrow-right" size={16} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
+
+// InfoItem Component
+const InfoItem = ({ 
+  icon, 
+  iconColor, 
+  label, 
+  value, 
+  isLast = false 
+}: {
+  icon: string;
+  iconColor: string;
+  label: string;
+  value: string;
+  isLast?: boolean;
+}) => (
+  <View style={[styles.infoRow, isLast && styles.infoRowLast]}>
+    <View style={styles.infoIconContainer}>
+      <FontAwesomeIcon icon={icon} size={18} color="#1C2A3A" />
+    </View>
+    <View style={styles.infoContent}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value}</Text>
+    </View>
+  </View>
+);
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
-  },
-  content: {
-    flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#FFFFFF',
   },
   loadingText: {
-    marginTop: Spacing.md,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
+    marginTop: 16,
+    fontSize: 16,
+    fontFamily: Typography.fontFamily.medium,
+    color: '#6B7280',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#FFFFFF',
   },
   errorText: {
-    marginTop: Spacing.md,
-    fontSize: Typography.fontSize.base,
-    color: Colors.error,
+    marginTop: 16,
+    fontSize: 16,
+    fontFamily: Typography.fontFamily.medium,
+    color: '#EF4444',
   },
-  header: {
-    alignItems: 'center',
-    paddingVertical: Spacing['3xl'],
-    paddingHorizontal: Spacing.lg,
-    backgroundColor: Colors.white,
-    marginBottom: Spacing.md,
-  },
-  avatarContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  settingsButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: Spacing.md,
+  },
+  profileInfoSection: {
+    backgroundColor: '#1C2A3A',
+    paddingTop: 0,
+    paddingBottom: 10,
+    marginTop: -20,
+  },
+  profileHeader: {
+    alignItems: 'center',
+  },
+  avatarContainer: {
+    marginBottom: 16,
+    marginTop: 10,
+  },
+  avatarCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#1C2A3A',
+  },
+  logoImage: {
+    width: 90,
+    height: 90,
   },
   userName: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.sm,
+    fontSize: 22,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#FFFFFF',
+    marginBottom: 8,
+    textAlign: 'center',
   },
   roleBadge: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.full,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginBottom: 24,
   },
   roleText: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.white,
+    fontSize: 12,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#FFFFFF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  scrollContent: {
+    flex: 1,
+    marginTop: -25,
+    backgroundColor: '#FFFFFF',
+  },
+  scrollContentContainer: {
+    paddingBottom: 30,
+    backgroundColor: '#FFFFFF',
   },
   section: {
-    marginBottom: Spacing.lg,
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: 20,
+    marginBottom: 24,
+    marginTop: 10,
   },
   sectionTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-    marginBottom: Spacing.md,
+    fontSize: 18,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#111827',
+    marginBottom: 12,
+    letterSpacing: -0.3,
   },
   infoCard: {
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    ...Shadow.sm,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.md,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  infoRowLast: {
+    borderBottomWidth: 0,
+  },
+  infoIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#1C2A3A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
   },
   infoContent: {
-    marginLeft: Spacing.md,
     flex: 1,
   },
   infoLabel: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textTertiary,
-    marginBottom: Spacing.xs,
+    fontSize: 12,
+    fontFamily: Typography.fontFamily.medium,
+    color: '#6B7280',
+    marginBottom: 4,
   },
   infoValue: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    fontWeight: Typography.fontWeight.medium,
+    fontSize: 15,
+    fontFamily: Typography.fontFamily.medium,
+    color: '#111827',
+    lineHeight: 20,
+  },
+  actionsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.lg,
-    marginBottom: Spacing.sm,
-    ...Shadow.sm,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+  },
+  actionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
   },
   actionButtonText: {
     flex: 1,
-    fontSize: Typography.fontSize.base,
-    color: Colors.textPrimary,
-    marginLeft: Spacing.md,
+    fontSize: 15,
+    fontFamily: Typography.fontFamily.medium,
+    color: '#111827',
+  },
+  actionDivider: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginLeft: 80,
   },
   logoutButton: {
-    borderLeftWidth: 4,
-    borderLeftColor: Colors.error,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1C2A3A',
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  logoutIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
   },
   logoutButtonText: {
-    color: Colors.error,
+    flex: 1,
+    fontSize: 16,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#FFFFFF',
   },
 });
 
