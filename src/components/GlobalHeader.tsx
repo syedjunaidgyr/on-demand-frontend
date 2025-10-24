@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { FontAwesomeIcon } from '../utils/icons';
 import { Colors } from '../constants/colors';
+import { Typography } from '../constants/typography';
 
 interface GlobalHeaderProps {
   title: string;
@@ -75,7 +76,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: Typography.fontFamily.bold,
     flex: 1,
     textAlign: 'center',
   },

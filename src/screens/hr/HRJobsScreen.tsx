@@ -341,6 +341,7 @@ const HRJobsScreen: React.FC = () => {
       <GlobalHeader 
         title="Job Management"
         backgroundColor={Colors.primary}
+        onBackPress={() => navigation.goBack()}
         rightComponent={
           <TouchableOpacity style={styles.createButton} onPress={handleCreateJob}>
             <FontAwesomeIcon icon="plus" size={24} color={Colors.white} />
@@ -384,6 +385,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: Spacing.md,
     fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.medium,
     color: Colors.textSecondary,
   },
   header: {
@@ -399,11 +401,12 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: Typography.fontSize['2xl'],
-    fontWeight: Typography.fontWeight.bold,
+    fontFamily: Typography.fontFamily.bold,
     color: Colors.white,
   },
   headerSubtitle: {
     fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.white,
     opacity: 0.9,
     marginTop: Spacing.xs,
@@ -438,7 +441,7 @@ const styles = StyleSheet.create({
   },
   jobTitle: {
     fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.bold,
+    fontFamily: Typography.fontFamily.bold,
     color: Colors.textPrimary,
     marginBottom: Spacing.sm,
   },
@@ -453,7 +456,7 @@ const styles = StyleSheet.create({
   },
   priorityText: {
     fontSize: Typography.fontSize.xs,
-    fontWeight: Typography.fontWeight.bold,
+    fontFamily: Typography.fontFamily.bold,
     color: Colors.white,
   },
   statusBadge: {
@@ -463,7 +466,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: Typography.fontSize.xs,
-    fontWeight: Typography.fontWeight.bold,
+    fontFamily: Typography.fontFamily.bold,
     color: Colors.white,
   },
   jobRate: {
@@ -471,11 +474,12 @@ const styles = StyleSheet.create({
   },
   rateAmount: {
     fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.bold,
+    fontFamily: Typography.fontFamily.bold,
     color: Colors.primary,
   },
   rateLabel: {
     fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.textSecondary,
   },
   jobDetails: {
@@ -488,6 +492,7 @@ const styles = StyleSheet.create({
   },
   jobDetailText: {
     fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.textSecondary,
     marginLeft: Spacing.sm,
   },
@@ -504,17 +509,18 @@ const styles = StyleSheet.create({
   },
   assignmentText: {
     fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.textTertiary,
   },
   pendingText: {
     fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.medium,
     color: Colors.warning,
-    fontWeight: Typography.fontWeight.medium,
   },
   acceptedText: {
     fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.medium,
     color: Colors.success,
-    fontWeight: Typography.fontWeight.medium,
   },
   jobActions: {
     flexDirection: 'row',

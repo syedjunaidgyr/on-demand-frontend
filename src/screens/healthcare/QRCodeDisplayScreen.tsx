@@ -22,12 +22,18 @@ import { generateQRCodeData } from '../../utils/qrCodeUtils';
 interface QRCodeDisplayScreenProps {
   assignment: JobAssignment;
   action: 'checkin' | 'checkout';
+  locationData?: {
+    latitude: number;
+    longitude: number;
+    accuracy: number;
+    timestamp: number;
+  };
 }
 
 const QRCodeDisplayScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { assignment, action } = route.params as QRCodeDisplayScreenProps;
+  const { assignment, action, locationData } = route.params as QRCodeDisplayScreenProps;
   
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -40,6 +46,13 @@ const QRCodeDisplayScreen: React.FC = () => {
     action,
     jobTitle: assignment.job?.title || 'Assignment',
     providerName: assignment.user ? `${assignment.user.firstName} ${assignment.user.lastName}` : 'Unknown Provider',
+    // Include GPS location data if available
+    gpsLocation: locationData ? {
+      latitude: locationData.latitude,
+      longitude: locationData.longitude,
+      accuracy: locationData.accuracy,
+      timestamp: locationData.timestamp
+    } : undefined,
   };
 
   const handleShare = async () => {
@@ -111,6 +124,24 @@ const QRCodeDisplayScreen: React.FC = () => {
           <Text style={styles.infoText}>
             Provider: {assignment.user?.firstName} {assignment.user?.lastName}
           </Text>
+          
+          {locationData && (
+            <View style={styles.locationContainer}>
+              <Text style={styles.locationTitle}>📍 GPS Location Verified</Text>
+              <Text style={styles.locationText}>
+                Latitude: {locationData.latitude.toFixed(6)}
+              </Text>
+              <Text style={styles.locationText}>
+                Longitude: {locationData.longitude.toFixed(6)}
+              </Text>
+              <Text style={styles.locationText}>
+                Accuracy: {Math.round(locationData.accuracy)}m
+              </Text>
+              <Text style={styles.locationText}>
+                Captured: {new Date(locationData.timestamp).toLocaleString()}
+              </Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.qrContainer}>
@@ -236,6 +267,25 @@ const styles = StyleSheet.create({
   instructionsText: {
     fontSize: Typography.fontSize.sm,
     color: Colors.textSecondary,
+    marginBottom: Spacing.xs,
+  },
+  locationContainer: {
+    marginTop: Spacing.md,
+    padding: Spacing.md,
+    backgroundColor: Colors.success + '10',
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.success + '30',
+  },
+  locationTitle: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.success,
+    marginBottom: Spacing.sm,
+  },
+  locationText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textPrimary,
     marginBottom: Spacing.xs,
   },
 });

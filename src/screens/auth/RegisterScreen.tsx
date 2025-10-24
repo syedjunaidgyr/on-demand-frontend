@@ -12,6 +12,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
+  Image,
+  Dimensions,
 } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { useNavigation } from '@react-navigation/native';
@@ -21,6 +23,12 @@ import { FontAwesomeIcon } from '../../utils/icons';
 import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
 import ApiService from '../../services/api';
+
+const { width, height } = Dimensions.get('window');
+
+// Device size detection for responsive design
+const IS_SMALL_DEVICE = height < 700;
+const IS_VERY_SMALL_DEVICE = height < 600;
 
 // Move InputField outside to prevent re-creation on each render
 const InputField = ({ 
@@ -965,12 +973,17 @@ const RegisterScreen: React.FC = () => {
         </View>
       </LinearGradient>
 
-      <KeyboardAvoidingView style={styles.flex1} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView 
+        style={styles.flex1} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+      >
         <ScrollView 
           style={styles.content} 
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="always"
+          keyboardShouldPersistTaps="handled"
           keyboardDismissMode="none"
+          contentContainerStyle={styles.scrollContentContainer}
         >
         <View style={styles.formContainer}>
           <Text style={styles.welcomeText}>Join Locum Healthcare</Text>
@@ -1370,6 +1383,16 @@ const RegisterScreen: React.FC = () => {
       
       {/* Success Modal */}
       {showSuccessModal && <SuccessModal />}
+
+      {/* Powered By Section - Fixed at bottom */}
+      <View style={styles.poweredByContainer}>
+        <Text style={styles.poweredByText}>Powered by</Text>
+        <Image
+          source={require('../../assets/footer_logo.png')}
+          style={styles.companyLogo}
+          resizeMode="contain"
+        />
+      </View>
     </SafeAreaView>
   );
 };
@@ -1417,6 +1440,10 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
     paddingTop: 0,
+  },
+  scrollContentContainer: {
+    flexGrow: 1,
+    paddingBottom: 40,
   },
   formContainer: {
     paddingTop: 24,
@@ -1679,6 +1706,24 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.regular,
     color: '#999999',
     textAlign: 'center',
+  },
+  poweredByContainer: {
+    position: 'absolute',
+    bottom: IS_VERY_SMALL_DEVICE ? height * 0.02 : height * 0.01,
+    right: IS_VERY_SMALL_DEVICE ? width * 0.03 : width * 0.02,
+    flexDirection: 'row',
+    alignItems: 'center',
+    maxWidth: width * 0.4,
+  },
+  poweredByText: {
+    fontSize: IS_VERY_SMALL_DEVICE ? width * 0.025 : width * 0.03,
+    fontFamily: Typography.fontFamily.medium, // DM Sans Medium
+    color: '#000000',
+    marginRight: IS_VERY_SMALL_DEVICE ? -15 : -25,
+  },
+  companyLogo: {
+    height: IS_VERY_SMALL_DEVICE ? 12 : 15,
+    width: IS_VERY_SMALL_DEVICE ? 80 : 95,
   },
 });
 

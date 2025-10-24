@@ -62,7 +62,7 @@ const DateField = ({
   label,
   value,
   onChange,
-  placeholder = 'YYYY-MM-DD',
+  placeholder = 'DD-MM-YYYY',
 }: {
   label: string;
   value: string;
@@ -72,37 +72,47 @@ const DateField = ({
   const [show, setShow] = useState(false);
 
   const parseDateString = (dateString: string): Date => {
-    // Expecting YYYY-MM-DD; fallback to today
-    const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    // Expecting DD-MM-YYYY; fallback to today
+    const match = dateString.match(/^(\d{2})-(\d{2})-(\d{4})$/);
     if (match) {
-      const year = parseInt(match[1], 10);
+      const day = parseInt(match[1], 10);
       const month = parseInt(match[2], 10) - 1;
-      const day = parseInt(match[3], 10);
+      const year = parseInt(match[3], 10);
       return new Date(year, month, day);
     }
     return new Date();
   };
 
   const formatDate = (date: Date): string => {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
     const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const y = date.getFullYear();
+    return `${d}-${m}-${y}`;
   };
 
   return (
     <View style={styles.inputContainer}>
       <Text style={styles.inputLabel}>{label}</Text>
-      <TouchableOpacity onPress={() => setShow(true)} activeOpacity={0.8}>
-        <TextInput
-          style={styles.textInput}
-          placeholder={placeholder}
-          placeholderTextColor={Colors.textTertiary}
-          value={value}
-          editable={false}
-          pointerEvents="none"
-        />
-      </TouchableOpacity>
+      <View style={styles.inputWithClear}>
+        <TouchableOpacity onPress={() => setShow(true)} activeOpacity={0.8} style={styles.inputTouchable}>
+          <TextInput
+            style={styles.textInput}
+            placeholder={placeholder}
+            placeholderTextColor={Colors.textTertiary}
+            value={value}
+            editable={false}
+            pointerEvents="none"
+          />
+        </TouchableOpacity>
+        {value && (
+          <TouchableOpacity 
+            onPress={() => onChange('')} 
+            style={styles.clearButton}
+            activeOpacity={0.7}>
+            <FontAwesomeIcon icon="times" size={16} color={Colors.textTertiary} />
+          </TouchableOpacity>
+        )}
+      </View>
       {show && (
         <DateTimePicker
           value={value ? parseDateString(value) : new Date()}
@@ -114,6 +124,81 @@ const DateField = ({
             }
             if (selectedDate) {
               onChange(formatDate(selectedDate));
+            }
+          }}
+        />
+      )}
+    </View>
+  );
+};
+
+// Time input component with native picker
+const TimeField = ({
+  label,
+  value,
+  onChange,
+  placeholder = 'HH:MM',
+}: {
+  label: string;
+  value: string;
+  onChange: (text: string) => void;
+  placeholder?: string;
+}) => {
+  const [show, setShow] = useState(false);
+
+  const parseTimeString = (timeString: string): Date => {
+    // Expecting HH:MM; fallback to current time
+    const match = timeString.match(/^(\d{1,2}):(\d{2})$/);
+    if (match) {
+      const hours = parseInt(match[1], 10);
+      const minutes = parseInt(match[2], 10);
+      const date = new Date();
+      date.setHours(hours, minutes, 0, 0);
+      return date;
+    }
+    return new Date();
+  };
+
+  const formatTime = (date: Date): string => {
+    const h = String(date.getHours()).padStart(2, '0');
+    const m = String(date.getMinutes()).padStart(2, '0');
+    return `${h}:${m}`;
+  };
+
+  return (
+    <View style={styles.inputContainer}>
+      <Text style={styles.inputLabel}>{label}</Text>
+      <View style={styles.inputWithClear}>
+        <TouchableOpacity onPress={() => setShow(true)} activeOpacity={0.8} style={styles.inputTouchable}>
+          <TextInput
+            style={styles.textInput}
+            placeholder={placeholder}
+            placeholderTextColor={Colors.textTertiary}
+            value={value}
+            editable={false}
+            pointerEvents="none"
+          />
+        </TouchableOpacity>
+        {value && (
+          <TouchableOpacity 
+            onPress={() => onChange('')} 
+            style={styles.clearButton}
+            activeOpacity={0.7}>
+            <FontAwesomeIcon icon="times" size={16} color={Colors.textTertiary} />
+          </TouchableOpacity>
+        )}
+      </View>
+      {show && (
+        <DateTimePicker
+          value={value ? parseTimeString(value) : new Date()}
+          mode="time"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={(event: any, selectedTime?: Date) => {
+            if (Platform.OS === 'android') {
+              setShow(false);
+            }
+            if (selectedTime) {
+              onChange(formatTime(selectedTime));
             }
           }}
         />
@@ -541,7 +626,7 @@ const CreateJobScreen: React.FC = () => {
         const ddmmyyyy = value.match(/^(\d{2})-(\d{2})-(\d{4})$/);
         if (ddmmyyyy) {
           const [, dd, mm, yyyy] = ddmmyyyy;
-          return `${yyyy}-${mm}-${dd}`; // convert to YYYY-MM-DD
+          return `${yyyy}-${mm}-${dd}`; // convert DD-MM-YYYY to YYYY-MM-DD for API
         }
         return value;
       };
@@ -737,7 +822,7 @@ const CreateJobScreen: React.FC = () => {
                 label="Start Date"
                 value={formData.startDate}
                 onChange={(text) => handleInputChange('startDate', text)}
-                placeholder="YYYY-MM-DD"
+                placeholder="DD-MM-YYYY"
               />
             </View>
             <View style={styles.halfWidth}>
@@ -745,25 +830,25 @@ const CreateJobScreen: React.FC = () => {
                 label="End Date"
                 value={formData.endDate}
                 onChange={(text) => handleInputChange('endDate', text)}
-                placeholder="YYYY-MM-DD"
+                placeholder="DD-MM-YYYY"
               />
             </View>
           </View>
 
           <View style={styles.row}>
             <View style={styles.halfWidth}>
-              <InputField
+              <TimeField
                 label="Start Time"
                 value={formData.startTime}
-                onChangeText={(text) => handleInputChange('startTime', text)}
+                onChange={(text) => handleInputChange('startTime', text)}
                 placeholder="HH:MM"
               />
             </View>
             <View style={styles.halfWidth}>
-              <InputField
+              <TimeField
                 label="End Time"
                 value={formData.endTime}
-                onChangeText={(text) => handleInputChange('endTime', text)}
+                onChange={(text) => handleInputChange('endTime', text)}
                 placeholder="HH:MM"
               />
             </View>
@@ -1041,7 +1126,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.bold,
+    fontFamily: Typography.fontFamily.bold,
     color: Colors.textPrimary,
     marginTop: Spacing.lg,
     marginBottom: Spacing.md,
@@ -1051,7 +1136,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
+    // fontWeight: Typography.fontWeight.medium,
     color: Colors.textPrimary,
     marginBottom: Spacing.sm,
   },
@@ -1100,7 +1185,7 @@ const styles = StyleSheet.create({
   },
   roleButtonText: {
     fontSize: Typography.fontSize.base,
-    fontWeight: Typography.fontWeight.medium,
+    // fontWeight: Typography.fontWeight.medium,
     color: Colors.primary,
     marginLeft: Spacing.sm,
   },
@@ -1129,7 +1214,7 @@ const styles = StyleSheet.create({
   },
   priorityButtonText: {
     fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
+    // fontWeight: Typography.fontWeight.medium,
     color: Colors.textPrimary,
   },
   priorityButtonTextActive: {
@@ -1174,7 +1259,7 @@ const styles = StyleSheet.create({
   },
   createButtonText: {
     fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.bold,
+    // fontWeight: Typography.fontWeight.bold,
     color: Colors.white,
   },
   dropdownStyle: {
@@ -1209,6 +1294,27 @@ const styles = StyleSheet.create({
   dropdownListItemStyle: {
     fontSize: Typography.fontSize.base,
     color: Colors.textPrimary,
+  },
+  inputWithClear: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  inputTouchable: {
+    flex: 1,
+  },
+  clearButton: {
+    position: 'absolute',
+    right: 12,
+    top: '50%',
+    transform: [{ translateY: -12 }],
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.backgroundSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
   },
 });
 

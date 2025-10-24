@@ -29,6 +29,9 @@ import QRCodeDisplayScreen from '../screens/healthcare/QRCodeDisplayScreen';
 import ProfileScreen from '../screens/common/ProfileScreen';
 import JobDetailsCommonScreen from '../screens/common/JobDetailsCommonScreen';
 
+// Test Components
+import GeolocationTest from '../components/GeolocationTest';
+
 import { Colors } from '../constants/colors';
 import { User, Job } from '../types';
 import { setGlobalLogoutHandler } from '../services/api';
@@ -65,6 +68,7 @@ export type RootStackParamList = {
   AssignmentDetails: { assignmentId: string };
   QRScanner: { assignmentId: string; action: 'checkin' | 'checkout' };
   QRCodeDisplay: { assignment: JobAssignment; action: 'checkin' | 'checkout' };
+  GeolocationTest: undefined;
 };
 
 export type AuthStackParamList = {
@@ -250,10 +254,7 @@ const MainNavigator = ({ user }: { user: User }) => {
         name="JobAssignment" 
         component={JobAssignmentScreen}
         options={{
-          headerShown: true,
-          title: 'Assign Job',
-          headerStyle: { backgroundColor: Colors.primary },
-          headerTintColor: Colors.white,
+          headerShown: false,
         }}
       />
       <Stack.Screen 
@@ -280,6 +281,16 @@ const MainNavigator = ({ user }: { user: User }) => {
         options={{
           headerShown: false, // We handle our own header
           title: 'QR Code Display',
+        }}
+      />
+      <Stack.Screen 
+        name="GeolocationTest" 
+        component={GeolocationTest}
+        options={{
+          headerShown: true,
+          title: 'Geolocation Test',
+          headerStyle: { backgroundColor: Colors.primary },
+          headerTintColor: Colors.white,
         }}
       />
     </Stack.Navigator>

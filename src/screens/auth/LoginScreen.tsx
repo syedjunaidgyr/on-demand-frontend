@@ -12,6 +12,8 @@ import {
   ActivityIndicator,
   Keyboard,
   TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
@@ -111,29 +113,34 @@ const LoginScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableWithoutFeedback onPress={dismissKeyboard}>
-        <View style={styles.content}>
-          {/* Top Spacer */}
-          <View style={styles.topSpacer} />
-          
-          {/* Logo Section */}
-          <View style={styles.logoContainer}>
-            <View style={styles.logoPlaceholder}>
-              <View style={styles.logoWrapper}>
-                <Image 
-                  source={require('../../assets/logo.png')} 
-                  style={styles.logo}
-                  resizeMode="cover"
-                />
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <TouchableWithoutFeedback onPress={dismissKeyboard}>
+          <View style={styles.content}>
+            {/* Top Spacer */}
+            <View style={styles.topSpacer} />
+            
+            {/* Logo Section */}
+            <View style={styles.logoContainer}>
+              <View style={styles.logoPlaceholder}>
+                <View style={styles.logoWrapper}>
+                  <Image 
+                    source={require('../../assets/logo.png')} 
+                    style={styles.logo}
+                    resizeMode="cover"
+                  />
+                </View>
+                <Text style={styles.logoText}>Locum</Text>
+                <Text style={styles.logoSubtext}>(On Demand)</Text>
+                <Text style={styles.logoSubtext2}>Clinical Professionals</Text>
               </View>
-              <Text style={styles.logoText}>Locum</Text>
-              <Text style={styles.logoSubtext}>(On Demand)</Text>
-              <Text style={styles.logoSubtext2}>Clinical Professionals</Text>
             </View>
-          </View>
 
-          {/* Welcome Card */}
-          <View style={styles.card}>
+            {/* Welcome Card */}
+            <View style={styles.card}>
             <Text style={styles.welcomeText}>Welcome Back!</Text>
             <Text style={styles.subtitleText}>Sign in to continue</Text>
 
@@ -211,10 +218,11 @@ const LoginScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Bottom Spacer */}
-          <View style={styles.bottomSpacer} />
-        </View>
-      </TouchableWithoutFeedback>
+            {/* Bottom Spacer */}
+            <View style={styles.bottomSpacer} />
+          </View>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
 
       {/* Powered By Section - Fixed at bottom */}
       <View style={styles.poweredByContainer}>
@@ -233,6 +241,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
+  },
+  keyboardView: {
+    flex: 1,
   },
   content: {
     flex: 1,

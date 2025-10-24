@@ -362,11 +362,7 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
     };
 
     const handleAssignmentPress = () => {
-      if (assignment.status === 'ASSIGNED' || assignment.status === 'IN_PROGRESS') {
-        (navigation as any).navigate('CheckInOut', { assignmentId: assignment.id });
-      } else {
-        (navigation as any).navigate('AssignmentDetails', { assignmentId: assignment.id });
-      }
+      (navigation as any).navigate('Assignments');
     };
 
     return (
@@ -510,7 +506,7 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
               icon="calendar-check"
               title="Job Assignments"
               subtitle={`${myAssignments.length} Active`}
-              onPress={() => navigation.navigate('Assignments' as never)}
+              onPress={() => (navigation as any).navigate('Assignments')}
               gradient={['#6366F1', '#4F46E5']}
               iconColor="#4F46E5"
             />
@@ -554,7 +550,7 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
         {/* <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Job Assignments</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Assignments' as never)}>
+            <TouchableOpacity onPress={() => (navigation as any).navigate('Assignments')}>
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
@@ -581,7 +577,7 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Job Assignments</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('MyAssignments' as never)}>
+            <TouchableOpacity onPress={() => (navigation as any).navigate('Assignments')}>
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>

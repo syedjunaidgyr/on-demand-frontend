@@ -23,6 +23,8 @@ import { Typography } from '../../constants/typography';
 import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import { JobAssignment, User } from '../../types';
 import ApiService from '../../services/api';
+import LocationService, { LocationData } from '../../services/locationService';
+import LocationValidationModal from '../../components/LocationValidationModal';
 
 type CheckInOutScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CheckInOut'>;
 type CheckInOutScreenRouteProp = RouteProp<RootStackParamList, 'CheckInOut'>;
@@ -38,6 +40,13 @@ const CheckInOutScreen: React.FC = () => {
   const [showActionSheet, setShowActionSheet] = useState(false);
   const [currentAssignment, setCurrentAssignment] = useState<JobAssignment | null>(null);
   const [actionType, setActionType] = useState<'checkin' | 'checkout' | null>(null);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [pendingLocationAction, setPendingLocationAction] = useState<{
+    type: 'manual' | 'qr';
+    assignmentId: string;
+    action: 'checkin' | 'checkout';
+    qrData?: string;
+  } | null>(null);
 
   useEffect(() => {
     loadConfirmedAssignments();
@@ -126,17 +135,51 @@ const CheckInOutScreen: React.FC = () => {
   const handleManualCheckIn = async () => {
     if (!currentAssignment) return;
     
+    console.log('🔧 handleManualCheckIn called');
+    console.log('📍 Current assignment:', currentAssignment.id);
+    
+    // Set up pending action and show location modal
+    setPendingLocationAction({
+      type: 'manual',
+      assignmentId: currentAssignment.id,
+      action: 'checkin'
+    });
+    setShowLocationModal(true);
+    setShowActionSheet(false);
+  };
+
+  const processManualCheckIn = async (location: LocationData) => {
+    if (!currentAssignment) return;
+    
+    console.log('🔧 processManualCheckIn called with location:', location);
+    console.log('📍 Input latitude:', location.latitude);
+    console.log('📍 Input longitude:', location.longitude);
+    console.log('📍 Input accuracy:', location.accuracy);
+    console.log('📍 Input timestamp:', location.timestamp);
+    
     setIsProcessing(true);
     try {
+      // Get address from coordinates
+      const locationService = LocationService.getInstance();
+      const address = await locationService.getAddressFromCoordinates(
+        location.latitude, 
+        location.longitude
+      );
+
       const checkInData = {
         jobAssignmentId: currentAssignment.id,
         location: {
-          latitude: 0,
-          longitude: 0,
-          address: currentAssignment.job?.location || 'Hospital Location'
+          latitude: location.latitude,
+          longitude: location.longitude,
+          address: address
         },
-        notes: 'Checked in for shift',
+        notes: `Manual check-in | GPS: ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)} | Accuracy: ${Math.round(location.accuracy)}m | Time: ${new Date().toISOString()}`,
       };
+
+      console.log('🔧 Check-in data being sent:', checkInData);
+      console.log('📍 Location data:', checkInData.location);
+      console.log('📍 Latitude:', location.latitude);
+      console.log('📍 Longitude:', location.longitude);
 
       // ✅ Use the unified endpoint
       const response = await ApiService.checkIn(checkInData.jobAssignmentId, checkInData.location, checkInData.notes);
@@ -148,7 +191,10 @@ const CheckInOutScreen: React.FC = () => {
       
       const facilityName = response.jobContext?.facilityName || 'the facility';
       const userName = response.userInfo ? `${response.userInfo.firstName} ${response.userInfo.lastName}` : 'User';
-      Alert.alert('Success', `${userName} successfully checked in at ${facilityName}!`);
+      Alert.alert(
+        'Check-In Successful! ✅', 
+        `${userName} successfully checked in at ${facilityName}!\n\nLocation verified: ${address}\nCoordinates: ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}\nAccuracy: ${Math.round(location.accuracy)}m`
+      );
       
       // ✅ Update the assignment status immediately with user and job context
       const updatedAssignments = confirmedAssignments.map(assignment => 
@@ -174,14 +220,39 @@ const CheckInOutScreen: React.FC = () => {
     }
   };
 
-  const handleGenerateQRCode = () => {
+  const handleGenerateQRCode = async () => {
     if (!currentAssignment || !actionType) return;
     
-    (navigation as any).navigate('QRCodeDisplay', {
-      assignment: currentAssignment,
-      action: actionType
-    });
-    setShowActionSheet(false);
+    setIsProcessing(true);
+    try {
+      // Get current location directly
+      const locationService = LocationService.getInstance();
+      const hasPermission = await locationService.requestLocationPermission();
+      if (!hasPermission) {
+        Alert.alert('Location Permission Required', 'Please enable location access to generate QR code with location data.');
+        return;
+      }
+
+      const location = await locationService.getCurrentLocationWithRetry(3);
+      
+      // Navigate to QR code display with location data
+      (navigation as any).navigate('QRCodeDisplay', {
+        assignment: currentAssignment,
+        action: actionType,
+        locationData: {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          accuracy: location.accuracy,
+          timestamp: location.timestamp
+        }
+      });
+      setShowActionSheet(false);
+    } catch (error) {
+      console.error('Location error:', error);
+      Alert.alert('Location Error', 'Unable to get your current location. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleScanQRCode = () => {
@@ -195,29 +266,75 @@ const CheckInOutScreen: React.FC = () => {
   };
 
   const handleQRCodeScanned = async (qrData: string, assignmentId: string, action: 'checkin' | 'checkout') => {
+    // Find the assignment
+    const assignment = confirmedAssignments.find(a => a.id === assignmentId);
+    if (!assignment) {
+      Alert.alert('Error', 'Assignment not found');
+      return;
+    }
+
+    // Set up pending action and show location modal
+    setPendingLocationAction({
+      type: 'qr',
+      assignmentId: assignmentId,
+      action: action,
+      qrData: qrData
+    });
+    setShowLocationModal(true);
+  };
+
+  const processQRCodeScanned = async (location: LocationData) => {
+    if (!pendingLocationAction || pendingLocationAction.type !== 'qr') return;
+    
+    console.log('🔧 processQRCodeScanned called with location:', location);
+    console.log('📍 Received latitude:', location.latitude);
+    console.log('📍 Received longitude:', location.longitude);
+    console.log('📍 Received accuracy:', location.accuracy);
+    
     setIsProcessing(true);
     try {
-      // Find the assignment
-      const assignment = confirmedAssignments.find(a => a.id === assignmentId);
-      if (!assignment) {
-        Alert.alert('Error', 'Assignment not found');
-        return;
-      }
+      // Get fresh GPS location directly for QR code scanning
+      const locationService = LocationService.getInstance();
+      console.log('🔧 Getting fresh GPS location for QR scan...');
+      const freshLocation = await locationService.getCurrentLocationWithRetry(3);
+      console.log('🔧 Fresh GPS location for QR:', freshLocation);
+      console.log('📍 Fresh latitude:', freshLocation.latitude);
+      console.log('📍 Fresh longitude:', freshLocation.longitude);
+      
+      // Get address from coordinates
+      const address = await locationService.getAddressFromCoordinates(
+        freshLocation.latitude, 
+        freshLocation.longitude
+      );
 
       const locationData = {
-        latitude: 0, // TODO: Extract from QR code or get GPS
-        longitude: 0, // TODO: Extract from QR code or get GPS
-        address: assignment.job?.location || 'Hospital Location'
+        latitude: freshLocation.latitude,
+        longitude: freshLocation.longitude,
+        address: address
       };
+      
+      console.log('🔧 Final locationData being sent:', locationData);
+      console.log('🔧 Fresh location values:', {
+        latitude: freshLocation.latitude,
+        longitude: freshLocation.longitude,
+        accuracy: freshLocation.accuracy
+      });
 
-      const notes = `QR Code scanned: ${qrData}`;
+      // Enhanced notes with QR data and location verification
+      const notes = `QR Code: ${pendingLocationAction.qrData} | GPS: ${freshLocation.latitude.toFixed(6)}, ${freshLocation.longitude.toFixed(6)} | Accuracy: ${Math.round(freshLocation.accuracy)}m | Time: ${new Date().toISOString()}`;
 
-      if (action === 'checkin') {
-        await ApiService.checkIn(assignmentId, locationData, notes);
-        Alert.alert('Success', 'Successfully checked in via QR code!');
+      if (pendingLocationAction.action === 'checkin') {
+        await ApiService.checkIn(pendingLocationAction.assignmentId, locationData, notes);
+        Alert.alert(
+          'Check-In Successful! ✅', 
+          `Location verified: ${address}\nCoordinates: ${freshLocation.latitude.toFixed(6)}, ${freshLocation.longitude.toFixed(6)}\nAccuracy: ${Math.round(freshLocation.accuracy)}m`
+        );
       } else {
-        await ApiService.checkOut(assignmentId, locationData, notes);
-        Alert.alert('Success', 'Successfully checked out via QR code!');
+        await ApiService.checkOut(pendingLocationAction.assignmentId, locationData, notes);
+        Alert.alert(
+          'Check-Out Successful! ✅', 
+          `Location verified: ${address}\nCoordinates: ${freshLocation.latitude.toFixed(6)}, ${freshLocation.longitude.toFixed(6)}\nAccuracy: ${Math.round(freshLocation.accuracy)}m`
+        );
       }
 
       // ✅ Reload the screen data to get fresh data from server
@@ -239,17 +356,48 @@ const CheckInOutScreen: React.FC = () => {
   const handleManualCheckOut = async () => {
     if (!currentAssignment) return;
     
+    // Set up pending action and show location modal
+    setPendingLocationAction({
+      type: 'manual',
+      assignmentId: currentAssignment.id,
+      action: 'checkout'
+    });
+    setShowLocationModal(true);
+    setShowActionSheet(false);
+  };
+
+  const processManualCheckOut = async (location: LocationData) => {
+    if (!currentAssignment) return;
+    
+    console.log('🔧 processManualCheckOut called with location:', location);
+    console.log('📍 Input latitude:', location.latitude);
+    console.log('📍 Input longitude:', location.longitude);
+    console.log('📍 Input accuracy:', location.accuracy);
+    console.log('📍 Input timestamp:', location.timestamp);
+    
     setIsProcessing(true);
     try {
+      // Get address from coordinates
+      const locationService = LocationService.getInstance();
+      const address = await locationService.getAddressFromCoordinates(
+        location.latitude, 
+        location.longitude
+      );
+
       const checkOutData = {
         jobAssignmentId: currentAssignment.id,
         location: {
-          latitude: 0, // TODO: Get actual location
-          longitude: 0, // TODO: Get actual location
-          address: currentAssignment.job?.location || 'Hospital Location'
+          latitude: location.latitude,
+          longitude: location.longitude,
+          address: address
         },
-        notes: 'Checked out after shift', // ✅ Non-empty notes
+        notes: `Manual check-out | GPS: ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)} | Accuracy: ${Math.round(location.accuracy)}m | Time: ${new Date().toISOString()}`,
       };
+
+      console.log('🔧 Check-out data being sent:', checkOutData);
+      console.log('📍 Location data:', checkOutData.location);
+      console.log('📍 Latitude:', location.latitude);
+      console.log('📍 Longitude:', location.longitude);
 
       // ✅ Use the unified endpoint
       const response = await ApiService.checkOut(checkOutData.jobAssignmentId, checkOutData.location, checkOutData.notes);
@@ -261,7 +409,10 @@ const CheckInOutScreen: React.FC = () => {
       
       const facilityName = response.jobContext?.facilityName || 'the facility';
       const userName = response.userInfo ? `${response.userInfo.firstName} ${response.userInfo.lastName}` : 'User';
-      Alert.alert('Success', `${userName} successfully checked out from ${facilityName}!`);
+      Alert.alert(
+        'Check-Out Successful! ✅', 
+        `${userName} successfully checked out from ${facilityName}!\n\nLocation verified: ${address}\nCoordinates: ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}\nAccuracy: ${Math.round(location.accuracy)}m`
+      );
       
       // ✅ Update the assignment status immediately with user and job context
       const updatedAssignments = confirmedAssignments.map(assignment => 
@@ -291,6 +442,7 @@ const CheckInOutScreen: React.FC = () => {
       setIsProcessing(false);
     }
   };
+
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -559,6 +711,40 @@ const CheckInOutScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Location Validation Modal */}
+      <LocationValidationModal
+        visible={showLocationModal}
+        onClose={() => {
+          setShowLocationModal(false);
+          setPendingLocationAction(null);
+        }}
+        onLocationValidated={(location) => {
+          console.log('🔧 LocationValidationModal callback received location:', location);
+          console.log('📍 Callback latitude:', location.latitude);
+          console.log('📍 Callback longitude:', location.longitude);
+          console.log('📍 Callback accuracy:', location.accuracy);
+          
+          if (pendingLocationAction) {
+            if (pendingLocationAction.type === 'manual') {
+              if (pendingLocationAction.action === 'checkin') {
+                processManualCheckIn(location);
+              } else if (pendingLocationAction.action === 'checkout') {
+                processManualCheckOut(location);
+              }
+            } else if (pendingLocationAction.type === 'qr') {
+              processQRCodeScanned(location);
+            }
+          }
+          setShowLocationModal(false);
+          setPendingLocationAction(null);
+        }}
+        jobLocation={currentAssignment?.job ? {
+          latitude: currentAssignment.job.latitude || 0,
+          longitude: currentAssignment.job.longitude || 0
+        } : undefined}
+        maxDistanceMeters={500}
+      />
     </View>
   );
 };

@@ -318,25 +318,43 @@ class ApiService {
   }
 
   async checkIn(jobAssignmentId: string, location: { latitude: number; longitude: number; address: string }, notes?: string): Promise<any> {
-    const response: AxiosResponse<any> = await this.api.post('/staff/check-in', {
+    console.log('🔧 API checkIn called with:');
+    console.log('📍 jobAssignmentId:', jobAssignmentId);
+    console.log('📍 location:', location);
+    console.log('📍 notes:', notes);
+    
+    const requestData = {
       jobAssignmentId,
       location,
       notes,
-    });
+    };
+    
+    console.log('🔧 Full request data:', requestData);
+    
+    const response: AxiosResponse<any> = await this.api.post('/staff/check-in', requestData);
     return response.data;
   }
 
-  async staffCheckIn(checkInData: { jobAssignmentId: string; location: any; notes?: string }): Promise<CheckIn> {
-    console.log('🔧 staffCheckIn called with:', checkInData);
-    return this.checkIn(checkInData.jobAssignmentId, checkInData.location, checkInData.notes);
-  }
+  // async staffCheckIn(checkInData: { jobAssignmentId: string; location: any; notes?: string }): Promise<CheckIn> {
+  //   console.log('🔧 staffCheckIn called with:', checkInData);
+  //   return this.checkIn(checkInData.jobAssignmentId, checkInData.location, checkInData.notes);
+  // }
 
   async checkOut(jobAssignmentId: string, location: { latitude: number; longitude: number; address: string }, notes?: string): Promise<any> {
-    const response: AxiosResponse<any> = await this.api.post('/staff/check-out', {
+    console.log('🔧 API checkOut called with:');
+    console.log('📍 jobAssignmentId:', jobAssignmentId);
+    console.log('📍 location:', location);
+    console.log('📍 notes:', notes);
+    
+    const requestData = {
       jobAssignmentId,
       location,
       notes,
-    });
+    };
+    
+    console.log('🔧 Full request data:', requestData);
+    
+    const response: AxiosResponse<any> = await this.api.post('/staff/check-out', requestData);
     return response.data;
   }
 
@@ -822,6 +840,21 @@ class ApiService {
       console.error('❌ Error response:', error.response?.data);
       console.error('❌ Error status:', error.response?.status);
       throw error;
+    }
+  }
+
+  // Assignment Details API
+  async getAssignmentDetails(assignmentId: string): Promise<JobAssignment> {
+    try {
+      console.log('🔧 Fetching assignment details for ID:', assignmentId);
+      const response = await this.api.get(`/staff/assignments/${assignmentId}`);
+      console.log('✅ Assignment details loaded:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to load assignment details:', error);
+      console.error('❌ Error response:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
+      throw new Error(error.response?.data?.message || 'Failed to load assignment details');
     }
   }
 }

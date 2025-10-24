@@ -277,6 +277,15 @@ const ProfileScreen: React.FC = () => {
             <FontAwesomeIcon icon="arrow-right" size={20} color={Colors.textTertiary}  />
           </TouchableOpacity>
 
+          <TouchableOpacity 
+            style={styles.actionButton} 
+            onPress={() => navigation.navigate('GeolocationTest' as never)}
+          >
+            <FontAwesomeIcon icon="map-marker-alt" size={20} color={Colors.primary}  />
+            <Text style={styles.actionButtonText}>Test Geolocation</Text>
+            <FontAwesomeIcon icon="arrow-right" size={20} color={Colors.textTertiary}  />
+          </TouchableOpacity>
+
           <TouchableOpacity style={[styles.actionButton, styles.logoutButton]} onPress={handleLogout}>
               <FontAwesomeIcon icon="sign-out-alt" size={20} color={Colors.error}  />
             <Text style={[styles.actionButtonText, styles.logoutButtonText]}>Logout</Text>

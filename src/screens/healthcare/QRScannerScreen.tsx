@@ -19,6 +19,7 @@ import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
 import { Spacing, BorderRadius } from '../../constants/spacing';
 import ApiService from '../../services/api';
+import LocationService, { LocationData } from '../../services/locationService';
 
 interface QRScannerScreenProps {
   assignmentId: string;
@@ -99,11 +100,28 @@ const QRScannerScreen: React.FC = () => {
       // Parse the QR code data
       const qrData = JSON.parse(data);
       
-      // Call the appropriate API based on action
+      // Get actual GPS location
+      const locationService = LocationService.getInstance();
+      const hasPermission = await locationService.requestLocationPermission();
+
+      if (!hasPermission) {
+        Alert.alert('Location Permission Required', 'Please enable location access to complete check-in/out.');
+        setIsScanning(true);
+        setScannedData(null);
+        setIsProcessing(false);
+        return;
+      }
+
+      const currentLocation = await locationService.getCurrentLocationWithRetry(3);
+      const address = await locationService.getAddressFromCoordinates(
+        currentLocation.latitude, 
+        currentLocation.longitude
+      );
+
       const locationData = {
-        latitude: 0, // TODO: Get actual location from GPS
-        longitude: 0, // TODO: Get actual location from GPS
-        address: qrData.location || 'Hospital Location'
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude,
+        address: address
       };
       
       let response;

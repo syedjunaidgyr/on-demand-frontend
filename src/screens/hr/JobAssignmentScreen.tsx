@@ -103,7 +103,7 @@ const JobAssignmentScreen: React.FC = () => {
     const staff = assignment.staff || assignment.user;
     Alert.alert(
       'Select Candidate',
-      `Are you sure you want to select ${staff.firstName} ${staff.lastName} for this job?\n\nJob: ${job.title}\nStaff: ${staff.firstName} ${staff.lastName}\nDepartment: ${staff.department}\nSpecialization: ${staff.specialization || 'N/A'}\n\nThis will confirm them for the job and reject all other candidates.`,
+      `Are you sure you want to select ${staff.firstName} ${staff.lastName} for this job?\n\nJob: ${job.title}\nStaff: ${staff.firstName} ${staff.lastName}\nDepartment: ${staff.department || job.department}\n${staff.role === 'DOCTOR' && job.specialization ? `Specialization: ${job.specialization}` : ''}\n\nThis will confirm them for the job and reject all other candidates.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -216,19 +216,6 @@ const JobAssignmentScreen: React.FC = () => {
         </View>
       </View>
       
-      <TouchableOpacity 
-        style={styles.assignButton}
-        onPress={() => handleAssignJob(staff)}
-        disabled={isAssigning}>
-        {isAssigning ? (
-          <ActivityIndicator size="small" color={Colors.white} />
-        ) : (
-          <>
-            <FontAwesomeIcon icon="user-plus" size={16} color={Colors.white} />
-            <Text style={styles.assignButtonText}>Assign Job</Text>
-          </>
-        )}
-      </TouchableOpacity>
     </View>
   );
 
@@ -251,24 +238,24 @@ const JobAssignmentScreen: React.FC = () => {
         <View style={styles.staffDetails}>
           <View style={styles.staffDetail}>
             <FontAwesomeIcon icon="user-md" size={16} color={Colors.textTertiary} />
-            <Text style={styles.staffDetailText}>{staff.department}</Text>
+            <Text style={styles.staffDetailText}>{staff.department || job.department}</Text>
           </View>
           
-          {staff.specialization && (
+          {staff.role === 'DOCTOR' && job.specialization && (
             <View style={styles.staffDetail}>
               <FontAwesomeIcon icon="stethoscope" size={16} color={Colors.textTertiary} />
-              <Text style={styles.staffDetailText}>{staff.specialization}</Text>
+              <Text style={styles.staffDetailText}>{job.specialization}</Text>
             </View>
           )}
           
           <View style={styles.staffDetail}>
             <FontAwesomeIcon icon="map-marker-alt" size={16} color={Colors.textTertiary} />
-            <Text style={styles.staffDetailText}>{staff.location}</Text>
+            <Text style={styles.staffDetailText}>{staff.location || job.location}</Text>
           </View>
           
           <View style={styles.staffDetail}>
             <FontAwesomeIcon icon="envelope" size={16} color={Colors.textTertiary} />
-            <Text style={styles.staffDetailText}>{staff.email}</Text>
+            <Text style={styles.staffDetailText}>{staff.email || 'N/A'}</Text>
           </View>
         </View>
         
@@ -450,33 +437,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: Spacing.xl,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    backgroundColor: Colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  headerBackButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: BorderRadius.lg,
-  },
-  headerTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-    flex: 1,
-    textAlign: 'center',
-    marginHorizontal: Spacing.md,
-  },
-  headerSpacer: {
-    width: 40,
   },
   content: {
     flex: 1,

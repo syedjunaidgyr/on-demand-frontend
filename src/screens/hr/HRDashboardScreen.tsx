@@ -17,6 +17,8 @@ import LinearGradient from 'react-native-linear-gradient';
 import GlobalHeader from '../../components/GlobalHeader';
 
 import ApiService from '../../services/api';
+import { Typography } from '../../constants/typography';
+import { Colors } from '../../constants/colors';
 
 interface DashboardStats {
   jobs: {
@@ -480,7 +482,7 @@ const HRDashboardScreen: React.FC = () => {
         </View>
 
         {/* Quick Actions - Enhanced Design */}
-        <View style={styles.section}>
+        <View style={styles.quickActionsSection}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
             <QuickAction
@@ -677,8 +679,9 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
+    fontFamily: Typography.fontFamily.medium,
     color: '#6B7280',
-    fontWeight: '500',
+    // fontWeight: Typography.fontWeight.medium,
   },
   profileButton: {
     width: 40,
@@ -696,6 +699,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#1C2A3A',
   },
   profileSection: {
     flexDirection: 'row',
@@ -722,7 +728,8 @@ const styles = StyleSheet.create({
   },
   profileInitials: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: Typography.fontFamily.bold,
+    // fontWeight: Typography.fontWeight.bold,
     color: '#FFFFFF',
   },
   profileText: {
@@ -730,14 +737,16 @@ const styles = StyleSheet.create({
   },
   profileName: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: Typography.fontFamily.bold,
+    // fontWeight: Typography.fontWeight.bold,
     color: '#FFFFFF',
     marginBottom: 2,
   },
   profileRole: {
     fontSize: 12,
+    fontFamily: Typography.fontFamily.medium,
     color: 'rgba(255, 255, 255, 0.8)',
-    fontWeight: '500',
+    // fontWeight: Typography.fontWeight.medium,
   },
   notificationButton: {
     width: 40,
@@ -753,7 +762,8 @@ const styles = StyleSheet.create({
   },
   mainTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: Typography.fontFamily.bold,
+    // fontWeight: Typography.fontWeight.bold,
     color: '#FFFFFF',
     letterSpacing: -0.5,
   },
@@ -772,6 +782,8 @@ const styles = StyleSheet.create({
     padding: 16,
     minHeight: 90,
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#87CEFA',
   },
   mainStatContent: {
     flexDirection: 'row',
@@ -791,14 +803,16 @@ const styles = StyleSheet.create({
   },
   mainStatValue: {
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: Typography.fontFamily.bold,
+    // fontWeight: Typography.fontWeight.bold,
     color: '#FFFFFF',
     marginBottom: 2,
   },
   mainStatLabel: {
     fontSize: 12,
+    fontFamily: Typography.fontFamily.medium,
     color: 'rgba(255, 255, 255, 0.9)',
-    fontWeight: '500',
+    // fontWeight: Typography.fontWeight.medium,
   },
   heroSection: {
     paddingBottom: 8,
@@ -831,26 +845,29 @@ const styles = StyleSheet.create({
   },
   heroLabel: {
     fontSize: 13,
+    fontFamily: Typography.fontFamily.medium,
     color: 'rgba(255, 255, 255, 0.8)',
-    fontWeight: '600',
+    // fontWeight: Typography.fontWeight.semibold,
     marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   heroValue: {
     fontSize: 36,
+    fontFamily: Typography.fontFamily.bold,
     color: '#FFFFFF',
-    fontWeight: '700',
+    // fontWeight: Typography.fontWeight.bold,
     marginBottom: 4,
   },
   heroSubtext: {
     fontSize: 13,
+    fontFamily: Typography.fontFamily.medium,
     color: 'rgba(255, 255, 255, 0.85)',
-    fontWeight: '500',
+    // fontWeight: Typography.fontWeight.medium,
   },
   section: {
     paddingHorizontal: 20,
-    marginTop: 24,
+    marginTop: 20,
   },
   firstSection: {
     paddingTop: 30,
@@ -859,26 +876,32 @@ const styles = StyleSheet.create({
   overviewSection: {
     marginBottom: 12,
   },
+  quickActionsSection: {
+    paddingHorizontal: 20,
+    marginTop: 8,
+  },
   lastSection: {
     marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: Typography.fontFamily.bold,
+    // fontWeight: Typography.fontWeight.bold,
     color: '#111827',
-    marginBottom: 16,
+    marginBottom: 14,
     letterSpacing: -0.3,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   viewAllText: {
     fontSize: 14,
+    fontFamily: Typography.fontFamily.medium,
     color: '#6366F1',
-    fontWeight: '600',
+    // fontWeight: Typography.fontWeight.semibold,
     marginTop: 2,
   },
   statsGrid: {
@@ -918,14 +941,16 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 32,
-    fontWeight: '700',
+    fontFamily: Typography.fontFamily.bold,
+    // fontWeight: Typography.fontWeight.bold,
     color: '#FFFFFF',
     lineHeight: 36,
     marginBottom: 8,
   },
   statTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: Typography.fontFamily.medium,
+    // fontWeight: Typography.fontWeight.semibold,
     color: 'rgba(255, 255, 255, 0.95)',
     maxWidth: '60%',
     lineHeight: 18,
@@ -942,7 +967,8 @@ const styles = StyleSheet.create({
   },
   percentageText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: Typography.fontFamily.bold,
+    // fontWeight: Typography.fontWeight.bold,
     color: '#FFFFFF',
   },
   quickActionsGrid: {
@@ -985,7 +1011,8 @@ const styles = StyleSheet.create({
   },
   quickActionTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: Typography.fontFamily.bold,
+    // fontWeight: Typography.fontWeight.bold,
     color: '#111827',
     marginBottom: 6,
     textAlign: 'center',
@@ -993,8 +1020,9 @@ const styles = StyleSheet.create({
   },
   quickActionSubtitle: {
     fontSize: 13,
+    fontFamily: Typography.fontFamily.medium,
     color: '#6B7280',
-    fontWeight: '500',
+    // fontWeight: Typography.fontWeight.medium,
     textAlign: 'center',
   },
   listCard: {
@@ -1033,12 +1061,14 @@ const styles = StyleSheet.create({
   },
   listTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: Typography.fontFamily.medium,
+    // fontWeight: Typography.fontWeight.semibold,
     color: '#111827',
     marginBottom: 4,
   },
   listSubtitle: {
     fontSize: 13,
+    fontFamily: Typography.fontFamily.regular,
     color: '#6B7280',
     marginBottom: 8,
   },
@@ -1054,7 +1084,8 @@ const styles = StyleSheet.create({
   },
   priorityText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: Typography.fontFamily.bold,
+    // fontWeight: Typography.fontWeight.bold,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
   },
@@ -1065,18 +1096,21 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: Typography.fontFamily.bold,
+    // fontWeight: Typography.fontWeight.bold,
     textTransform: 'capitalize',
   },
   listRate: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: Typography.fontFamily.bold,
+    // fontWeight: Typography.fontWeight.bold,
     color: '#111827',
   },
   listTime: {
     fontSize: 12,
+    fontFamily: Typography.fontFamily.medium,
     color: '#9CA3AF',
-    fontWeight: '500',
+    // fontWeight: Typography.fontWeight.medium,
   },
   emptyState: {
     alignItems: 'center',
@@ -1094,12 +1128,14 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: Typography.fontFamily.medium,
+    // fontWeight: Typography.fontWeight.semibold,
     color: '#374151',
     marginBottom: 4,
   },
   emptySubtitle: {
     fontSize: 14,
+    fontFamily: Typography.fontFamily.regular,
     color: '#9CA3AF',
     textAlign: 'center',
   },
@@ -1129,14 +1165,16 @@ const styles = StyleSheet.create({
   },
   simpleStatValue: {
     fontSize: 26,
-    fontWeight: '700',
+    fontFamily: Typography.fontFamily.bold,
+    // fontWeight: Typography.fontWeight.bold,
     color: '#000000',
     marginBottom: 6,
   },
   simpleStatTitle: {
     fontSize: 12,
+    fontFamily: Typography.fontFamily.medium,
     color: '#000000',
-    fontWeight: '600',
+    // fontWeight: Typography.fontWeight.semibold,
     textAlign: 'center',
   },
   horizontalScroll: {
