@@ -1716,7 +1716,7 @@ const styles = StyleSheet.create({
     maxWidth: width * 0.4,
   },
   poweredByText: {
-    fontSize: IS_VERY_SMALL_DEVICE ? width * 0.025 : width * 0.03,
+    fontSize: 12,
     fontFamily: Typography.fontFamily.medium, // DM Sans Medium
     color: '#000000',
     marginRight: IS_VERY_SMALL_DEVICE ? -15 : -25,

@@ -7,13 +7,14 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { RootStackParamList } from '../../navigation/AppNavigator';
 import { FontAwesomeIcon } from '../../utils/icons';
 import GlobalHeader from '../../components/GlobalHeader';
 
 import { Typography } from '../../constants/typography';
 
 const ProfileSettingsScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
 
   return (
     <View style={styles.container}>
@@ -34,7 +35,9 @@ const ProfileSettingsScreen: React.FC = () => {
         {/* All Settings in One Card */}
         <View style={styles.section}>
           <View style={styles.actionsCard}>
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={() => navigation.navigate('EditProfile')}>
               <View style={styles.actionIcon}>
                 <FontAwesomeIcon icon="edit" size={17} color="#1C2A3A" />
               </View>
@@ -44,7 +47,9 @@ const ProfileSettingsScreen: React.FC = () => {
 
             <View style={styles.actionDivider} />
 
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={() => navigation.navigate('ChangePassword')}>
               <View style={styles.actionIcon}>
                 <FontAwesomeIcon icon="lock" size={18} color="#1C2A3A" />
               </View>

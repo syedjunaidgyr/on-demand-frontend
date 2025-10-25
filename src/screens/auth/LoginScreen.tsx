@@ -312,18 +312,18 @@ const styles = StyleSheet.create({
     width: width * 0.84,
   },
   welcomeText: {
-    fontSize: width * 0.065,
+    fontSize: 24,
     fontFamily: Typography.fontFamily.bold, // DM Sans Bold for headers
     color: Colors.textPrimary,
     marginBottom: 8,
     textAlign: 'center',
   },
   subtitleText: {
-    fontSize: width * 0.04,
+    fontSize: 16,
     fontFamily: Typography.fontFamily.regular, // DM Sans Regular for subtitles
     color: Colors.textSecondary,
     textAlign: 'center',
-    marginBottom: height * 0.03,
+    marginBottom: 24,
   },
   inputContainer: {
     marginBottom: height * 0.02,
@@ -388,11 +388,12 @@ const styles = StyleSheet.create({
     marginHorizontal: width * 0.08,
   },
   accountLinkText: {
-    fontSize: width * 0.035,
+    fontSize: 14,
     fontFamily: Typography.fontFamily.regular, // DM Sans Regular
     color: '#000000',
   },
   signUpLink: {
+    fontSize: 16,
     color: Colors.primary,
     fontFamily: Typography.fontFamily.medium, // DM Sans Medium
     fontWeight: Typography.fontWeight.medium,
@@ -406,7 +407,7 @@ const styles = StyleSheet.create({
     maxWidth: width * 0.4,
   },
   poweredByText: {
-    fontSize: IS_VERY_SMALL_DEVICE ? width * 0.025 : width * 0.03,
+    fontSize: 12,
     fontFamily: Typography.fontFamily.medium, // DM Sans Medium
     color: '#000000',
     marginRight: IS_VERY_SMALL_DEVICE ? -15 : -25,

@@ -28,13 +28,15 @@ import QRCodeDisplayScreen from '../screens/healthcare/QRCodeDisplayScreen';
 // Common Screens
 import ProfileScreen from '../screens/common/ProfileScreen';
 import ProfileSettingsScreen from '../screens/common/ProfileSettingsScreen';
+import EditProfileScreen from '../screens/common/EditProfileScreen';
+import ChangePasswordScreen from '../screens/common/ChangePasswordScreen';
 import JobDetailsCommonScreen from '../screens/common/JobDetailsCommonScreen';
 
 // Test Components
 import GeolocationTest from '../components/GeolocationTest';
 
 import { Colors } from '../constants/colors';
-import { User, Job } from '../types';
+import { User, Job, JobAssignment } from '../types';
 import { setGlobalLogoutHandler } from '../services/api';
 
 // Authentication Context
@@ -63,6 +65,8 @@ export type RootStackParamList = {
   Register: undefined;
   Profile: undefined;
   ProfileSettings: undefined;
+  EditProfile: undefined;
+  ChangePassword: undefined;
   JobDetails: { jobId?: string; job?: Job };
   CreateJob: undefined;
   CheckInOut: { assignmentId?: string; scannedQRData?: string; scannedAction?: 'checkin' | 'checkout' };
@@ -222,6 +226,20 @@ const MainNavigator = ({ user }: { user: User }) => {
       <Stack.Screen 
         name="ProfileSettings" 
         component={ProfileSettingsScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="EditProfile" 
+        component={EditProfileScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="ChangePassword" 
+        component={ChangePasswordScreen}
         options={{
           headerShown: false,
         }}

@@ -298,7 +298,7 @@ const ProfileScreen: React.FC = () => {
         
           
         
-          
+
           <TouchableOpacity 
             style={styles.logoutButton} 
             onPress={handleLogout}
