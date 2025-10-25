@@ -10,10 +10,13 @@ import {
   ActivityIndicator,
   Alert,
   TextInput,
+  Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import LinearGradient from 'react-native-linear-gradient';
+import GlobalHeader from '../../components/GlobalHeader';
+import HRFooterNavigation from '../../components/HRFooterNavigation';
 
 import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
@@ -29,23 +32,37 @@ const HRUsersScreen: React.FC = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRole, setSelectedRole] = useState<'ALL' | 'DOCTOR' | 'NURSE'>('ALL');
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [animatedValue] = useState(new Animated.Value(0));
+  const [tabAnimation] = useState(new Animated.Value(0));
+  const [modalAnimation] = useState(new Animated.Value(0));
 
   useEffect(() => {
+    console.log('🚀 HRUsersScreen mounted, loading users...');
     loadUsers();
   }, []);
 
   const loadUsers = async (pageNum = 1, refresh = false) => {
     try {
+      console.log('🔧 Loading users - page:', pageNum, 'refresh:', refresh);
+      
       const response = await ApiService.getAllUsers({
         page: pageNum,
-        limit: 10,
+        limit: 100, // Increased limit to get all users
         sortBy: 'createdAt',
         sortOrder: 'DESC',
       });
 
-      // Handle different response formats
-      const usersData = response.data || [];
+      console.log('📊 API Response:', JSON.stringify(response, null, 2));
+
+      // FIX: Backend returns { users: [...], pagination: {...} }
+      const usersData = response.users || response.data || [];
       const pagination = response.pagination || response;
+
+      console.log('👥 Users Data:', usersData);
+      console.log('📄 Pagination:', pagination);
+      console.log('📊 Users count:', usersData.length);
 
       if (refresh || pageNum === 1) {
         setUsers(usersData);
@@ -55,7 +72,12 @@ const HRUsersScreen: React.FC = () => {
 
       setHasMore(pagination.page < pagination.totalPages);
     } catch (error) {
-      console.error('Failed to load users:', error);
+      console.error('❌ Failed to load users:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
       Alert.alert('Error', 'Failed to load users. Please try again.');
       if (refresh || pageNum === 1) {
         setUsers([]);
@@ -83,30 +105,45 @@ const HRUsersScreen: React.FC = () => {
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'DOCTOR':
-        return Colors.doctor;
+        return '#EF4444';
       case 'NURSE':
-        return Colors.nurse;
+        return '#06B6D4';
       case 'HR':
-        return Colors.hr;
+        return '#8B5CF6';
       case 'ADMIN':
-        return Colors.admin;
+        return '#F59E0B';
       default:
         return Colors.primary;
+    }
+  };
+
+  const getRoleGradient = (role: string): [string, string] => {
+    switch (role) {
+      case 'DOCTOR':
+        return ['#EF4444', '#DC2626'];
+      case 'NURSE':
+        return ['#06B6D4', '#0891B2'];
+      case 'HR':
+        return ['#8B5CF6', '#7C3AED'];
+      case 'ADMIN':
+        return ['#F59E0B', '#D97706'];
+      default:
+        return [Colors.primary, Colors.primaryDark];
     }
   };
 
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'DOCTOR':
-        return 'medical-services';
+        return 'user-md';
       case 'NURSE':
-        return 'healing';
+        return 'user-nurse';
       case 'HR':
-        return 'people';
+        return 'users';
       case 'ADMIN':
-        return 'admin-panel-settings';
+        return 'user-cog';
       default:
-        return 'person';
+        return 'user';
     }
   };
 
@@ -119,75 +156,166 @@ const HRUsersScreen: React.FC = () => {
     });
   };
 
-  const filteredUsers = users.filter(user =>
+  const filteredUsers = users.filter(user => {
+    // Role filter
+    const roleMatch = selectedRole === 'ALL' || user.role === selectedRole;
+    
+    // Search filter
+    const searchMatch = searchQuery === '' || 
     user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.department.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      user.department.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return roleMatch && searchMatch;
+  });
+
+  console.log('🔍 Current state:', {
+    users: users.length,
+    filteredUsers: filteredUsers.length,
+    isLoading,
+    searchQuery,
+    selectedRole
+  });
 
   const handleUserPress = (user: User) => {
-    // Navigate to user details or profile
     console.log('User pressed:', user.id);
   };
 
+  const handleRoleChange = (role: 'ALL' | 'DOCTOR' | 'NURSE') => {
+    Animated.sequence([
+      Animated.timing(tabAnimation, {
+        toValue: 0.9,
+        duration: 80,
+        useNativeDriver: true,
+      }),
+      Animated.timing(tabAnimation, {
+        toValue: 1,
+        duration: 80,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
+    setSelectedRole(role);
+  };
+
+  const openFilterModal = () => {
+    setShowFilterModal(true);
+    Animated.timing(modalAnimation, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeFilterModal = () => {
+    Animated.timing(modalAnimation, {
+      toValue: 0,
+      duration: 150,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowFilterModal(false);
+    });
+  };
+
   const UserCard = ({ user }: { user: User }) => (
-    <TouchableOpacity style={styles.userCard} onPress={() => handleUserPress(user)}>
+    <TouchableOpacity 
+      style={styles.userCard} 
+      onPress={() => handleUserPress(user)}
+      activeOpacity={0.8}>
+      <LinearGradient
+        colors={['rgba(255,255,255,0.95)', 'rgba(255,255,255,0.8)']}
+        style={styles.userCardGradient}>
+        
+        {/* Top Section - Header with Avatar and Role */}
       <View style={styles.userHeader}>
-        <View style={[styles.avatarContainer, { backgroundColor: getRoleColor(user.role) }]}>
-          <FontAwesomeIcon icon={getRoleIcon(user.role)} size={24} color={Colors.white}  />
-        </View>
+          <LinearGradient
+            colors={getRoleGradient(user.role)}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.avatarContainer}>
+            <FontAwesomeIcon icon={getRoleIcon(user.role)} size={28} color="#FFFFFF" />
+          </LinearGradient>
+
         <View style={styles.userInfo}>
-          <Text style={styles.userName}>
+            <View style={styles.nameRow}>
+              <Text style={styles.userName} numberOfLines={1}>
             {user.firstName} {user.lastName}
           </Text>
-          <Text style={styles.userEmail}>{user.email}</Text>
-          <View style={styles.userMeta}>
-            <View style={[styles.roleBadge, { backgroundColor: getRoleColor(user.role) }]}>
-              <Text style={styles.roleText}>{user.role}</Text>
+              <View style={[styles.roleBadge, { backgroundColor: getRoleColor(user.role) + '20' }]}>
+                <Text style={[styles.roleText, { color: getRoleColor(user.role) }]}>
+                  {user.role}
+                </Text>
+              </View>
             </View>
-            <View style={[styles.statusBadge, { backgroundColor: user.isActive ? Colors.success : Colors.error }]}>
-              <Text style={styles.statusText}>{user.isActive ? 'Active' : 'Inactive'}</Text>
+            <Text style={styles.userEmail} numberOfLines={1}>{user.email}</Text>
+            <View style={styles.statusContainer}>
+              <View style={[styles.statusDot, { backgroundColor: user.isActive ? '#10B981' : '#EF4444' }]} />
+              <Text style={styles.statusLabel}>
+                {user.isActive ? 'Active' : 'Inactive'}
+              </Text>
             </View>
           </View>
         </View>
-        <TouchableOpacity style={styles.moreButton}>
-          <FontAwesomeIcon icon="more-vert" size={20} color={Colors.textTertiary}  />
-        </TouchableOpacity>
+
+        {/* Middle Section - Details Grid */}
+        <View style={styles.detailsGrid}>
+          <View style={styles.detailItem}>
+            <View style={styles.detailIcon}>
+              <FontAwesomeIcon icon="building" size={14} color={Colors.primary} />
+            </View>
+            <Text style={styles.detailLabel}>Department</Text>
+            <Text style={styles.detailValue} numberOfLines={1}>
+              {user.department || 'Not specified'}
+            </Text>
+          </View>
+
+          <View style={styles.detailItem}>
+            <View style={styles.detailIcon}>
+              <FontAwesomeIcon icon="map-marker-alt" size={14} color={Colors.primary} />
+            </View>
+            <Text style={styles.detailLabel}>Location</Text>
+            <Text style={styles.detailValue} numberOfLines={1}>
+              {user.location || 'Not specified'}
+            </Text>
       </View>
 
-      <View style={styles.userDetails}>
-        <View style={styles.detailRow}>
-          <FontAwesomeIcon icon="building" size={16} color={Colors.textTertiary}  />
-          <Text style={styles.detailText}>{user.department}</Text>
+          <View style={styles.detailItem}>
+            <View style={styles.detailIcon}>
+              <FontAwesomeIcon icon="phone" size={14} color={Colors.primary} />
         </View>
-        <View style={styles.detailRow}>
-          <FontAwesomeIcon icon="map-marker-alt" size={16} color={Colors.textTertiary}  />
-          <Text style={styles.detailText}>{user.location}</Text>
+            <Text style={styles.detailLabel}>Phone</Text>
+            <Text style={styles.detailValue} numberOfLines={1}>
+              {user.phone || 'Not specified'}
+            </Text>
         </View>
+
         {user.specialization && (
-          <View style={styles.detailRow}>
-            <FontAwesomeIcon icon="stethoscope" size={16} color={Colors.textTertiary}  />
-            <Text style={styles.detailText}>{user.specialization}</Text>
+            <View style={styles.detailItem}>
+              <View style={styles.detailIcon}>
+                <FontAwesomeIcon icon="stethoscope" size={14} color={Colors.primary} />
+              </View>
+              <Text style={styles.detailLabel}>Specialization</Text>
+              <Text style={styles.detailValue} numberOfLines={1}>
+                {user.specialization}
+              </Text>
           </View>
         )}
-        <View style={styles.detailRow}>
-          <FontAwesomeIcon icon="phone" size={16} color={Colors.textTertiary}  />
-          <Text style={styles.detailText}>{user.phone}</Text>
-        </View>
       </View>
 
+        {/* Bottom Section - Footer with Actions */}
       <View style={styles.userFooter}>
         <Text style={styles.joinDate}>Joined {formatDate(user.createdAt)}</Text>
         <View style={styles.userActions}>
-          <TouchableOpacity style={styles.actionButton}>
-            <FontAwesomeIcon icon="edit" size={16} color={Colors.primary}  />
+            <TouchableOpacity style={styles.actionButton} activeOpacity={0.6}>
+              <FontAwesomeIcon icon="edit" size={16} color={Colors.primary} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <FontAwesomeIcon icon="message" size={16} color={Colors.info}  />
+            <TouchableOpacity style={styles.actionButton} activeOpacity={0.6}>
+              <FontAwesomeIcon icon="envelope" size={16} color="#06B6D4" />
           </TouchableOpacity>
         </View>
       </View>
+      </LinearGradient>
     </TouchableOpacity>
   );
 
@@ -204,48 +332,60 @@ const HRUsersScreen: React.FC = () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
+          <Animated.View style={{ opacity: animatedValue }}>
           <ActivityIndicator size="large" color={Colors.primary} />
           <Text style={styles.loadingText}>Loading users...</Text>
+          </Animated.View>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <LinearGradient
-        colors={[Colors.primary, Colors.primaryDark]}
-        style={styles.header}>
-        <View style={styles.headerContent}>
-          <View>
-            <Text style={styles.headerTitle}>Staff Management</Text>
-            <Text style={styles.headerSubtitle}>{users.length} total users</Text>
-          </View>
-          <TouchableOpacity style={styles.filterButton}>
-            <FontAwesomeIcon icon="filter" size={24} color={Colors.white}  />
+    <View style={styles.container}>
+      {/* Global Header */}
+      <GlobalHeader
+        title="Staff Management"
+        showBackButton={true}
+        onBackPress={() => navigation.goBack()}
+        rightComponent={
+          <TouchableOpacity 
+            style={styles.filterButton} 
+            onPress={openFilterModal}
+            activeOpacity={0.7}>
+            <FontAwesomeIcon icon="filter" size={20} color={Colors.white} />
           </TouchableOpacity>
-        </View>
-      </LinearGradient>
+        }
+      />
+      
+      {/* Subtitle */}
+      {/* <View style={styles.subtitleContainer}>
+        <Text style={styles.subtitle}>
+          {searchQuery ? `${filteredUsers.length} of ${users.length} found` : `${users.length} total staff`}
+        </Text>
+      </View> */}
 
-      {/* Search Bar */}
+      {/* Enhanced Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <FontAwesomeIcon icon="search" size={20} color={Colors.textTertiary}  />
+          <FontAwesomeIcon icon="search" size={18} color={Colors.primary} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search users..."
+            placeholder="Search by name, email, or role..."
             placeholderTextColor={Colors.textTertiary}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <FontAwesomeIcon icon="clear" size={20} color={Colors.textTertiary}  />
+            <TouchableOpacity 
+              onPress={() => setSearchQuery('')}
+              activeOpacity={0.6}>
+              <FontAwesomeIcon icon="times" size={18} color={Colors.textTertiary} />
             </TouchableOpacity>
           )}
         </View>
       </View>
+
 
       {/* Users List */}
       <FlatList
@@ -256,19 +396,105 @@ const HRUsersScreen: React.FC = () => {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
+        // Disabled infinite scroll since we load all users at once
+        // onEndReached={loadMore}
+        // onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={() => (
+          <View style={styles.emptyState}>
+            <FontAwesomeIcon icon="users" size={48} color={Colors.textTertiary} />
+            <Text style={styles.emptyTitle}>No Users Found</Text>
+            <Text style={styles.emptySubtitle}>
+              {searchQuery ? 'Try adjusting your search terms' : 'No users available at the moment'}
+            </Text>
+            {!searchQuery && (
+              <TouchableOpacity style={styles.retryButton} onPress={() => loadUsers(1, true)}>
+                <Text style={styles.retryButtonText}>Refresh</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       />
-    </SafeAreaView>
+
+      {/* Filter Modal */}
+      {showFilterModal && (
+        <Animated.View 
+          style={[
+            styles.modalOverlay,
+            {
+              opacity: modalAnimation,
+            }
+          ]}>
+          <Animated.View 
+            style={[
+              styles.modalContent,
+              {
+                transform: [
+                  {
+                    scale: modalAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.8, 1],
+                    }),
+                  },
+                  {
+                    translateY: modalAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [50, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}>
+            <Text style={styles.modalTitle}>Filter Options</Text>
+            <TouchableOpacity 
+              style={[styles.modalOption, selectedRole === 'ALL' && styles.modalOptionActive]}
+              onPress={() => {
+                setSelectedRole('ALL');
+                closeFilterModal();
+              }}>
+              <Text style={[styles.modalOptionText, selectedRole === 'ALL' && styles.modalOptionTextActive]}>
+                Show All Staff
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.modalOption, selectedRole === 'DOCTOR' && styles.modalOptionActive]}
+              onPress={() => {
+                setSelectedRole('DOCTOR');
+                closeFilterModal();
+              }}>
+              <Text style={[styles.modalOptionText, selectedRole === 'DOCTOR' && styles.modalOptionTextActive]}>
+                Show Doctors Only
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.modalOption, selectedRole === 'NURSE' && styles.modalOptionActive]}
+              onPress={() => {
+                setSelectedRole('NURSE');
+                closeFilterModal();
+              }}>
+              <Text style={[styles.modalOptionText, selectedRole === 'NURSE' && styles.modalOptionTextActive]}>
+                Show Nurses Only
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.modalCloseButton}
+              onPress={closeFilterModal}>
+              <Text style={styles.modalCloseText}>Close</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </Animated.View>
+      )}
+      
+      <HRFooterNavigation activeRoute="Users" />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#F8FAFC',
   },
   loadingContainer: {
     flex: 1,
@@ -278,28 +504,19 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: Spacing.md,
     fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.textSecondary,
   },
-  header: {
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.lg,
+  subtitleContainer: {
+    backgroundColor: Colors.primary,
     paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
   },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.white,
-  },
-  headerSubtitle: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.white,
-    opacity: 0.9,
-    marginTop: Spacing.xs,
+  subtitle: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: 'rgba(255, 255, 255, 0.85)',
+    textAlign: 'center',
   },
   filterButton: {
     width: 40,
@@ -312,34 +529,78 @@ const styles = StyleSheet.create({
   searchContainer: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
-    backgroundColor: Colors.white,
+    backgroundColor: '#F8FAFC',
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.backgroundSecondary,
-    borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.xl,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    elevation: 2,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   searchInput: {
     flex: 1,
     fontSize: Typography.fontSize.base,
     color: Colors.textPrimary,
-    marginLeft: Spacing.sm,
+    marginLeft: Spacing.md,
     paddingVertical: 0,
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    backgroundColor: Colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    marginHorizontal: Spacing.xs,
+    borderRadius: BorderRadius.lg,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  activeTab: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  tabText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textSecondary,
+  },
+  activeTabText: {
+    color: Colors.white,
+    fontFamily: Typography.fontFamily.bold,
   },
   listContainer: {
     padding: Spacing.lg,
+    paddingTop: Spacing.md,
   },
   userCard: {
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
     marginBottom: Spacing.md,
-    ...Shadow.sm,
+    borderRadius: BorderRadius.lg,
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  userCardGradient: {
+    padding: Spacing.lg,
   },
   userHeader: {
     flexDirection: 'row',
@@ -347,66 +608,94 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   avatarContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: Spacing.md,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
   },
   userInfo: {
     flex: 1,
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
+    justifyContent: 'space-between',
+  },
   userName: {
     fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.bold,
+    fontFamily: Typography.fontFamily.bold,
     color: Colors.textPrimary,
-    marginBottom: Spacing.xs,
-  },
-  userEmail: {
-    fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.sm,
-  },
-  userMeta: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
+    flex: 1,
   },
   roleBadge: {
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.sm,
+    borderRadius: BorderRadius.md,
+    marginLeft: Spacing.sm,
   },
   roleText: {
     fontSize: Typography.fontSize.xs,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.white,
+    fontFamily: Typography.fontFamily.bold,
   },
-  statusBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.sm,
+  userEmail: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.sm,
   },
-  statusText: {
-    fontSize: Typography.fontSize.xs,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.white,
-  },
-  moreButton: {
-    padding: Spacing.sm,
-  },
-  userDetails: {
-    marginBottom: Spacing.md,
-  },
-  detailRow: {
+  statusContainer: {
     flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: Spacing.xs,
+  },
+  statusLabel: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textSecondary,
+  },
+  detailsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: Spacing.md,
+    marginHorizontal: -Spacing.xs,
+  },
+  detailItem: {
+    width: '50%',
+    paddingHorizontal: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
+  detailIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.primary + '10',
+    justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.xs,
   },
-  detailText: {
+  detailLabel: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textTertiary,
+    marginBottom: Spacing.xs,
+  },
+  detailValue: {
     fontSize: Typography.fontSize.sm,
-    color: Colors.textSecondary,
-    marginLeft: Spacing.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textPrimary,
   },
   userFooter: {
     flexDirection: 'row',
@@ -414,10 +703,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: Colors.borderLight,
+    borderTopColor: '#E2E8F0',
   },
   joinDate: {
-    fontSize: Typography.fontSize.sm,
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.textTertiary,
   },
   userActions: {
@@ -425,16 +715,114 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   actionButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Colors.backgroundSecondary,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F1F5F9',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   footerLoader: {
     paddingVertical: Spacing.lg,
     alignItems: 'center',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: Spacing['4xl'],
+    paddingHorizontal: Spacing.lg,
+  },
+  emptyTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  emptySubtitle: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+  },
+  retryButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
+  },
+  retryButtonText: {
+    color: Colors.white,
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.bold,
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    margin: Spacing.lg,
+    minWidth: 280,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  modalTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.lg,
+    textAlign: 'center',
+  },
+  modalOption: {
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.sm,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  modalOptionActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  modalOptionText: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+  },
+  modalOptionTextActive: {
+    color: Colors.white,
+    fontFamily: Typography.fontFamily.bold,
+  },
+  modalCloseButton: {
+    marginTop: Spacing.md,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    backgroundColor: '#F1F5F9',
+    borderRadius: BorderRadius.md,
+  },
+  modalCloseText: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textSecondary,
+    textAlign: 'center',
   },
 });
 

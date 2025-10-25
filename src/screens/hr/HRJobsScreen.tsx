@@ -14,6 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import LinearGradient from 'react-native-linear-gradient';
 import GlobalHeader from '../../components/GlobalHeader';
+import HRFooterNavigation from '../../components/HRFooterNavigation';
 
 import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
@@ -368,6 +369,8 @@ const HRJobsScreen: React.FC = () => {
       <TouchableOpacity style={styles.fab} onPress={handleCreateJob}>
         <FontAwesomeIcon icon="plus" size={24} color={Colors.white}  />
       </TouchableOpacity>
+      
+      <HRFooterNavigation activeRoute="Jobs" />
     </View>
   );
 };

@@ -134,11 +134,7 @@ const HRTabNavigator = () => {
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.textTertiary,
         tabBarStyle: {
-          backgroundColor: Colors.white,
-          borderTopColor: Colors.border,
-          paddingBottom: 5,
-          paddingTop: 5,
-          height: 60,
+          display: 'none',
         },
         headerShown: false,
       })}>

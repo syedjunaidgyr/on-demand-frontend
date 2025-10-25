@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import LinearGradient from 'react-native-linear-gradient';
 import GlobalHeader from '../../components/GlobalHeader';
+import HRFooterNavigation from '../../components/HRFooterNavigation';
 
 import ApiService from '../../services/api';
 import { Typography } from '../../constants/typography';
@@ -654,6 +655,7 @@ const HRDashboardScreen: React.FC = () => {
           </View>
         </View>
       </ScrollView>
+      <HRFooterNavigation activeRoute="Dashboard" />
     </View>
   );
 };
@@ -703,7 +705,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
-    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#1C2A3A',
   },
@@ -886,7 +887,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   lastSection: {
-    marginBottom: 24,
+    marginBottom: 0,
   },
   sectionTitle: {
     fontSize: 20,
