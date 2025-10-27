@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Animated,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
@@ -59,6 +60,9 @@ const HRDashboardScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const overviewScrollRef = React.useRef<ScrollView>(null);
+  
+  // Add scroll position tracking for footer transparency
+  const scrollY = React.useRef(new Animated.Value(0)).current;
   
   // Get screen dimensions for responsive design
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -142,14 +146,26 @@ const HRDashboardScreen: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    if (!dateString) return 'Invalid Date';
     
-    if (diffInHours < 1) return 'Just now';
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    if (diffInHours < 48) return 'Yesterday';
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    try {
+      const date = new Date(dateString);
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date';
+      }
+      
+      const now = new Date();
+      const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+      
+      if (diffInHours < 1) return 'Just now';
+      if (diffInHours < 24) return `${diffInHours}h ago`;
+      if (diffInHours < 48) return 'Yesterday';
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } catch (error) {
+      return 'Invalid Date';
+    }
   };
 
   const getPriorityColor = (priority: string) => {
@@ -381,6 +397,11 @@ const HRDashboardScreen: React.FC = () => {
       <ScrollView
         style={styles.scrollableContent}
         showsVerticalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl 
             refreshing={refreshing} 
@@ -585,8 +606,28 @@ const HRDashboardScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
           <View style={styles.listCard}>
+            {(() => {
+              console.log('📊 Recent Assignments Data:', {
+                hasStats: !!stats,
+                hasRecent: !!stats?.recent,
+                hasAssignments: !!stats?.recent?.assignments,
+                assignmentsLength: stats?.recent?.assignments?.length || 0,
+                assignmentsData: stats?.recent?.assignments || 'No assignments data'
+              });
+              return null;
+            })()}
             {stats?.recent?.assignments && stats.recent.assignments.length > 0 ? (
               stats.recent.assignments.slice(0, 3).map((assignment, index) => {
+                console.log(`📋 Assignment ${index + 1}:`, {
+                  id: assignment.id,
+                  status: assignment.status,
+                  user: assignment.user,
+                  job: assignment.job,
+                  assignedAt: assignment.assignedAt,
+                  hourlyRate: assignment.hourlyRate,
+                  fullAssignment: assignment
+                });
+                
                 const getStatusColor = (status: string) => {
                   switch (status) {
                     case 'ACCEPTED': return '#10B981';
@@ -639,7 +680,7 @@ const HRDashboardScreen: React.FC = () => {
                         <Text style={styles.listRate}>₹{assignment.hourlyRate}/hr</Text>
                       </View>
                     </View>
-                    <Text style={styles.listTime}>{formatDate(assignment.assignedAt)}</Text>
+                    <Text style={styles.listTime}>{formatDate(assignment.updatedAt)}</Text>
                   </View>
                 );
               })
@@ -654,8 +695,19 @@ const HRDashboardScreen: React.FC = () => {
             )}
           </View>
         </View>
+        
+        {/* Powered By Section */}
+        <View style={styles.poweredByContainer}>
+          <Text style={styles.poweredByText}>Powered by</Text>
+          <Image
+            source={require('../../assets/footer_logo.png')}
+            style={styles.companyLogo}
+            resizeMode="contain"
+          />
+        </View>
       </ScrollView>
-      <HRFooterNavigation activeRoute="Dashboard" />
+      
+      <HRFooterNavigation activeRoute="Dashboard" scrollY={scrollY} />
     </View>
   );
 };
@@ -664,6 +716,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
+    // Ensure it fits all screen sizes
+    minHeight: Dimensions.get('window').height,
   },
   stickyHeader: {
     position: 'absolute',
@@ -671,10 +725,13 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1000,
+    // Ensure header fits all screen sizes
+    maxHeight: Dimensions.get('window').height * 0.4,
   },
   scrollableContent: {
     flex: 1,
     marginTop: 260,
+    paddingBottom: 100, // Add padding for footer
   },
   loadingContainer: {
     flex: 1,
@@ -900,7 +957,7 @@ const styles = StyleSheet.create({
   sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 12,
   },
   scrollToEndButton: {
@@ -912,7 +969,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: Typography.fontFamily.medium,
     color: '#6366F1',
-    // fontWeight: Typography.fontWeight.semibold,
+    alignSelf: 'flex-start',
+    marginTop: 2,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -1208,6 +1266,23 @@ const styles = StyleSheet.create({
   iconStatsRow: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  poweredByContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingVertical: 10,
+    marginTop: 8,
+  },
+  poweredByText: {
+    fontSize: 12,
+    fontFamily: Typography.fontFamily.medium,
+    color: '#6B7280',
+    marginRight: -25,
+  },
+  companyLogo: {
+    height: 15,
+    width: 95,
   },
 });
 

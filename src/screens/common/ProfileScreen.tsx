@@ -28,8 +28,10 @@ const ProfileScreen: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  const { width: screenWidth } = Dimensions.get('window');
+  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
   const isSmallScreen = screenWidth < 375;
+  const isLargeScreen = screenHeight > 800;
+  const isVerySmallScreen = screenHeight < 600;
 
   useEffect(() => {
     loadUserProfile();
@@ -150,11 +152,18 @@ const ProfileScreen: React.FC = () => {
         titleColor="#FFFFFF"
         onBackPress={() => navigation.goBack()}
         rightComponent={
-          <TouchableOpacity 
-            style={styles.settingsButton}
-            onPress={() => (navigation as any).navigate('ProfileSettings')}>
-            <FontAwesomeIcon icon="cog" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity 
+              style={styles.headerButton}
+              onPress={() => (navigation as any).navigate('ProfileSettings')}>
+              <FontAwesomeIcon icon="cog" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.headerButton}
+              onPress={handleLogout}>
+              <FontAwesomeIcon icon="sign-out-alt" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
         }
       />
 
@@ -293,22 +302,14 @@ const ProfileScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Actions */}
-        <View style={styles.section}>
-        
-          
-        
-
-          <TouchableOpacity 
-            style={styles.logoutButton} 
-            onPress={handleLogout}
-            activeOpacity={0.7}>
-            <View style={styles.logoutIconContainer}>
-              <FontAwesomeIcon icon="sign-out-alt" size={18} color="#FFFFFF" />
-            </View>
-            <Text style={styles.logoutButtonText}>Logout</Text>
-            <FontAwesomeIcon icon="arrow-right" size={16} color="#FFFFFF" />
-          </TouchableOpacity>
+        {/* Powered By Section */}
+        <View style={styles.poweredByContainer}>
+          <Text style={styles.poweredByText}>Powered by</Text>
+          <Image
+            source={require('../../assets/footer_logo.png')}
+            style={styles.companyLogo}
+            resizeMode="contain"
+          />
         </View>
       </ScrollView>
     </View>
@@ -344,6 +345,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    // Ensure it fits all screen sizes
+    minHeight: Dimensions.get('window').height,
   },
   loadingContainer: {
     flex: 1,
@@ -369,7 +372,12 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.medium,
     color: '#EF4444',
   },
-  settingsButton: {
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -391,25 +399,28 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   avatarCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
     backgroundColor: 'white',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
     borderColor: '#1C2A3A',
+    // Responsive size for different screen sizes
+    width: 100,
+    height: 100,
+    borderRadius: 50,
   },
   logoImage: {
+    // Responsive size for different screen sizes
     width: 90,
     height: 90,
   },
   userName: {
-    fontSize: 22,
     fontFamily: Typography.fontFamily.bold,
     color: '#FFFFFF',
     marginBottom: 8,
     textAlign: 'center',
+    // Responsive font size for different screen sizes
+    fontSize: 22,
   },
   roleBadge: {
     backgroundColor: 'rgba(255, 255, 255, 0.25)',
@@ -429,9 +440,12 @@ const styles = StyleSheet.create({
     flex: 1,
     marginTop: -25,
     backgroundColor: '#FFFFFF',
+    // Ensure proper scrolling on all devices
+    minHeight: Dimensions.get('window').height * 0.6,
   },
   scrollContentContainer: {
-    paddingBottom: 30,
+    flexGrow: 1,
+    paddingBottom: 20,
     backgroundColor: '#FFFFFF',
   },
   section: {
@@ -471,8 +485,8 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 12,
     backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#1C2A3A',
+    borderWidth: 1,
+    borderColor: '#6B7280', // Changed to match email label color
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -482,14 +496,14 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 12,
-    fontFamily: Typography.fontFamily.medium,
-    color: '#6B7280',
+    fontFamily: Typography.fontFamily.bold,
+    color: '#111827', // Changed to text color
     marginBottom: 4,
   },
   infoValue: {
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: Typography.fontFamily.medium,
-    color: '#111827',
+    color: '#6B7280', // Changed to label color
     lineHeight: 20,
   },
   actionsCard: {
@@ -528,32 +542,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
     marginLeft: 80,
   },
-  logoutButton: {
+  poweredByContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C2A3A',
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    borderRadius: 16,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    justifyContent: 'flex-end',
+    paddingVertical: 10,
+    marginTop: 45,
   },
-  logoutIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
+  poweredByText: {
+    fontSize: 12,
+    fontFamily: Typography.fontFamily.medium,
+    color: '#6B7280',
+    marginRight: -25,
   },
-  logoutButtonText: {
-    flex: 1,
-    fontSize: 16,
-    fontFamily: Typography.fontFamily.bold,
-    color: '#FFFFFF',
+  companyLogo: {
+    height: 15,
+    width: 95,
   },
 });
 

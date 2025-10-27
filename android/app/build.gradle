@@ -133,4 +133,9 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    // GIF and WebP support for Android
+    implementation 'com.facebook.fresco:animated-gif:3.6.0'
+    implementation 'com.facebook.fresco:animated-webp:3.6.0'
+    implementation 'com.facebook.fresco:webpsupport:3.6.0'
 }

@@ -5,6 +5,8 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Image,
+  Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigation/AppNavigator';
@@ -15,6 +17,8 @@ import { Typography } from '../../constants/typography';
 
 const ProfileSettingsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+  const isVerySmallScreen = screenHeight < 600;
 
   return (
     <View style={styles.container}>
@@ -108,6 +112,16 @@ const ProfileSettingsScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
         </View>
+        
+        {/* Powered By Section */}
+        <View style={styles.poweredByContainer}>
+          <Text style={styles.poweredByText}>Powered by</Text>
+          <Image
+            source={require('../../assets/footer_logo.png')}
+            style={styles.companyLogo}
+            resizeMode="contain"
+          />
+        </View>
       </ScrollView>
     </View>
   );
@@ -124,7 +138,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   scrollContentContainer: {
-    paddingBottom: 30,
+    flexGrow: 1,
+    paddingBottom: 20,
     backgroundColor: '#FFFFFF',
   },
   section: {
@@ -177,6 +192,23 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#F3F4F6',
     marginLeft: 80,
+  },
+  poweredByContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingVertical: 10,
+    marginTop: 160,
+  },
+  poweredByText: {
+    fontSize: 12,
+    fontFamily: Typography.fontFamily.medium,
+    color: '#6B7280',
+    marginRight: -25,
+  },
+  companyLogo: {
+    height: 15,
+    width: 95,
   },
 });
 

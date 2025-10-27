@@ -1,26 +1,61 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   TouchableOpacity,
   StyleSheet,
   Text,
+  Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../utils/icons';
 
 interface HRFooterNavigationProps {
-  activeRoute?: 'Dashboard' | 'Jobs' | 'Users' | 'Reports';
+  activeRoute?: 'Dashboard' | 'Jobs' | 'Users'; // | 'Reports';
+  scrollY?: Animated.Value; // Add scroll position for transparency
 }
 
-const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute }) => {
+const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, scrollY }) => {
   const navigation = useNavigation();
+  const lastScrollY = useRef(0);
+  const opacityValue = useRef(new Animated.Value(1)).current;
 
   const handleNavigation = (route: string) => {
     (navigation as any).navigate(route);
   };
 
+  useEffect(() => {
+    if (scrollY) {
+      const listener = scrollY.addListener(({ value }) => {
+        const currentScrollY = value;
+        const scrollDirection = currentScrollY > lastScrollY.current ? 'down' : 'up';
+        
+        if (scrollDirection === 'down' && currentScrollY > 50) {
+          // Scrolling down - fade out
+          Animated.timing(opacityValue, {
+            toValue: 0.3,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+        } else if (scrollDirection === 'up' || currentScrollY < 50) {
+          // Scrolling up or near top - show fully
+          Animated.timing(opacityValue, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+        }
+        
+        lastScrollY.current = currentScrollY;
+      });
+
+      return () => scrollY.removeListener(listener);
+    }
+  }, [scrollY, opacityValue]);
+
+  const animatedOpacity = scrollY ? opacityValue : new Animated.Value(1);
+
   return (
-    <View style={styles.floatingContainer}>
+    <Animated.View style={[styles.floatingContainer, { opacity: animatedOpacity }]}>
       <View style={styles.footerRow}>
         {/* Dashboard */}
         <TouchableOpacity
@@ -36,10 +71,13 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute }) 
             size={20}
             color={activeRoute === 'Dashboard' ? '#FFFFFF' : '#9CA3AF'}
           />
-          <Text style={[
-            styles.labelText,
-            activeRoute === 'Dashboard' && styles.activeLabelText
-          ]}>Dashboard</Text>
+          <Text 
+            style={[
+              styles.labelText,
+              activeRoute === 'Dashboard' && styles.activeLabelText
+            ]}
+            numberOfLines={1}
+          >Dashboard</Text>
         </TouchableOpacity>
 
         {/* Jobs */}
@@ -56,10 +94,13 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute }) 
             size={20}
             color={activeRoute === 'Jobs' ? '#FFFFFF' : '#9CA3AF'}
           />
-          <Text style={[
-            styles.labelText,
-            activeRoute === 'Jobs' && styles.activeLabelText
-          ]}>Jobs</Text>
+          <Text 
+            style={[
+              styles.labelText,
+              activeRoute === 'Jobs' && styles.activeLabelText
+            ]}
+            numberOfLines={1}
+          >Jobs</Text>
         </TouchableOpacity>
 
         {/* Users */}
@@ -76,14 +117,17 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute }) 
             size={20}
             color={activeRoute === 'Users' ? '#FFFFFF' : '#9CA3AF'}
           />
-          <Text style={[
-            styles.labelText,
-            activeRoute === 'Users' && styles.activeLabelText
-          ]}>Users</Text>
+          <Text 
+            style={[
+              styles.labelText,
+              activeRoute === 'Users' && styles.activeLabelText
+            ]}
+            numberOfLines={1}
+          >Users</Text>
         </TouchableOpacity>
 
-        {/* Reports */}
-        <TouchableOpacity
+        {/* Reports - Commented Out */}
+        {/* <TouchableOpacity
           style={[
             styles.footerButton,
             activeRoute === 'Reports' && styles.activeButton
@@ -100,9 +144,9 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute }) 
             styles.labelText,
             activeRoute === 'Reports' && styles.activeLabelText
           ]}>Reports</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
-    </View>
+    </Animated.View>
   );
 };
 
@@ -115,6 +159,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     pointerEvents: 'box-none',
+    zIndex: 1000, // Ensure footer stays visible
   },
   footerRow: {
     flexDirection: 'row',
@@ -127,9 +172,9 @@ const styles = StyleSheet.create({
     gap: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 8,
-    elevation: 5,
+    elevation: 8,
   },
   footerButton: {
     paddingHorizontal: 8,
@@ -140,7 +185,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   activeButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)', // Increased opacity for better visibility
     borderRadius: 20,
   },
   labelText: {

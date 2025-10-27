@@ -486,36 +486,36 @@ const ReportsScreen: React.FC = () => {
         <View style={styles.tabsContainer}>
           <FlatList
             data={reportTypes}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.tabsContent}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabsContent}
             renderItem={({ item: type }) => (
-              <TouchableOpacity
-                key={type.key}
+            <TouchableOpacity
+              key={type.key}
+              style={[
+                styles.tab,
+                selectedReportType === type.key && styles.tabActive,
+              ]}
+              onPress={() => setSelectedReportType(type.key)}
+            >
+              <FontAwesomeIcon
+                icon={type.icon}
+                size={16}
+                color={
+                  selectedReportType === type.key
+                    ? Colors.white
+                    : Colors.textSecondary
+                }
+              />
+              <Text
                 style={[
-                  styles.tab,
-                  selectedReportType === type.key && styles.tabActive,
+                  styles.tabText,
+                  selectedReportType === type.key && styles.tabTextActive,
                 ]}
-                onPress={() => setSelectedReportType(type.key)}
               >
-                <FontAwesomeIcon
-                  icon={type.icon}
-                  size={16}
-                  color={
-                    selectedReportType === type.key
-                      ? Colors.white
-                      : Colors.textSecondary
-                  }
-                />
-                <Text
-                  style={[
-                    styles.tabText,
-                    selectedReportType === type.key && styles.tabTextActive,
-                  ]}
-                >
-                  {type.label}
-                </Text>
-              </TouchableOpacity>
+                {type.label}
+              </Text>
+            </TouchableOpacity>
             )}
             keyExtractor={(item) => item.key}
           />
@@ -898,52 +898,52 @@ const ReportsScreen: React.FC = () => {
                 <Text style={styles.loadingText}>Loading job details...</Text>
               </View>
             ) : selectedJobDetails ? (
-              <ScrollView style={styles.jobDetailModalContent}>
-                {/* Job Basic Info */}
-                <View style={styles.jobDetailSection}>
-                  <Text style={styles.jobDetailSectionTitle}>Job Information</Text>
-                  <View style={styles.jobDetailRow}>
-                    <Text style={styles.jobDetailLabel}>Title:</Text>
-                    <Text style={styles.jobDetailValue}>{selectedJobDetails.title}</Text>
-                  </View>
+            <ScrollView style={styles.jobDetailModalContent}>
+              {/* Job Basic Info */}
+              <View style={styles.jobDetailSection}>
+                <Text style={styles.jobDetailSectionTitle}>Job Information</Text>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>Title:</Text>
+                  <Text style={styles.jobDetailValue}>{selectedJobDetails.title}</Text>
+                </View>
                   <View style={styles.jobDetailRow}>
                     <Text style={styles.jobDetailLabel}>Description:</Text>
                     <Text style={styles.jobDetailValue}>{selectedJobDetails.description}</Text>
                   </View>
-                  <View style={styles.jobDetailRow}>
-                    <Text style={styles.jobDetailLabel}>Department:</Text>
-                    <Text style={styles.jobDetailValue}>{selectedJobDetails.department}</Text>
-                  </View>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>Department:</Text>
+                  <Text style={styles.jobDetailValue}>{selectedJobDetails.department}</Text>
+                </View>
                   <View style={styles.jobDetailRow}>
                     <Text style={styles.jobDetailLabel}>Specialization:</Text>
                     <Text style={styles.jobDetailValue}>{selectedJobDetails.specialization}</Text>
                   </View>
-                  <View style={styles.jobDetailRow}>
-                    <Text style={styles.jobDetailLabel}>Location:</Text>
-                    <Text style={styles.jobDetailValue}>{selectedJobDetails.location}</Text>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>Location:</Text>
+                  <Text style={styles.jobDetailValue}>{selectedJobDetails.location}</Text>
+                </View>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>Status:</Text>
+                  <View style={[
+                    styles.statusBadge,
+                    { backgroundColor: getStatusColor(selectedJobDetails.status) }
+                  ]}>
+                    <Text style={styles.statusText}>{selectedJobDetails.status}</Text>
                   </View>
-                  <View style={styles.jobDetailRow}>
-                    <Text style={styles.jobDetailLabel}>Status:</Text>
-                    <View style={[
-                      styles.statusBadge,
-                      { backgroundColor: getStatusColor(selectedJobDetails.status) }
-                    ]}>
-                      <Text style={styles.statusText}>{selectedJobDetails.status}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.jobDetailRow}>
-                    <Text style={styles.jobDetailLabel}>Priority:</Text>
-                    <Text style={styles.jobDetailValue}>{selectedJobDetails.priority}</Text>
-                  </View>
-                  <View style={styles.jobDetailRow}>
-                    <Text style={styles.jobDetailLabel}>Hourly Rate:</Text>
-                    <Text style={styles.jobDetailValue}>₹{selectedJobDetails.hourlyRate}</Text>
-                  </View>
+                </View>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>Priority:</Text>
+                  <Text style={styles.jobDetailValue}>{selectedJobDetails.priority}</Text>
+                </View>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>Hourly Rate:</Text>
+                  <Text style={styles.jobDetailValue}>₹{selectedJobDetails.hourlyRate}</Text>
+                </View>
                   <View style={styles.jobDetailRow}>
                     <Text style={styles.jobDetailLabel}>Max Assignments:</Text>
                     <Text style={styles.jobDetailValue}>{selectedJobDetails.maxAssignments}</Text>
                   </View>
-                </View>
+              </View>
 
                 {/* Facility Information */}
                 <View style={styles.jobDetailSection}>
@@ -1005,55 +1005,55 @@ const ReportsScreen: React.FC = () => {
                   </View>
                 )}
 
-                {/* Dates & Times */}
-                <View style={styles.jobDetailSection}>
-                  <Text style={styles.jobDetailSectionTitle}>Schedule</Text>
-                  <View style={styles.jobDetailRow}>
-                    <Text style={styles.jobDetailLabel}>Start Date:</Text>
-                    <Text style={styles.jobDetailValue}>
-                      {new Date(selectedJobDetails.startDate).toLocaleDateString()}
-                    </Text>
-                  </View>
-                  <View style={styles.jobDetailRow}>
-                    <Text style={styles.jobDetailLabel}>End Date:</Text>
-                    <Text style={styles.jobDetailValue}>
-                      {new Date(selectedJobDetails.endDate).toLocaleDateString()}
-                    </Text>
-                  </View>
-                  <View style={styles.jobDetailRow}>
-                    <Text style={styles.jobDetailLabel}>Start Time:</Text>
-                    <Text style={styles.jobDetailValue}>{selectedJobDetails.startTime}</Text>
-                  </View>
-                  <View style={styles.jobDetailRow}>
-                    <Text style={styles.jobDetailLabel}>End Time:</Text>
-                    <Text style={styles.jobDetailValue}>{selectedJobDetails.endTime}</Text>
-                  </View>
+              {/* Dates & Times */}
+              <View style={styles.jobDetailSection}>
+                <Text style={styles.jobDetailSectionTitle}>Schedule</Text>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>Start Date:</Text>
+                  <Text style={styles.jobDetailValue}>
+                    {new Date(selectedJobDetails.startDate).toLocaleDateString()}
+                  </Text>
                 </View>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>End Date:</Text>
+                  <Text style={styles.jobDetailValue}>
+                    {new Date(selectedJobDetails.endDate).toLocaleDateString()}
+                  </Text>
+                </View>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>Start Time:</Text>
+                  <Text style={styles.jobDetailValue}>{selectedJobDetails.startTime}</Text>
+                </View>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>End Time:</Text>
+                  <Text style={styles.jobDetailValue}>{selectedJobDetails.endTime}</Text>
+                </View>
+              </View>
 
-                {/* Requirements */}
-                {selectedJobDetails.requirements && (
-                  <View style={styles.jobDetailSection}>
-                    <Text style={styles.jobDetailSectionTitle}>Requirements</Text>
+              {/* Requirements */}
+              {selectedJobDetails.requirements && (
+                <View style={styles.jobDetailSection}>
+                  <Text style={styles.jobDetailSectionTitle}>Requirements</Text>
+                  <View style={styles.jobDetailRow}>
+                    <Text style={styles.jobDetailLabel}>Experience:</Text>
+                    <Text style={styles.jobDetailValue}>{selectedJobDetails.requirements.experience}</Text>
+                  </View>
+                  <View style={styles.jobDetailRow}>
+                    <Text style={styles.jobDetailLabel}>Board Certified:</Text>
+                    <Text style={styles.jobDetailValue}>
+                      {selectedJobDetails.requirements.boardCertified ? 'Yes' : 'No'}
+                    </Text>
+                  </View>
+                  {selectedJobDetails.requirements.skills && (
                     <View style={styles.jobDetailRow}>
-                      <Text style={styles.jobDetailLabel}>Experience:</Text>
-                      <Text style={styles.jobDetailValue}>{selectedJobDetails.requirements.experience}</Text>
-                    </View>
-                    <View style={styles.jobDetailRow}>
-                      <Text style={styles.jobDetailLabel}>Board Certified:</Text>
+                      <Text style={styles.jobDetailLabel}>Skills:</Text>
                       <Text style={styles.jobDetailValue}>
-                        {selectedJobDetails.requirements.boardCertified ? 'Yes' : 'No'}
+                        {selectedJobDetails.requirements.skills.join(', ')}
                       </Text>
                     </View>
-                    {selectedJobDetails.requirements.skills && (
-                      <View style={styles.jobDetailRow}>
-                        <Text style={styles.jobDetailLabel}>Skills:</Text>
-                        <Text style={styles.jobDetailValue}>
-                          {selectedJobDetails.requirements.skills.join(', ')}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                )}
+                  )}
+                </View>
+              )}
 
                 {/* Benefits */}
                 {selectedJobDetails.benefits && (
@@ -1088,18 +1088,18 @@ const ReportsScreen: React.FC = () => {
                   </View>
                 )}
 
-                {/* Assignments */}
-                {selectedJobDetails.assignments && selectedJobDetails.assignments.length > 0 && (
-                  <View style={styles.jobDetailSection}>
-                    <Text style={styles.jobDetailSectionTitle}>Assignments</Text>
-                    {selectedJobDetails.assignments.map((assignment: any, index: number) => (
-                      <View key={index} style={styles.assignmentCard}>
-                        <View style={styles.jobDetailRow}>
-                          <Text style={styles.jobDetailLabel}>Assigned To:</Text>
-                          <Text style={styles.jobDetailValue}>
-                            {assignment.user?.firstName} {assignment.user?.lastName}
-                          </Text>
-                        </View>
+              {/* Assignments */}
+              {selectedJobDetails.assignments && selectedJobDetails.assignments.length > 0 && (
+                <View style={styles.jobDetailSection}>
+                  <Text style={styles.jobDetailSectionTitle}>Assignments</Text>
+                  {selectedJobDetails.assignments.map((assignment: any, index: number) => (
+                    <View key={index} style={styles.assignmentCard}>
+                      <View style={styles.jobDetailRow}>
+                        <Text style={styles.jobDetailLabel}>Assigned To:</Text>
+                        <Text style={styles.jobDetailValue}>
+                          {assignment.user?.firstName} {assignment.user?.lastName}
+                        </Text>
+                      </View>
                         <View style={styles.jobDetailRow}>
                           <Text style={styles.jobDetailLabel}>Email:</Text>
                           <Text style={styles.jobDetailValue}>{assignment.user?.email}</Text>
@@ -1108,23 +1108,23 @@ const ReportsScreen: React.FC = () => {
                           <Text style={styles.jobDetailLabel}>Phone:</Text>
                           <Text style={styles.jobDetailValue}>{assignment.user?.phone}</Text>
                         </View>
-                        <View style={styles.jobDetailRow}>
-                          <Text style={styles.jobDetailLabel}>Status:</Text>
-                          <View style={[
-                            styles.statusBadge,
-                            { backgroundColor: getStatusColor(assignment.status) }
-                          ]}>
-                            <Text style={styles.statusText}>{assignment.status}</Text>
-                          </View>
+                      <View style={styles.jobDetailRow}>
+                        <Text style={styles.jobDetailLabel}>Status:</Text>
+                        <View style={[
+                          styles.statusBadge,
+                          { backgroundColor: getStatusColor(assignment.status) }
+                        ]}>
+                          <Text style={styles.statusText}>{assignment.status}</Text>
                         </View>
-                        <View style={styles.jobDetailRow}>
-                          <Text style={styles.jobDetailLabel}>Total Hours:</Text>
-                          <Text style={styles.jobDetailValue}>{assignment.totalHours}</Text>
-                        </View>
-                        <View style={styles.jobDetailRow}>
-                          <Text style={styles.jobDetailLabel}>Total Payment:</Text>
-                          <Text style={styles.jobDetailValue}>₹{assignment.totalPayment}</Text>
-                        </View>
+                      </View>
+                      <View style={styles.jobDetailRow}>
+                        <Text style={styles.jobDetailLabel}>Total Hours:</Text>
+                        <Text style={styles.jobDetailValue}>{assignment.totalHours}</Text>
+                      </View>
+                      <View style={styles.jobDetailRow}>
+                        <Text style={styles.jobDetailLabel}>Total Payment:</Text>
+                        <Text style={styles.jobDetailValue}>₹{assignment.totalPayment}</Text>
+                      </View>
                         <View style={styles.jobDetailRow}>
                           <Text style={styles.jobDetailLabel}>Accepted At:</Text>
                           <Text style={styles.jobDetailValue}>
@@ -1175,8 +1175,8 @@ const ReportsScreen: React.FC = () => {
                                     <Text style={styles.jobDetailValue}>{checkIn.notes}</Text>
                                   </View>
                                 )}
-                              </View>
-                            ))}
+                    </View>
+                  ))}
                           </View>
                         )}
                       </View>
@@ -1210,9 +1210,9 @@ const ReportsScreen: React.FC = () => {
                         {new Date(selectedJobDetails.updatedAt).toLocaleString()}
                       </Text>
                     </View>
-                  </View>
-                )}
-              </ScrollView>
+                </View>
+              )}
+            </ScrollView>
             ) : (
               <View style={styles.errorContainer}>
                 <FontAwesomeIcon icon="exclamation-triangle" size={48} color={Colors.error} />

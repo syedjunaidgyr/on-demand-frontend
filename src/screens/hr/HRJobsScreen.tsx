@@ -9,6 +9,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
+  Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
@@ -28,6 +29,9 @@ const HRJobsScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
+  
+  // Add scroll position tracking for footer transparency
+  const scrollY = React.useRef(new Animated.Value(0)).current;
   const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => {
@@ -363,6 +367,11 @@ const HRJobsScreen: React.FC = () => {
         onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
         showsVerticalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+        scrollEventThrottle={16}
       />
 
       {/* Floating Action Button */}
@@ -370,7 +379,7 @@ const HRJobsScreen: React.FC = () => {
         <FontAwesomeIcon icon="plus" size={24} color={Colors.white}  />
       </TouchableOpacity>
       
-      <HRFooterNavigation activeRoute="Jobs" />
+      <HRFooterNavigation activeRoute="Jobs" scrollY={scrollY} />
     </View>
   );
 };
