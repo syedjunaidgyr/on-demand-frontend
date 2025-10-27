@@ -13,6 +13,8 @@ import RegisterScreen from '../screens/auth/RegisterScreen';
 import HRDashboardScreen from '../screens/hr/HRDashboardScreen';
 import HRJobsScreen from '../screens/hr/HRJobsScreen';
 import HRUsersScreen from '../screens/hr/HRUsersScreen';
+import ReportsScreen from '../screens/hr/ReportsScreen';
+import ReportDetailsScreen from '../screens/hr/ReportDetailsScreen';
 import CreateJobScreen from '../screens/hr/CreateJobScreen';
 import JobAssignmentScreen from '../screens/hr/JobAssignmentScreen';
 
@@ -74,6 +76,8 @@ export type RootStackParamList = {
   AssignmentDetails: { assignmentId: string };
   QRScanner: { assignmentId: string; action: 'checkin' | 'checkout' };
   QRCodeDisplay: { assignment: JobAssignment; action: 'checkin' | 'checkout' };
+  Reports: undefined;
+  ReportDetails: { reportId: number };
   GeolocationTest: undefined;
 };
 
@@ -301,6 +305,20 @@ const MainNavigator = ({ user }: { user: User }) => {
         options={{
           headerShown: false, // We handle our own header
           title: 'QR Code Display',
+        }}
+      />
+      <Stack.Screen 
+        name="Reports" 
+        component={ReportsScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="ReportDetails" 
+        component={ReportDetailsScreen}
+        options={{
+          headerShown: false,
         }}
       />
       <Stack.Screen 

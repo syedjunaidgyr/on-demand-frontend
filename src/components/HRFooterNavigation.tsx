@@ -9,7 +9,7 @@ import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../utils/icons';
 
 interface HRFooterNavigationProps {
-  activeRoute?: 'Dashboard' | 'Jobs' | 'Users';
+  activeRoute?: 'Dashboard' | 'Jobs' | 'Users' | 'Reports';
 }
 
 const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute }) => {
@@ -81,6 +81,26 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute }) 
             activeRoute === 'Users' && styles.activeLabelText
           ]}>Users</Text>
         </TouchableOpacity>
+
+        {/* Reports */}
+        <TouchableOpacity
+          style={[
+            styles.footerButton,
+            activeRoute === 'Reports' && styles.activeButton
+          ]}
+          onPress={() => handleNavigation('Reports')}
+          activeOpacity={0.8}
+        >
+          <FontAwesomeIcon
+            icon="file-alt"
+            size={20}
+            color={activeRoute === 'Reports' ? '#FFFFFF' : '#9CA3AF'}
+          />
+          <Text style={[
+            styles.labelText,
+            activeRoute === 'Reports' && styles.activeLabelText
+          ]}>Reports</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -121,7 +141,7 @@ const styles = StyleSheet.create({
   },
   activeButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 8,
+    borderRadius: 20,
   },
   labelText: {
     color: '#9CA3AF',

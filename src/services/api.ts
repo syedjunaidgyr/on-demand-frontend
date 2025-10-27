@@ -857,6 +857,187 @@ class ApiService {
       throw new Error(error.response?.data?.message || 'Failed to load assignment details');
     }
   }
+
+  // Reports API
+  async generateJobPostingsReport(filters: any): Promise<any> {
+    try {
+      console.log('📊 Generating job postings report with filters:', filters);
+      const response = await this.api.post('/reports/job-postings', filters);
+      console.log('✅ Job postings report generated:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to generate job postings report:', error);
+      throw new Error(error.response?.data?.message || 'Failed to generate job postings report');
+    }
+  }
+
+  async generateJobAssignmentsReport(filters: any): Promise<any> {
+    try {
+      console.log('📊 Generating job assignments report with filters:', filters);
+      const response = await this.api.post('/reports/job-assignments', filters);
+      console.log('✅ Job assignments report generated:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to generate job assignments report:', error);
+      throw new Error(error.response?.data?.message || 'Failed to generate job assignments report');
+    }
+  }
+
+  async generateAttendanceReport(filters: any): Promise<any> {
+    try {
+      console.log('📊 Generating attendance report with filters:', filters);
+      const response = await this.api.post('/reports/attendance', filters);
+      console.log('✅ Attendance report generated:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to generate attendance report:', error);
+      throw new Error(error.response?.data?.message || 'Failed to generate attendance report');
+    }
+  }
+
+  async generateNoShowJobsReport(filters: any): Promise<any> {
+    try {
+      console.log('📊 Generating no-show jobs report with filters:', filters);
+      const response = await this.api.post('/reports/no-show-jobs', filters);
+      console.log('✅ No-show jobs report generated:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to generate no-show jobs report:', error);
+      throw new Error(error.response?.data?.message || 'Failed to generate no-show jobs report');
+    }
+  }
+
+  async generateFinancialReport(filters: any): Promise<any> {
+    try {
+      console.log('📊 Generating financial report with filters:', filters);
+      const response = await this.api.post('/reports/financial', filters);
+      console.log('✅ Financial report generated:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to generate financial report:', error);
+      throw new Error(error.response?.data?.message || 'Failed to generate financial report');
+    }
+  }
+
+  async getReports(): Promise<any[]> {
+    try {
+      console.log('📊 Fetching all reports');
+      const response = await this.api.get('/api/v1/reports');
+      console.log('✅ Reports fetched:', response.data);
+      return response.data.reports || [];
+    } catch (error: any) {
+      console.error('❌ Failed to fetch reports:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch reports');
+    }
+  }
+
+  async getReportDetails(reportId: number): Promise<any> {
+    try {
+      console.log('📊 Fetching report details for ID:', reportId);
+      const response = await this.api.get(`/api/v1/reports/${reportId}`);
+      console.log('✅ Report details fetched:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to fetch report details:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch report details');
+    }
+  }
+
+  async deleteReport(reportId: number): Promise<void> {
+    try {
+      console.log('📊 Deleting report with ID:', reportId);
+      await this.api.delete(`/api/v1/reports/${reportId}`);
+      console.log('✅ Report deleted successfully');
+    } catch (error: any) {
+      console.error('❌ Failed to delete report:', error);
+      throw new Error(error.response?.data?.message || 'Failed to delete report');
+    }
+  }
+
+  // Job-related API methods for report generation
+  async getAllJobsForReports(): Promise<any[]> {
+    try {
+      console.log('📊 Fetching all jobs for report generation');
+      console.log('🔗 Full API URL:', `${this.api.defaults.baseURL}/hr/jobs`);
+      
+      // Call the API directly to get all jobs
+      const response = await this.api.get('/hr/jobs');
+      console.log('✅ Jobs fetched:', response.data);
+      console.log('📊 Response status:', response.status);
+      console.log('📊 Response headers:', response.headers);
+      
+      // Handle different response formats
+      if (Array.isArray(response.data)) {
+        return response.data;
+      } else if (response.data.jobs) {
+        return response.data.jobs;
+      } else if (response.data.data) {
+        return response.data.data;
+      } else {
+        console.log('⚠️ Unexpected response format:', response.data);
+        return [];
+      }
+    } catch (error: any) {
+      console.error('❌ Failed to fetch jobs:', error);
+      console.error('❌ Error status:', error.response?.status);
+      console.error('❌ Error data:', error.response?.data);
+      console.error('❌ Error headers:', error.response?.headers);
+      throw new Error(error.response?.data?.message || 'Failed to fetch jobs');
+    }
+  }
+
+  // Assignment-related API methods for report generation
+  async getAllAssignments(): Promise<any[]> {
+    try {
+      console.log('📊 Fetching all assignments for report generation');
+      console.log('🔗 Full API URL:', `${this.api.defaults.baseURL}/hr/assignments`);
+      
+      // Call the API directly to get all assignments
+      const response = await this.api.get('/hr/assignments');
+      console.log('✅ Assignments fetched:', response.data);
+      console.log('📊 Response status:', response.status);
+      console.log('📊 Response headers:', response.headers);
+      
+      // Handle different response formats
+      if (Array.isArray(response.data)) {
+        return response.data;
+      } else if (response.data.assignments) {
+        return response.data.assignments;
+      } else if (response.data.data) {
+        return response.data.data;
+      } else {
+        console.log('⚠️ Unexpected response format:', response.data);
+        return [];
+      }
+    } catch (error: any) {
+      console.error('❌ Failed to fetch assignments:', error);
+      console.error('❌ Error status:', error.response?.status);
+      console.error('❌ Error data:', error.response?.data);
+      console.error('❌ Error headers:', error.response?.headers);
+      throw new Error(error.response?.data?.message || 'Failed to fetch assignments');
+    }
+  }
+
+  async getAssignmentById(assignmentId: string): Promise<any> {
+    try {
+      console.log('📊 Fetching assignment details for ID:', assignmentId);
+      console.log('🔗 Full API URL:', `${this.api.defaults.baseURL}/hr/assignments/${assignmentId}`);
+      
+      // Call the API directly to get assignment details
+      const response = await this.api.get(`/hr/assignments/${assignmentId}`);
+      console.log('✅ Assignment details fetched:', response.data);
+      console.log('📊 Response status:', response.status);
+      console.log('📊 Response headers:', response.headers);
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to fetch assignment details:', error);
+      console.error('❌ Error status:', error.response?.status);
+      console.error('❌ Error data:', error.response?.data);
+      console.error('❌ Error headers:', error.response?.headers);
+      throw new Error(error.response?.data?.message || 'Failed to fetch assignment details');
+    }
+  }
 }
 
 export default new ApiService();

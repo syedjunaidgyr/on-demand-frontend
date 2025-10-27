@@ -516,7 +516,7 @@ const HRDashboardScreen: React.FC = () => {
               subtitle="View insights"
               icon="chart-line"
               gradient={['#F59E0B', '#D97706']}
-              onPress={() => {}}
+              onPress={() => (navigation as any).navigate('Reports')}
             />
           </View>
         </View>

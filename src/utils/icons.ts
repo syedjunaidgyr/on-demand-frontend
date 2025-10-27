@@ -25,6 +25,7 @@ import { faArrowLeft } from '@fortawesome/free-solid-svg-icons/faArrowLeft';
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons/faArrowRight';
 import { faChevronDown } from '@fortawesome/free-solid-svg-icons/faChevronDown';
 import { faChevronUp } from '@fortawesome/free-solid-svg-icons/faChevronUp';
+import { faChevronRight } from '@fortawesome/free-solid-svg-icons/faChevronRight';
 import { faEye } from '@fortawesome/free-solid-svg-icons/faEye';
 import { faEyeSlash } from '@fortawesome/free-solid-svg-icons/faEyeSlash';
 import { faLock } from '@fortawesome/free-solid-svg-icons/faLock';
@@ -96,6 +97,11 @@ import { faParking } from '@fortawesome/free-solid-svg-icons/faParking';
 import { faShieldAlt } from '@fortawesome/free-solid-svg-icons/faShieldAlt';
 import { faQrcode } from '@fortawesome/free-solid-svg-icons/faQrcode';
 import { faCamera } from '@fortawesome/free-solid-svg-icons/faCamera';
+import { faFileAlt } from '@fortawesome/free-solid-svg-icons/faFileAlt';
+import { faFile } from '@fortawesome/free-solid-svg-icons/faFile';
+import { faFilePdf } from '@fortawesome/free-solid-svg-icons/faFilePdf';
+import { faFileExcel } from '@fortawesome/free-solid-svg-icons/faFileExcel';
+import { faDatabase } from '@fortawesome/free-solid-svg-icons/faDatabase';
 
 // Add all icons to the library
 library.add(
@@ -122,6 +128,7 @@ library.add(
   faArrowRight as any,
   faChevronDown as any,
   faChevronUp as any,
+  faChevronRight as any,
   faEye as any,
   faEyeSlash as any,
   faLock as any,
@@ -193,6 +200,11 @@ library.add(
   faShieldAlt as any,
   faQrcode as any,
   faCamera as any,
+  faFileAlt as any,
+  faFile as any,
+  faFilePdf as any,
+  faFileExcel as any,
+  faDatabase as any,
 );
 
 export { FontAwesomeIcon };
