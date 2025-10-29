@@ -16,6 +16,7 @@ import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
 import { Notification } from '../../types';
 import { useNotifications } from '../../contexts/NotificationContext';
+import Responsive from '../../utils/responsive';
 
 const NotificationsScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -172,7 +173,7 @@ const NotificationsScreen: React.FC = () => {
           style={styles.deleteBackground}
           onPress={() => handleDeletePress(item.id)}
           activeOpacity={0.8}>
-          <FontAwesomeIcon icon="trash" size={22} color={Colors.white} />
+          <FontAwesomeIcon icon="trash" size={Responsive.iconSize(22)} color={Colors.white} />
           <Text style={styles.deleteText}>Delete</Text>
         </TouchableOpacity>
 
@@ -197,7 +198,7 @@ const NotificationsScreen: React.FC = () => {
             ]}>
               <FontAwesomeIcon
                 icon={icon}
-                size={20}
+                size={Responsive.iconSize(20)}
                 color={item.isRead ? '#999999' : color}
               />
             </View>
@@ -220,7 +221,7 @@ const NotificationsScreen: React.FC = () => {
             {!item.isRead && <View style={styles.unreadDot} />}
             {item.isRead && (
               <View style={styles.readCheckmark}>
-                <FontAwesomeIcon icon="check" size={12} color="#999999" />
+                <FontAwesomeIcon icon="check" size={Responsive.iconSize(12)} color="#999999" />
               </View>
             )}
           </TouchableOpacity>
@@ -246,7 +247,7 @@ const NotificationsScreen: React.FC = () => {
           <TouchableOpacity 
             onPress={() => setModalVisible(true)}
             style={styles.menuButton}>
-            <FontAwesomeIcon icon="ellipsis-v" size={20} color={Colors.white} />
+            <FontAwesomeIcon icon="ellipsis-v" size={Responsive.iconSize(20)} color={Colors.white} />
           </TouchableOpacity>
         }
       />
@@ -273,7 +274,7 @@ const NotificationsScreen: React.FC = () => {
         }}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <FontAwesomeIcon icon="bell-slash" size={64} color={Colors.textTertiary} />
+            <FontAwesomeIcon icon="bell-slash" size={Responsive.iconSize(64)} color={Colors.textTertiary} />
             <Text style={styles.emptyText}>No notifications yet</Text>
             <Text style={styles.emptySubtext}>
               You'll see notifications here when there are updates
@@ -327,7 +328,7 @@ const NotificationsScreen: React.FC = () => {
         <View style={styles.deleteModalOverlay}>
           <View style={styles.deleteModalContent}>
             <View style={styles.deleteModalIcon}>
-              <FontAwesomeIcon icon="exclamation-triangle" size={40} color={Colors.warning} />
+              <FontAwesomeIcon icon="exclamation-triangle" size={Responsive.iconSize(40)} color={Colors.warning} />
             </View>
             
             <Text style={styles.deleteModalTitle}>Delete Notification?</Text>
@@ -361,18 +362,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
   },
   menuButton: {
-    padding: 8,
+    padding: Responsive.scale(8),
   },
   listContent: {
-    paddingBottom: 24,
+    paddingBottom: Responsive.verticalScale(24),
   },
   sectionHeader: {
-    fontSize: 13,
+    fontSize: Responsive.fontSize(13),
     fontFamily: Typography.fontFamily.medium,
     color: Colors.textTertiary,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
+    paddingHorizontal: Responsive.scale(16),
+    paddingTop: Responsive.verticalScale(16),
+    paddingBottom: Responsive.verticalScale(8),
     backgroundColor: '#F5F5F5',
   },
   swipeContainer: {
@@ -388,7 +389,7 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     bottom: 0,
-    width: 80,
+    width: Responsive.scale(80),
     backgroundColor: Colors.error,
     justifyContent: 'center',
     alignItems: 'center',
@@ -396,23 +397,23 @@ const styles = StyleSheet.create({
   },
   deleteText: {
     color: Colors.white,
-    fontSize: 12,
+    fontSize: Responsive.fontSize(12),
     fontFamily: Typography.fontFamily.medium,
-    marginTop: 4,
+    marginTop: Responsive.verticalScale(4),
   },
   notificationCard: {
     backgroundColor: Colors.white,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
+    paddingVertical: Responsive.verticalScale(16),
+    paddingHorizontal: Responsive.scale(16),
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
     position: 'relative',
   },
   unreadIndicator: {
     backgroundColor: '#F0F7FF',
-    borderLeftWidth: 3,
+    borderLeftWidth: Responsive.scale(3),
     borderLeftColor: Colors.primary,
   },
   readCard: {
@@ -420,30 +421,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFAFA',
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: Responsive.scale(40),
+    height: Responsive.verticalScale(40),
+    borderRadius: Responsive.scale(20),
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: Responsive.scale(12),
   },
   textContent: {
     flex: 1,
-    marginRight: 12,
+    marginRight: Responsive.scale(12),
   },
   notificationMessage: {
-    fontSize: 14,
+    fontSize: Responsive.fontSize(14),
     fontFamily: Typography.fontFamily.regular,
     color: Colors.textPrimary,
-    lineHeight: 20,
-    marginBottom: 4,
+    lineHeight: Responsive.verticalScale(20),
+    marginBottom: Responsive.verticalScale(4),
   },
   readText: {
     color: '#999999',
     fontFamily: Typography.fontFamily.regular,
   },
   notificationTime: {
-    fontSize: 12,
+    fontSize: Responsive.fontSize(12),
     fontFamily: Typography.fontFamily.regular,
     color: Colors.textTertiary,
   },
@@ -452,20 +453,20 @@ const styles = StyleSheet.create({
   },
   unreadDot: {
     position: 'absolute',
-    right: 16,
-    top: 16,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    right: Responsive.scale(16),
+    top: Responsive.verticalScale(16),
+    width: Responsive.scale(10),
+    height: Responsive.verticalScale(10),
+    borderRadius: Responsive.scale(5),
     backgroundColor: '#FF3B30',
   },
   readCheckmark: {
     position: 'absolute',
-    right: 16,
-    top: 20,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    right: Responsive.scale(16),
+    top: Responsive.verticalScale(20),
+    width: Responsive.scale(20),
+    height: Responsive.verticalScale(20),
+    borderRadius: Responsive.scale(10),
     backgroundColor: '#E8E8E8',
     justifyContent: 'center',
     alignItems: 'center',
@@ -474,21 +475,21 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 80,
+    paddingVertical: Responsive.verticalScale(80),
   },
   emptyText: {
-    fontSize: 18,
+    fontSize: Responsive.fontSize(18),
     fontFamily: Typography.fontFamily.bold,
     color: Colors.textSecondary,
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: Responsive.verticalScale(16),
+    marginBottom: Responsive.verticalScale(8),
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: Responsive.fontSize(14),
     fontFamily: Typography.fontFamily.regular,
     color: Colors.textTertiary,
     textAlign: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: Responsive.scale(40),
   },
   modalOverlay: {
     flex: 1,
@@ -497,17 +498,17 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: Colors.white,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 34,
+    borderTopLeftRadius: Responsive.scale(20),
+    borderTopRightRadius: Responsive.scale(20),
+    paddingBottom: Responsive.verticalScale(34),
   },
   modalOption: {
-    paddingVertical: 18,
-    paddingHorizontal: 20,
+    paddingVertical: Responsive.verticalScale(18),
+    paddingHorizontal: Responsive.scale(20),
     alignItems: 'center',
   },
   modalOptionText: {
-    fontSize: 16,
+    fontSize: Responsive.fontSize(16),
     fontFamily: Typography.fontFamily.regular,
     color: Colors.textPrimary,
   },
@@ -517,46 +518,46 @@ const styles = StyleSheet.create({
   modalDivider: {
     height: 1,
     backgroundColor: '#F0F0F0',
-    marginHorizontal: 20,
+    marginHorizontal: Responsive.scale(20),
   },
   deleteModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: Responsive.scale(20),
   },
   deleteModalContent: {
     backgroundColor: Colors.white,
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: Responsive.scale(16),
+    padding: Responsive.scale(24),
     width: '100%',
-    maxWidth: 340,
+    maxWidth: Responsive.scale(340),
     alignItems: 'center',
   },
   deleteModalIcon: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: Responsive.scale(70),
+    height: Responsive.verticalScale(70),
+    borderRadius: Responsive.scale(35),
     backgroundColor: '#FFF3E0',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: Responsive.verticalScale(16),
   },
   deleteModalTitle: {
-    fontSize: 20,
+    fontSize: Responsive.fontSize(20),
     fontFamily: Typography.fontFamily.bold,
     color: Colors.textPrimary,
-    marginBottom: 8,
+    marginBottom: Responsive.verticalScale(8),
     textAlign: 'center',
   },
   deleteModalMessage: {
-    fontSize: 14,
+    fontSize: Responsive.fontSize(14),
     fontFamily: Typography.fontFamily.regular,
     color: Colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 24,
+    lineHeight: Responsive.verticalScale(20),
+    marginBottom: Responsive.verticalScale(24),
   },
   deleteModalButtons: {
     flexDirection: 'row',
@@ -565,16 +566,16 @@ const styles = StyleSheet.create({
   },
   deleteModalButton: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
+    paddingVertical: Responsive.verticalScale(12),
+    paddingHorizontal: Responsive.scale(20),
+    borderRadius: Responsive.scale(8),
     alignItems: 'center',
   },
   cancelButton: {
     backgroundColor: '#F5F5F5',
   },
   cancelButtonText: {
-    fontSize: 16,
+    fontSize: Responsive.fontSize(16),
     fontFamily: Typography.fontFamily.medium,
     color: Colors.textPrimary,
   },
@@ -582,7 +583,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.error,
   },
   confirmButtonText: {
-    fontSize: 16,
+    fontSize: Responsive.fontSize(16),
     fontFamily: Typography.fontFamily.bold,
     color: Colors.white,
   },

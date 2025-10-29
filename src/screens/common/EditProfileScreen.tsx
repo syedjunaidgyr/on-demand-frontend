@@ -20,6 +20,7 @@ import { Typography } from '../../constants/typography';
 import { Colors } from '../../constants/colors';
 import { User } from '../../types';
 import ApiService from '../../services/api';
+import Responsive from '../../utils/responsive';
 
 // Dropdown options
 const relationshipOptions = [
@@ -539,7 +540,7 @@ const EditProfileScreen: React.FC = () => {
                   </Text>
                   <FontAwesomeIcon 
                     icon={showRelationshipDropdown ? "chevron-up" : "chevron-down"} 
-                    size={16} 
+                    size={Responsive.iconSize(16)} 
                     color="#6B7280" 
                   />
                 </TouchableOpacity>
@@ -598,7 +599,7 @@ const EditProfileScreen: React.FC = () => {
                     </Text>
                     <FontAwesomeIcon 
                       icon={showCityDropdown ? "chevron-up" : "chevron-down"} 
-                      size={16} 
+                      size={Responsive.iconSize(16)} 
                       color="#6B7280" 
                     />
                   </TouchableOpacity>
@@ -638,7 +639,7 @@ const EditProfileScreen: React.FC = () => {
                     </Text>
                     <FontAwesomeIcon 
                       icon={showStateDropdown ? "chevron-up" : "chevron-down"} 
-                      size={16} 
+                      size={Responsive.iconSize(16)} 
                       color="#6B7280" 
                     />
                   </TouchableOpacity>
@@ -705,7 +706,7 @@ const EditProfileScreen: React.FC = () => {
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <>
-                  <FontAwesomeIcon icon="check" size={18} color="#FFFFFF" />
+                  <FontAwesomeIcon icon="check" size={Responsive.iconSize(18)} color="#FFFFFF" />
                   <Text style={styles.saveButtonText}>Save Changes</Text>
                 </>
               )}
@@ -735,7 +736,7 @@ const EditProfileScreen: React.FC = () => {
                },
              ]}>
              <View style={styles.successIconContainer}>
-               <FontAwesomeIcon icon="check-circle" size={80} color="#FFFFFF" />
+               <FontAwesomeIcon icon="check-circle" size={Responsive.iconSize(80)} color="#FFFFFF" />
              </View>
              <Text style={styles.successTitle}>Success!</Text>
              <Text style={styles.successMessage}>

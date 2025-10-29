@@ -17,6 +17,7 @@ import { Spacing, Shadow, BorderRadius } from '../../constants/spacing';
 import ApiService from '../../services/api';
 import HRFooterNavigation from '../../components/HRFooterNavigation';
 import GlobalHeader from '../../components/GlobalHeader';
+import Responsive from '../../utils/responsive';
 
 type RootStackParamList = {
   ReportDetails: { reportId: number };
@@ -190,7 +191,7 @@ const ReportDetailsScreen: React.FC = () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <FontAwesomeIcon icon="exclamation-triangle" size={48} color={Colors.error} />
+          <FontAwesomeIcon icon="exclamation-triangle" size={Responsive.iconSize(48)} color={Colors.error} />
           <Text style={styles.errorText}>Report not found</Text>
           <TouchableOpacity
             style={styles.backButton}
@@ -211,7 +212,7 @@ const ReportDetailsScreen: React.FC = () => {
         onBackPress={() => navigation.goBack()}
         rightComponent={
           <TouchableOpacity style={styles.exportButton} onPress={handleExport}>
-            <FontAwesomeIcon icon="download" size={20} color={Colors.white} />
+            <FontAwesomeIcon icon="download" size={Responsive.iconSize(20)} color={Colors.white} />
           </TouchableOpacity>
         }
       />
@@ -222,11 +223,11 @@ const ReportDetailsScreen: React.FC = () => {
           <Text style={styles.reportTitle}>{report.title}</Text>
           <View style={styles.reportMeta}>
             <View style={styles.reportMetaItem}>
-              <FontAwesomeIcon icon="file-alt" size={16} color={Colors.textSecondary} />
+              <FontAwesomeIcon icon="file-alt" size={Responsive.iconSize(16)} color={Colors.textSecondary} />
               <Text style={styles.reportMetaText}>{report.type}</Text>
             </View>
             <View style={styles.reportMetaItem}>
-              <FontAwesomeIcon icon="calendar" size={16} color={Colors.textSecondary} />
+              <FontAwesomeIcon icon="calendar" size={Responsive.iconSize(16)} color={Colors.textSecondary} />
               <Text style={styles.reportMetaText}>{formatDate(report.generatedAt)}</Text>
             </View>
             <View style={styles.reportMetaItem}>

@@ -13,6 +13,7 @@ import { FontAwesomeIcon } from '../utils/icons';
 import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
 import { Spacing, BorderRadius } from '../constants/spacing';
+import Responsive from '../utils/responsive';
 
 interface SplashScreenProps {
   onAnimationFinish: () => void;
@@ -146,7 +147,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationFinish }) => {
         <FloatingIcon
           icon="user-md"
           color={Colors.white}
-          size={24}
+          size={Responsive.iconSize(24)}
           style={[styles.floatingIcon, styles.topLeft]}
           animValue={icon1Anim}
           fromX={-100}
@@ -155,7 +156,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationFinish }) => {
         <FloatingIcon
           icon="stethoscope"
           color={Colors.success}
-          size={20}
+          size={Responsive.iconSize(20)}
           style={[styles.floatingIcon, styles.topRight]}
           animValue={icon2Anim}
           fromX={100}
@@ -164,7 +165,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationFinish }) => {
         <FloatingIcon
           icon="heartbeat"
           color={Colors.error}
-          size={22}
+          size={Responsive.iconSize(22)}
           style={[styles.floatingIcon, styles.bottomLeft]}
           animValue={icon3Anim}
           fromX={-100}
@@ -173,7 +174,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationFinish }) => {
         <FloatingIcon
           icon="pills"
           color={Colors.warning}
-          size={18}
+          size={Responsive.iconSize(18)}
           style={[styles.floatingIcon, styles.bottomRight]}
           animValue={icon4Anim}
           fromX={100}
@@ -182,7 +183,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationFinish }) => {
         <FloatingIcon
           icon="ambulance"
           color={Colors.info}
-          size={20}
+          size={Responsive.iconSize(20)}
           style={[styles.floatingIcon, styles.leftCenter]}
           animValue={icon5Anim}
           fromX={-150}
@@ -191,7 +192,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onAnimationFinish }) => {
         <FloatingIcon
           icon="syringe"
           color={Colors.white}
-          size={16}
+          size={Responsive.iconSize(16)}
           style={[styles.floatingIcon, styles.rightCenter]}
           animValue={icon6Anim}
           fromX={150}

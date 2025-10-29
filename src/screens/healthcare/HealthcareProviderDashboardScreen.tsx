@@ -20,6 +20,7 @@ import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import { Job, JobAssignment, User } from '../../types';
 import ApiService from '../../services/api';
 import { useNotifications } from '../../contexts/NotificationContext';
+import Responsive from '../../utils/responsive';
 
 const HealthcareProviderDashboardScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -165,7 +166,7 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
         <View style={styles.quickActionHorizontal}>
           <View style={styles.quickActionContent}>
             <View style={[styles.quickActionHorizontalIcon, { borderColor: iconColor || '#E5E7EB', borderWidth: 1, backgroundColor: '#FFFFFF' }]}>
-              <FontAwesomeIcon icon={icon} size={24} color={iconColor || Colors.primary} />
+              <FontAwesomeIcon icon={icon} size={Responsive.iconSize(24)} color={iconColor || Colors.primary} />
             </View>
             <View style={styles.quickActionTextContainer}>
               <Text style={styles.quickActionHorizontalTitle}>{title}</Text>
@@ -173,7 +174,7 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
             </View>
           </View>
           <View style={styles.quickActionArrow}>
-            <FontAwesomeIcon icon="arrow-right" size={14} color={iconColor || Colors.textSecondary} />
+            <FontAwesomeIcon icon="arrow-right" size={Responsive.iconSize(14)} color={iconColor || Colors.textSecondary} />
           </View>
         </View>
       </TouchableOpacity>
@@ -256,7 +257,7 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
           {job.facilityName && (
             <View style={styles.jobDetail}>
               <View style={styles.jobDetailIcon}>
-                <FontAwesomeIcon icon="hospital" size={14} color={Colors.primary} />
+                <FontAwesomeIcon icon="hospital" size={Responsive.iconSize(14)} color={Colors.primary} />
               </View>
               <Text style={styles.jobDetailText}>{job.facilityName}</Text>
             </View>
@@ -264,13 +265,13 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
           <View style={styles.jobDetails}>
             <View style={styles.jobDetail}>
               <View style={styles.jobDetailIcon}>
-                <FontAwesomeIcon icon="map-marker-alt" size={14} color={Colors.primary} />
+                <FontAwesomeIcon icon="map-marker-alt" size={Responsive.iconSize(14)} color={Colors.primary} />
               </View>
               <Text style={styles.jobDetailText}>{job.location}</Text>
             </View>
             <View style={styles.jobDetail}>
               <View style={styles.jobDetailIcon}>
-                <FontAwesomeIcon icon="clock" size={14} color={Colors.primary} />
+                <FontAwesomeIcon icon="clock" size={Responsive.iconSize(14)} color={Colors.primary} />
               </View>
               <Text style={styles.jobDetailText}>
                 {formatDate(job.startDate)} at {formatTime(job.startTime)}
@@ -278,14 +279,14 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
             </View>
             <View style={styles.jobDetail}>
               <View style={styles.jobDetailIcon}>
-                <FontAwesomeIcon icon="building" size={14} color={Colors.primary} />
+                <FontAwesomeIcon icon="building" size={Responsive.iconSize(14)} color={Colors.primary} />
               </View>
               <Text style={styles.jobDetailText}>{job.department}</Text>
             </View>
             {job.specialization && (
               <View style={styles.jobDetail}>
                 <View style={styles.jobDetailIcon}>
-                  <FontAwesomeIcon icon="stethoscope" size={14} color={Colors.primary} />
+                  <FontAwesomeIcon icon="stethoscope" size={Responsive.iconSize(14)} color={Colors.primary} />
                 </View>
                 <Text style={styles.jobDetailText}>{job.specialization}</Text>
               </View>
@@ -293,7 +294,7 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
             {job.facilityAddress && (
               <View style={styles.jobDetail}>
                 <View style={styles.jobDetailIcon}>
-                  <FontAwesomeIcon icon="map-pin" size={14} color={Colors.primary} />
+                  <FontAwesomeIcon icon="map-pin" size={Responsive.iconSize(14)} color={Colors.primary} />
                 </View>
                 <Text style={styles.jobDetailText}>
                   {job.facilityAddress.street}, {job.facilityAddress.city}
@@ -303,7 +304,7 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
             {job.hourlyRate && (
               <View style={styles.jobDetail}>
                 <View style={styles.jobDetailIcon}>
-                  <FontAwesomeIcon icon="rupee-sign" size={14} color={Colors.success} />
+                  <FontAwesomeIcon icon="rupee-sign" size={Responsive.iconSize(14)} color={Colors.success} />
                 </View>
                 <Text style={styles.jobDetailText}>
                   ₹{job.hourlyRate}/hour
@@ -379,13 +380,13 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
           <View style={styles.assignmentDetails}>
             <View style={styles.assignmentDetail}>
               <View style={styles.assignmentDetailIcon}>
-                <FontAwesomeIcon icon="map-marker-alt" size={14} color={Colors.primary} />
+                <FontAwesomeIcon icon="map-marker-alt" size={Responsive.iconSize(14)} color={Colors.primary} />
               </View>
               <Text style={styles.assignmentDetailText}>{assignment.job?.location || 'Unknown Location'}</Text>
             </View>
             <View style={styles.assignmentDetail}>
               <View style={styles.assignmentDetailIcon}>
-                <FontAwesomeIcon icon="clock" size={14} color={Colors.primary} />
+                <FontAwesomeIcon icon="clock" size={Responsive.iconSize(14)} color={Colors.primary} />
               </View>
               <Text style={styles.assignmentDetailText}>
                 {assignment.job ? `${formatDate(assignment.job.startDate)} at ${formatTime(assignment.job.startTime)}` : 'Date not available'}
@@ -409,7 +410,7 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
             </View>
             {(assignment.status === 'ASSIGNED' || assignment.status === 'IN_PROGRESS') && (
               <View style={styles.assignmentAction}>
-                <FontAwesomeIcon icon="check-circle" size={16} color={Colors.primary} />
+                <FontAwesomeIcon icon="check-circle" size={Responsive.iconSize(16)} color={Colors.primary} />
                 <Text style={styles.assignmentActionText}>Check In/Out</Text>
               </View>
             )}
@@ -467,7 +468,7 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
             <TouchableOpacity 
               style={styles.notificationButton}
               onPress={() => navigation.navigate('Notifications' as never)}>
-              <FontAwesomeIcon icon="bell" size={18} color="#FFFFFF" />
+              <FontAwesomeIcon icon="bell" size={Responsive.iconSize(18)} color="#FFFFFF" />
               {unreadCount > 0 && (
                 <View style={styles.notificationBadge}>
                   <Text style={styles.notificationBadgeText}>
@@ -578,7 +579,7 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
             ))
           ) : (
             <View style={styles.emptyState}>
-              <FontAwesomeIcon icon="briefcase" size={48} color={Colors.textTertiary} />
+              <FontAwesomeIcon icon="briefcase" size={Responsive.iconSize(48)} color={Colors.textTertiary} />
               <Text style={styles.emptyStateText}>No available jobs at the moment</Text>
             </View>
           )}
@@ -598,7 +599,7 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
             ))
           ) : (
             <View style={styles.emptyState}>
-              <FontAwesomeIcon icon="calendar" size={48} color={Colors.textTertiary} />
+              <FontAwesomeIcon icon="calendar" size={Responsive.iconSize(48)} color={Colors.textTertiary} />
               <Text style={styles.emptyStateText}>No current assignments</Text>
             </View>
           )}

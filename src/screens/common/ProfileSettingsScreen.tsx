@@ -14,6 +14,7 @@ import { FontAwesomeIcon } from '../../utils/icons';
 import GlobalHeader from '../../components/GlobalHeader';
 
 import { Typography } from '../../constants/typography';
+import Responsive from '../../utils/responsive';
 
 const ProfileSettingsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -43,10 +44,10 @@ const ProfileSettingsScreen: React.FC = () => {
               style={styles.actionButton}
               onPress={() => navigation.navigate('EditProfile')}>
               <View style={styles.actionIcon}>
-                <FontAwesomeIcon icon="edit" size={17} color="#1C2A3A" />
+                <FontAwesomeIcon icon="edit" size={Responsive.iconSize(17)} color="#1C2A3A" />
               </View>
               <Text style={styles.actionButtonText}>Edit Profile</Text>
-              <FontAwesomeIcon icon="arrow-right" size={16} color="#9CA3AF" />
+              <FontAwesomeIcon icon="arrow-right" size={Responsive.iconSize(16)} color="#9CA3AF" />
             </TouchableOpacity>
 
             <View style={styles.actionDivider} />
@@ -55,10 +56,10 @@ const ProfileSettingsScreen: React.FC = () => {
               style={styles.actionButton}
               onPress={() => navigation.navigate('ChangePassword')}>
               <View style={styles.actionIcon}>
-                <FontAwesomeIcon icon="lock" size={18} color="#1C2A3A" />
+                <FontAwesomeIcon icon="lock" size={Responsive.iconSize(18)} color="#1C2A3A" />
               </View>
               <Text style={styles.actionButtonText}>Change Password</Text>
-              <FontAwesomeIcon icon="arrow-right" size={16} color="#9CA3AF" />
+              <FontAwesomeIcon icon="arrow-right" size={Responsive.iconSize(16)} color="#9CA3AF" />
             </TouchableOpacity>
 
             <View style={styles.actionDivider} />
@@ -68,7 +69,7 @@ const ProfileSettingsScreen: React.FC = () => {
                 <FontAwesomeIcon icon="bell" size={17} color="#1C2A3A" />
               </View>
               <Text style={styles.actionButtonText}>Notifications</Text>
-              <FontAwesomeIcon icon="arrow-right" size={16} color="#9CA3AF" />
+              <FontAwesomeIcon icon="arrow-right" size={Responsive.iconSize(16)} color="#9CA3AF" />
             </TouchableOpacity>
 
             <View style={styles.actionDivider} />
@@ -78,7 +79,7 @@ const ProfileSettingsScreen: React.FC = () => {
                 <FontAwesomeIcon icon="shield-alt" size={17} color="#1C2A3A" />
               </View>
               <Text style={styles.actionButtonText}>Privacy & Security</Text>
-              <FontAwesomeIcon icon="arrow-right" size={16} color="#9CA3AF" />
+              <FontAwesomeIcon icon="arrow-right" size={Responsive.iconSize(16)} color="#9CA3AF" />
             </TouchableOpacity>
 
             <View style={styles.actionDivider} />
@@ -88,7 +89,7 @@ const ProfileSettingsScreen: React.FC = () => {
                 <FontAwesomeIcon icon="cog" size={17} color="#1C2A3A" />
               </View>
               <Text style={styles.actionButtonText}>Preferences</Text>
-              <FontAwesomeIcon icon="arrow-right" size={16} color="#9CA3AF" />
+              <FontAwesomeIcon icon="arrow-right" size={Responsive.iconSize(16)} color="#9CA3AF" />
             </TouchableOpacity>
 
             <View style={styles.actionDivider} />
@@ -98,7 +99,7 @@ const ProfileSettingsScreen: React.FC = () => {
                 <FontAwesomeIcon icon="question" size={17} color="#1C2A3A" />
               </View>
               <Text style={styles.actionButtonText}>Help Center</Text>
-              <FontAwesomeIcon icon="arrow-right" size={16} color="#9CA3AF" />
+              <FontAwesomeIcon icon="arrow-right" size={Responsive.iconSize(16)} color="#9CA3AF" />
             </TouchableOpacity>
 
             <View style={styles.actionDivider} />
@@ -108,7 +109,7 @@ const ProfileSettingsScreen: React.FC = () => {
                 <FontAwesomeIcon icon="envelope" size={17} color="#1C2A3A" />
               </View>
               <Text style={styles.actionButtonText}>Contact Support</Text>
-              <FontAwesomeIcon icon="arrow-right" size={16} color="#9CA3AF" />
+              <FontAwesomeIcon icon="arrow-right" size={Responsive.iconSize(16)} color="#9CA3AF" />
             </TouchableOpacity>
           </View>
         </View>

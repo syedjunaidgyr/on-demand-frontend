@@ -22,6 +22,7 @@ import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
 import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import ApiService from '../../services/api';
+import Responsive from '../../utils/responsive';
 
 // Reusable input components must be defined outside to avoid remounting on each render
 const InputField = ({ 
@@ -109,7 +110,7 @@ const DateField = ({
             onPress={() => onChange('')} 
             style={styles.clearButton}
             activeOpacity={0.7}>
-            <FontAwesomeIcon icon="times" size={16} color={Colors.textTertiary} />
+            <FontAwesomeIcon icon="times" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
           </TouchableOpacity>
         )}
       </View>
@@ -184,7 +185,7 @@ const TimeField = ({
             onPress={() => onChange('')} 
             style={styles.clearButton}
             activeOpacity={0.7}>
-            <FontAwesomeIcon icon="times" size={16} color={Colors.textTertiary} />
+            <FontAwesomeIcon icon="times" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
           </TouchableOpacity>
         )}
       </View>
@@ -388,7 +389,7 @@ const CheckboxField = ({
 }) => (
   <TouchableOpacity style={styles.checkboxContainer} onPress={() => onValueChange(!value)}>
     <View style={[styles.checkbox, value && styles.checkboxChecked]}>
-      {value && <FontAwesomeIcon icon="check" size={16} color={Colors.white}  />}
+      {value && <FontAwesomeIcon icon="check" size={Responsive.iconSize(16)} color={Colors.white}  />}
     </View>
     <Text style={styles.checkboxLabel}>{label}</Text>
   </TouchableOpacity>
@@ -766,7 +767,7 @@ const CreateJobScreen: React.FC = () => {
                   formData.requiredRole === 'DOCTOR' && styles.roleButtonActive,
                 ]}
                 onPress={() => handleInputChange('requiredRole', 'DOCTOR')}>
-                <FontAwesomeIcon icon="stethoscope" size={20} color={formData.requiredRole === 'DOCTOR' ? Colors.white : Colors.primary}  />
+                <FontAwesomeIcon icon="stethoscope" size={Responsive.iconSize(20)} color={formData.requiredRole === 'DOCTOR' ? Colors.white : Colors.primary}  />
                 <Text style={[
                   styles.roleButtonText,
                   formData.requiredRole === 'DOCTOR' && styles.roleButtonTextActive,
@@ -780,7 +781,7 @@ const CreateJobScreen: React.FC = () => {
                   formData.requiredRole === 'NURSE' && styles.roleButtonActive,
                 ]}
                 onPress={() => handleInputChange('requiredRole', 'NURSE')}>
-                <FontAwesomeIcon icon="user-nurse" size={20} color={formData.requiredRole === 'NURSE' ? Colors.white : Colors.primary}  />
+                <FontAwesomeIcon icon="user-nurse" size={Responsive.iconSize(20)} color={formData.requiredRole === 'NURSE' ? Colors.white : Colors.primary}  />
                 <Text style={[
                   styles.roleButtonText,
                   formData.requiredRole === 'NURSE' && styles.roleButtonTextActive,

@@ -18,6 +18,7 @@ import { Typography } from '../../constants/typography';
 import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import { Job } from '../../types';
 import ApiService from '../../services/api';
+import Responsive from '../../utils/responsive';
 
 const JobDetailsCommonScreen: React.FC = () => {
   const route = useRoute();
@@ -176,7 +177,7 @@ const JobDetailsCommonScreen: React.FC = () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <FontAwesomeIcon icon="exclamation-triangle" size={48} color={Colors.error}  />
+          <FontAwesomeIcon icon="exclamation-triangle" size={Responsive.iconSize(48)} color={Colors.error}  />
           <Text style={styles.errorText}>Job not found</Text>
         </View>
       </SafeAreaView>
@@ -199,7 +200,7 @@ const JobDetailsCommonScreen: React.FC = () => {
           style={styles.header}>
           <View style={styles.headerContent}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-              <FontAwesomeIcon icon="arrow-left" size={24} color={Colors.white}  />
+              <FontAwesomeIcon icon="arrow-left" size={Responsive.iconSize(24)} color={Colors.white}  />
             </TouchableOpacity>
             <View style={styles.headerInfo}>
               <Text style={styles.headerTitle} numberOfLines={2}>{job.title}</Text>
@@ -213,7 +214,7 @@ const JobDetailsCommonScreen: React.FC = () => {
               </View>
             </View>
             <TouchableOpacity style={styles.shareButton}>
-              <FontAwesomeIcon icon="share" size={24} color={Colors.white}  />
+              <FontAwesomeIcon icon="share" size={Responsive.iconSize(24)} color={Colors.white}  />
             </TouchableOpacity>
           </View>
         </LinearGradient>
@@ -227,21 +228,21 @@ const JobDetailsCommonScreen: React.FC = () => {
             </View>
             <View style={styles.overviewDetails}>
               <View style={styles.overviewRow}>
-                <FontAwesomeIcon icon="building" size={20} color={Colors.textTertiary}  />
+                <FontAwesomeIcon icon="building" size={Responsive.iconSize(20)} color={Colors.textTertiary}  />
                 <Text style={styles.overviewText}>{job.department}</Text>
               </View>
               <View style={styles.overviewRow}>
-                <FontAwesomeIcon icon="map-marker-alt" size={20} color={Colors.textTertiary}  />
+                <FontAwesomeIcon icon="map-marker-alt" size={Responsive.iconSize(20)} color={Colors.textTertiary}  />
                 <Text style={styles.overviewText}>{job.location}</Text>
               </View>
               <View style={styles.overviewRow}>
-                <FontAwesomeIcon icon="calendar-alt" size={20} color={Colors.textTertiary}  />
+                <FontAwesomeIcon icon="calendar-alt" size={Responsive.iconSize(20)} color={Colors.textTertiary}  />
                 <Text style={styles.overviewText}>
                   {formatDate(job.startDate)} - {formatDate(job.endDate)}
                 </Text>
               </View>
               <View style={styles.overviewRow}>
-                <FontAwesomeIcon icon="clock" size={20} color={Colors.textTertiary}  />
+                <FontAwesomeIcon icon="clock" size={Responsive.iconSize(20)} color={Colors.textTertiary}  />
                 <Text style={styles.overviewText}>
                   {formatTime(job.startTime)} - {formatTime(job.endTime)}
                 </Text>
@@ -264,7 +265,7 @@ const JobDetailsCommonScreen: React.FC = () => {
           <View style={styles.requirementsCard}>
             {job.requirements?.experience && (
               <View style={styles.requirementItem}>
-                <FontAwesomeIcon icon="graduation-cap" size={20} color={Colors.primary}  />
+                <FontAwesomeIcon icon="graduation-cap" size={Responsive.iconSize(20)} color={Colors.primary}  />
                 <View style={styles.requirementContent}>
                   <Text style={styles.requirementLabel}>Experience</Text>
                   <Text style={styles.requirementValue}>{job.requirements.experience}</Text>
@@ -274,7 +275,7 @@ const JobDetailsCommonScreen: React.FC = () => {
             
             {job.requirements?.boardCertified && (
               <View style={styles.requirementItem}>
-                <FontAwesomeIcon icon="verified" size={20} color={Colors.primary}  />
+                <FontAwesomeIcon icon="verified" size={Responsive.iconSize(20)} color={Colors.primary}  />
                 <View style={styles.requirementContent}>
                   <Text style={styles.requirementLabel}>Board Certification</Text>
                   <Text style={styles.requirementValue}>Required</Text>

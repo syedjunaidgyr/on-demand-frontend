@@ -22,6 +22,7 @@ import { Typography } from '../../constants/typography';
 import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import { Job } from '../../types';
 import ApiService from '../../services/api';
+import Responsive from '../../utils/responsive';
 
 const HRJobsScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -245,28 +246,28 @@ const HRJobsScreen: React.FC = () => {
 
         <View style={styles.jobDetails}>
           <View style={styles.jobDetailRow}>
-            <FontAwesomeIcon icon="building" size={16} color={Colors.textTertiary}  />
+            <FontAwesomeIcon icon="building" size={Responsive.iconSize(16)} color={Colors.textTertiary}  />
             <Text style={styles.jobDetailText}>{job.department}</Text>
           </View>
           <View style={styles.jobDetailRow}>
-            <FontAwesomeIcon icon="map-marker-alt" size={16} color={Colors.textTertiary}  />
+            <FontAwesomeIcon icon="map-marker-alt" size={Responsive.iconSize(16)} color={Colors.textTertiary}  />
             <Text style={styles.jobDetailText}>{job.location}</Text>
           </View>
           <View style={styles.jobDetailRow}>
-            <FontAwesomeIcon icon="calendar" size={16} color={Colors.textTertiary}  />
+            <FontAwesomeIcon icon="calendar" size={Responsive.iconSize(16)} color={Colors.textTertiary}  />
             <Text style={styles.jobDetailText}>
               {formatDate(job.startDate)} - {formatDate(job.endDate)}
             </Text>
           </View>
           <View style={styles.jobDetailRow}>
-            <FontAwesomeIcon icon="clock" size={16} color={Colors.textTertiary}  />
+            <FontAwesomeIcon icon="clock" size={Responsive.iconSize(16)} color={Colors.textTertiary}  />
             <Text style={styles.jobDetailText}>
               {formatTime(job.startTime)} - {formatTime(job.endTime)}
             </Text>
           </View>
           {job.specialization && (
             <View style={styles.jobDetailRow}>
-              <FontAwesomeIcon icon="stethoscope" size={16} color={Colors.textTertiary}  />
+              <FontAwesomeIcon icon="stethoscope" size={Responsive.iconSize(16)} color={Colors.textTertiary}  />
               <Text style={styles.jobDetailText}>{job.specialization}</Text>
             </View>
           )}
@@ -299,21 +300,21 @@ const HRJobsScreen: React.FC = () => {
                 style={[styles.reviewButton, { opacity: job.status === 'ACTIVE' ? 1 : 0.5 }]}
                 onPress={() => job.status === 'ACTIVE' && handleReviewCandidates(job)}
                 disabled={job.status !== 'ACTIVE'}>
-                <FontAwesomeIcon icon="users" size={16} color={Colors.white}  />
+                <FontAwesomeIcon icon="users" size={Responsive.iconSize(16)} color={Colors.white}  />
               </TouchableOpacity>
             ) : (
               <TouchableOpacity 
                 style={[styles.assignButton, { opacity: job.status === 'ACTIVE' ? 1 : 0.5 }]}
                 onPress={() => job.status === 'ACTIVE' && handleAssignJobToStaff(job)}
                 disabled={job.status !== 'ACTIVE'}>
-                <FontAwesomeIcon icon="user-plus" size={16} color={Colors.white}  />
+                <FontAwesomeIcon icon="user-plus" size={Responsive.iconSize(16)} color={Colors.white}  />
               </TouchableOpacity>
             )}
             <TouchableOpacity style={styles.actionButton}>
-              <FontAwesomeIcon icon="edit" size={16} color={Colors.primary}  />
+              <FontAwesomeIcon icon="edit" size={Responsive.iconSize(16)} color={Colors.primary}  />
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton}>
-              <FontAwesomeIcon icon="ellipsis-v" size={16} color={Colors.textTertiary} />
+              <FontAwesomeIcon icon="ellipsis-v" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -349,7 +350,7 @@ const HRJobsScreen: React.FC = () => {
         onBackPress={() => navigation.goBack()}
         rightComponent={
           <TouchableOpacity style={styles.createButton} onPress={handleCreateJob}>
-            <FontAwesomeIcon icon="plus" size={24} color={Colors.white} />
+            <FontAwesomeIcon icon="plus" size={Responsive.iconSize(24)} color={Colors.white} />
           </TouchableOpacity>
         }
       />
@@ -424,16 +425,16 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
   },
   createButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: Responsive.scale(40),
+    height: Responsive.verticalScale(40),
+    borderRadius: Responsive.scale(20),
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   listContainer: {
-    padding: Spacing.lg,
-    paddingBottom: 100,
+    padding: Responsive.scale(Spacing.lg),
+    paddingBottom: Responsive.verticalScale(80),
   },
   jobCard: {
     backgroundColor: Colors.white,
@@ -547,36 +548,36 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   actionButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: Responsive.scale(32),
+    height: Responsive.verticalScale(32),
+    borderRadius: Responsive.scale(16),
     backgroundColor: Colors.backgroundSecondary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   assignButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: Responsive.scale(32),
+    height: Responsive.verticalScale(32),
+    borderRadius: Responsive.scale(16),
     backgroundColor: Colors.success,
     justifyContent: 'center',
     alignItems: 'center',
   },
   reviewButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: Responsive.scale(32),
+    height: Responsive.verticalScale(32),
+    borderRadius: Responsive.scale(16),
     backgroundColor: Colors.warning,
     justifyContent: 'center',
     alignItems: 'center',
   },
   fab: {
     position: 'absolute',
-    bottom: Spacing['2xl'],
-    right: Spacing.lg,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    bottom: Responsive.verticalScale(Spacing['2xl']),
+    right: Responsive.scale(Spacing.lg),
+    width: Responsive.scale(56),
+    height: Responsive.verticalScale(56),
+    borderRadius: Responsive.scale(28),
     backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',

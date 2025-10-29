@@ -23,12 +23,13 @@ import { FontAwesomeIcon } from '../../utils/icons';
 import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
 import ApiService from '../../services/api';
+import Responsive from '../../utils/responsive';
 
 const { width, height } = Dimensions.get('window');
 
-// Device size detection for responsive design
-const IS_SMALL_DEVICE = height < 700;
-const IS_VERY_SMALL_DEVICE = height < 600;
+// Device size detection for responsive design - now using Responsive utility
+const IS_SMALL_DEVICE = Responsive.isSmallScreen();
+const IS_VERY_SMALL_DEVICE = Responsive.getScreenHeight() < 600;
 
 // Move InputField outside to prevent re-creation on each render
 const InputField = ({ 
@@ -57,7 +58,7 @@ const InputField = ({
   <View style={styles.inputContainer}>
     <Text style={styles.inputLabel}>{label}</Text>
     <View style={[styles.inputWrapper, error && styles.inputWrapperError]}>
-      <FontAwesomeIcon icon={icon} size={20} color={error ? Colors.error : Colors.textTertiary} style={styles.inputIcon} />
+      <FontAwesomeIcon icon={icon} size={Responsive.iconSize(20)} color={error ? Colors.error : Colors.textTertiary} style={styles.inputIcon} />
       <TextInput
         style={styles.textInput}
         placeholder={placeholder}
@@ -79,7 +80,7 @@ const InputField = ({
         <TouchableOpacity onPress={onToggleEye} style={styles.eyeIcon}>
           <FontAwesomeIcon
             icon={secureTextEntry ? "eye-slash" : "eye"}
-            size={20}
+            size={Responsive.iconSize(20)}
             color={Colors.textTertiary}
           />
         </TouchableOpacity>
@@ -942,7 +943,7 @@ const RegisterScreen: React.FC = () => {
       <View style={styles.modalContainer}>
 
       <View style={styles.modalIconContainer}>
-          <FontAwesomeIcon icon="check-circle" size={60} color="#4CAF50" />
+          <FontAwesomeIcon icon="check-circle" size={Responsive.iconSize(60)} color="#4CAF50" />
         </View>
         <Text style={styles.modalTitle}>Congratulations!</Text>
       
@@ -966,7 +967,7 @@ const RegisterScreen: React.FC = () => {
         style={styles.headerGradient}>
         <View style={styles.header}>
           <TouchableOpacity onPress={navigateToLogin} style={styles.backButton}>
-            <FontAwesomeIcon icon="arrow-left" size={24} color={Colors.white} />
+            <FontAwesomeIcon icon="arrow-left" size={Responsive.iconSize(24)} color={Colors.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Create Account</Text>
           <View style={styles.backButton} />
@@ -1409,71 +1410,71 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerGradient: {
-    paddingTop: 24,
-    paddingBottom: 24,
-    paddingHorizontal: 24,
+    paddingTop: Responsive.verticalScale(24),
+    paddingBottom: Responsive.verticalScale(24),
+    paddingHorizontal: Responsive.scale(24),
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: 46,
+    height: Responsive.verticalScale(46),
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: Responsive.scale(40),
+    height: Responsive.verticalScale(40),
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
-    marginTop: 30,
+    borderRadius: Responsive.scale(12),
+    marginTop: Responsive.verticalScale(30),
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: Responsive.fontSize(20),
     fontFamily: Typography.fontFamily.bold,
     color: Colors.white,
     flex: 1,
     textAlign: 'center',
-    marginTop: 25,
-    marginLeft: 20,
+    marginTop: Responsive.verticalScale(25),
+    marginLeft: Responsive.scale(20),
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: Responsive.scale(24),
     paddingTop: 0,
   },
   scrollContentContainer: {
     flexGrow: 1,
-    paddingBottom: 40,
+    paddingBottom: Responsive.verticalScale(40),
   },
   formContainer: {
-    paddingTop: 24,
-    paddingBottom: 48,
+    paddingTop: Responsive.verticalScale(24),
+    paddingBottom: Responsive.verticalScale(48),
     paddingHorizontal: 0,
   },
   welcomeText: {
-    fontSize: 24,
+    fontSize: Responsive.fontSize(24),
     fontFamily: Typography.fontFamily.bold,
     color: Colors.textPrimary,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: Responsive.verticalScale(8),
   },
   subtitleText: {
-    fontSize: 16,
+    fontSize: Responsive.fontSize(16),
     fontFamily: Typography.fontFamily.regular,
     color: Colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: Responsive.verticalScale(40),
   },
   roleSelector: {
     flexDirection: 'row',
-    marginBottom: 24,
-    marginTop: -15,
+    marginBottom: Responsive.verticalScale(24),
+    marginTop: Responsive.verticalScale(-15),
     marginHorizontal: 0,
     backgroundColor: 'transparent',
-    borderRadius: 12,
+    borderRadius: Responsive.scale(12),
     borderWidth: 1,
     borderColor: '#E5E5E5',
-    padding: 6,
+    padding: Responsive.scale(6),
     width: '100%',
     alignSelf: 'stretch',
   },
@@ -1481,9 +1482,9 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 8,
-    borderRadius: 8,
+    paddingVertical: Responsive.verticalScale(14),
+    paddingHorizontal: Responsive.scale(8),
+    borderRadius: Responsive.scale(8),
     backgroundColor: 'transparent',
     minHeight: 48,
   },
@@ -1491,7 +1492,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
   roleTabText: {
-    fontSize: 16,
+    fontSize: Responsive.fontSize(16),
     fontFamily: Typography.fontFamily.medium,
     color: '#999999',
     textAlign: 'center',
@@ -1501,21 +1502,21 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
   },
   inputContainer: {
-    marginBottom: 16,
+    marginBottom: Responsive.verticalScale(16),
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: Responsive.fontSize(14),
     fontFamily: Typography.fontFamily.medium,
     color: Colors.textPrimary,
-    marginBottom: 8,
+    marginBottom: Responsive.verticalScale(8),
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.backgroundSecondary,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    borderRadius: Responsive.scale(16),
+    paddingHorizontal: Responsive.scale(16),
+    paddingVertical: Responsive.verticalScale(16),
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -1527,20 +1528,20 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: Responsive.fontSize(16),
     fontFamily: Typography.fontFamily.regular,
     color: Colors.textPrimary,
     paddingVertical: 0,
   },
   eyeIcon: {
-    padding: 4,
+    padding: Responsive.scale(4),
   },
   errorText: {
-    fontSize: 12,
+    fontSize: Responsive.fontSize(12),
     fontFamily: Typography.fontFamily.regular,
     color: Colors.error,
-    marginTop: 4,
-    marginLeft: 4,
+    marginTop: Responsive.verticalScale(4),
+    marginLeft: Responsive.scale(4),
   },
   row: {
     flexDirection: 'row',
@@ -1550,18 +1551,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: Responsive.fontSize(18),
     fontFamily: Typography.fontFamily.bold,
     color: Colors.textPrimary,
-    marginTop: 24,
-    marginBottom: 16,
+    marginTop: Responsive.verticalScale(24),
+    marginBottom: Responsive.verticalScale(16),
   },
   registerButton: {
     backgroundColor: Colors.primary,
-    borderRadius: 16,
-    paddingVertical: 16,
+    borderRadius: Responsive.scale(16),
+    paddingVertical: Responsive.verticalScale(16),
     alignItems: 'center',
-    marginTop: 40,
+    marginTop: Responsive.verticalScale(40),
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -1575,16 +1576,16 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   registerButtonText: {
-    fontSize: 18,
+    fontSize: Responsive.fontSize(18),
     fontFamily: Typography.fontFamily.bold,
     color: Colors.white,
   },
   loginButton: {
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: Responsive.verticalScale(24),
   },
   loginButtonText: {
-    fontSize: 16,
+    fontSize: Responsive.fontSize(16),
     fontFamily: Typography.fontFamily.regular,
     color: Colors.textSecondary,
   },
@@ -1649,81 +1650,81 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     backgroundColor: Colors.white,
-    borderRadius: 16,
-    padding: 32,
-    marginHorizontal: 24,
+    borderRadius: Responsive.scale(16),
+    padding: Responsive.scale(32),
+    marginHorizontal: Responsive.scale(24),
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: Responsive.verticalScale(2),
     },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: Responsive.scale(4),
     elevation: 4,
-    maxWidth: 320,
+    maxWidth: Responsive.scale(320),
   },
   modalTitle: {
-    fontSize: 28,
+    fontSize: Responsive.fontSize(28),
     fontFamily: Typography.fontFamily.bold,
     color: '#333333',
-    marginBottom: 20,
+    marginBottom: Responsive.verticalScale(20),
     textAlign: 'center',
   },
   modalIconContainer: {
-    marginBottom: 20,
+    marginBottom: Responsive.verticalScale(20),
     alignItems: 'center',
   },
   modalMessage: {
-    fontSize: 16,
+    fontSize: Responsive.fontSize(16),
     fontFamily: Typography.fontFamily.regular,
     color: '#666666',
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 32,
-    paddingHorizontal: 8,
+    lineHeight: Responsive.verticalScale(22),
+    marginBottom: Responsive.verticalScale(32),
+    paddingHorizontal: Responsive.scale(8),
   },
   modalDoneButton: {
     backgroundColor: '#1a1a1a',
-    borderRadius: 8,
-    paddingVertical: 16,
-    paddingHorizontal: 48,
+    borderRadius: Responsive.scale(8),
+    paddingVertical: Responsive.verticalScale(16),
+    paddingHorizontal: Responsive.scale(48),
     alignItems: 'center',
-    minWidth: 140,
-    marginBottom: 16,
+    minWidth: Responsive.scale(140),
+    marginBottom: Responsive.verticalScale(16),
   },
   modalDoneButtonText: {
-    fontSize: 16,
+    fontSize: Responsive.fontSize(16),
     fontFamily: Typography.fontFamily.bold,
     color: Colors.white,
   },
   modalEditLink: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: Responsive.verticalScale(8),
+    paddingHorizontal: Responsive.scale(16),
   },
   modalEditLinkText: {
-    fontSize: 14,
+    fontSize: Responsive.fontSize(14),
     fontFamily: Typography.fontFamily.regular,
     color: '#999999',
     textAlign: 'center',
   },
   poweredByContainer: {
     position: 'absolute',
-    bottom: IS_VERY_SMALL_DEVICE ? height * 0.02 : height * 0.01,
-    right: IS_VERY_SMALL_DEVICE ? width * 0.03 : width * 0.02,
+    bottom: IS_VERY_SMALL_DEVICE ? Responsive.hp('2%') : Responsive.hp('1%'),
+    right: IS_VERY_SMALL_DEVICE ? Responsive.wp('3%') : Responsive.wp('2%'),
     flexDirection: 'row',
     alignItems: 'center',
-    maxWidth: width * 0.4,
+    maxWidth: Responsive.wp('40%'),
   },
   poweredByText: {
-    fontSize: 12,
+    fontSize: Responsive.fontSize(12),
     fontFamily: Typography.fontFamily.medium, // DM Sans Medium
     color: '#000000',
-    marginRight: IS_VERY_SMALL_DEVICE ? -15 : -25,
+    marginRight: IS_VERY_SMALL_DEVICE ? Responsive.scale(-15) : Responsive.scale(-25),
   },
   companyLogo: {
-    height: IS_VERY_SMALL_DEVICE ? 12 : 15,
-    width: IS_VERY_SMALL_DEVICE ? 80 : 95,
+    height: IS_VERY_SMALL_DEVICE ? Responsive.verticalScale(12) : Responsive.verticalScale(15),
+    width: IS_VERY_SMALL_DEVICE ? Responsive.scale(80) : Responsive.scale(95),
   },
 });
 

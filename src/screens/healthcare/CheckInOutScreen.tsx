@@ -25,6 +25,7 @@ import { JobAssignment, User } from '../../types';
 import ApiService from '../../services/api';
 import LocationService, { LocationData } from '../../services/locationService';
 import LocationValidationModal from '../../components/LocationValidationModal';
+import Responsive from '../../utils/responsive';
 
 type CheckInOutScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CheckInOut'>;
 type CheckInOutScreenRouteProp = RouteProp<RootStackParamList, 'CheckInOut'>;
@@ -502,38 +503,38 @@ const CheckInOutScreen: React.FC = () => {
       <View style={styles.assignmentDetails}>
         {/* ✅ Add facility name */}
         <View style={styles.assignmentDetail}>
-          <FontAwesomeIcon icon="hospital" size={16} color={Colors.textTertiary} />
+          <FontAwesomeIcon icon="hospital" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
           <Text style={styles.assignmentDetailText}>{assignment.job?.facilityName || 'Facility not specified'}</Text>
         </View>
 
         <View style={styles.assignmentDetail}>
-          <FontAwesomeIcon icon="map-marker-alt" size={16} color={Colors.textTertiary} />
+          <FontAwesomeIcon icon="map-marker-alt" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
           <Text style={styles.assignmentDetailText}>{assignment.job?.location || 'Location not specified'}</Text>
         </View>
 
         {/* ✅ Add department */}
         <View style={styles.assignmentDetail}>
-          <FontAwesomeIcon icon="building" size={16} color={Colors.textTertiary} />
+          <FontAwesomeIcon icon="building" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
           <Text style={styles.assignmentDetailText}>{assignment.job?.department || 'Department not specified'}</Text>
         </View>
 
         {/* ✅ Add specialization for doctors */}
         {assignment.job?.specialization && (
           <View style={styles.assignmentDetail}>
-            <FontAwesomeIcon icon="user-md" size={16} color={Colors.textTertiary} />
+            <FontAwesomeIcon icon="user-md" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
             <Text style={styles.assignmentDetailText}>{assignment.job.specialization}</Text>
           </View>
         )}
 
         <View style={styles.assignmentDetail}>
-          <FontAwesomeIcon icon="calendar" size={16} color={Colors.textTertiary} />
+          <FontAwesomeIcon icon="calendar" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
           <Text style={styles.assignmentDetailText}>
             {assignment.job?.startDate ? formatDate(assignment.job.startDate) : 'Date not specified'}
           </Text>
         </View>
 
         <View style={styles.assignmentDetail}>
-          <FontAwesomeIcon icon="clock" size={16} color={Colors.textTertiary} />
+          <FontAwesomeIcon icon="clock" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
           <Text style={styles.assignmentDetailText}>
             {assignment.job?.startTime && assignment.job?.endTime 
               ? `${formatTime(assignment.job.startTime)} - ${formatTime(assignment.job.endTime)}`
@@ -551,7 +552,7 @@ const CheckInOutScreen: React.FC = () => {
           if (assignment.status === 'COMPLETED') {
             return (
               <View style={styles.completionStatus}>
-                <FontAwesomeIcon icon="check-circle" size={16} color={Colors.success} />
+                <FontAwesomeIcon icon="check-circle" size={Responsive.iconSize(16)} color={Colors.success} />
                 <Text style={styles.completionStatusText}>Staff has been checked out</Text>
               </View>
             );
@@ -564,7 +565,7 @@ const CheckInOutScreen: React.FC = () => {
                 style={[styles.checkOutButton, { backgroundColor: Colors.error }]}
                 onPress={() => handleCheckOut(assignment)}
                 disabled={isProcessing}>
-                <FontAwesomeIcon icon="sign-out-alt" size={16} color={Colors.white} />
+                <FontAwesomeIcon icon="sign-out-alt" size={Responsive.iconSize(16)} color={Colors.white} />
                 <Text style={styles.checkOutButtonText}>Check Out</Text>
               </TouchableOpacity>
             );
@@ -577,7 +578,7 @@ const CheckInOutScreen: React.FC = () => {
                 style={[styles.checkInButton, { backgroundColor: (assignment.status as any) === 'ASSIGNED' ? Colors.warning : Colors.success }]}
                 onPress={() => handleCheckIn(assignment)}
                 disabled={isProcessing}>
-                <FontAwesomeIcon icon="sign-in-alt" size={16} color={Colors.white} />
+                <FontAwesomeIcon icon="sign-in-alt" size={Responsive.iconSize(16)} color={Colors.white} />
                 <Text style={styles.checkInButtonText}>
                   {(assignment.status as any) === 'ASSIGNED' ? 'Accept & Check In' : 'Check In'}
                 </Text>
@@ -631,7 +632,7 @@ const CheckInOutScreen: React.FC = () => {
           ))
         ) : (
           <View style={styles.emptyState}>
-            <FontAwesomeIcon icon="clock" size={64} color={Colors.textTertiary} />
+            <FontAwesomeIcon icon="clock" size={Responsive.iconSize(64)} color={Colors.textTertiary} />
             <Text style={styles.emptyStateTitle}>No Active Assignments</Text>
             <Text style={styles.emptyStateText}>
               You don't have any active assignments that require check in/out at the moment.
@@ -639,7 +640,7 @@ const CheckInOutScreen: React.FC = () => {
             <TouchableOpacity
               style={[styles.primaryButton, { backgroundColor: roleConfig.color }]}
               onPress={() => navigation.goBack()}>
-              <FontAwesomeIcon icon="calendar" size={16} color={Colors.white} />
+              <FontAwesomeIcon icon="calendar" size={Responsive.iconSize(16)} color={Colors.white} />
               <Text style={styles.primaryButtonText}>Go Back</Text>
             </TouchableOpacity>
           </View>
@@ -689,7 +690,7 @@ const CheckInOutScreen: React.FC = () => {
               style={styles.actionSheetButton}
               onPress={handleGenerateQRCode}
             >
-              <FontAwesomeIcon icon="qrcode" size={20} color={Colors.primary} />
+              <FontAwesomeIcon icon="qrcode" size={Responsive.iconSize(20)} color={Colors.primary} />
               <Text style={styles.actionSheetButtonText}>Generate QR Code</Text>
             </TouchableOpacity>
 
@@ -697,7 +698,7 @@ const CheckInOutScreen: React.FC = () => {
               style={styles.actionSheetButton}
               onPress={handleScanQRCode}
             >
-              <FontAwesomeIcon icon="camera" size={20} color={Colors.primary} />
+              <FontAwesomeIcon icon="camera" size={Responsive.iconSize(20)} color={Colors.primary} />
               <Text style={styles.actionSheetButtonText}>Scan QR Code</Text>
             </TouchableOpacity>
 
@@ -705,7 +706,7 @@ const CheckInOutScreen: React.FC = () => {
               style={[styles.actionSheetButton, styles.cancelButton]}
               onPress={() => setShowActionSheet(false)}
             >
-              <FontAwesomeIcon icon="times" size={20} color={Colors.error} />
+              <FontAwesomeIcon icon="times" size={Responsive.iconSize(20)} color={Colors.error} />
               <Text style={[styles.actionSheetButtonText, styles.cancelButtonText]}>Cancel</Text>
             </TouchableOpacity>
           </View>

@@ -20,6 +20,7 @@ import { Typography } from '../../constants/typography';
 import { Spacing, BorderRadius } from '../../constants/spacing';
 import ApiService from '../../services/api';
 import LocationService, { LocationData } from '../../services/locationService';
+import Responsive from '../../utils/responsive';
 
 interface QRScannerScreenProps {
   assignmentId: string;
@@ -176,7 +177,7 @@ const QRScannerScreen: React.FC = () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.permissionContainer}>
-          <FontAwesomeIcon icon="camera" size={64} color={Colors.textTertiary} />
+          <FontAwesomeIcon icon="camera" size={Responsive.iconSize(64)} color={Colors.textTertiary} />
           <Text style={styles.permissionTitle}>Camera Permission Required</Text>
           <Text style={styles.permissionText}>
             Please allow camera access to scan QR codes for check-in/check-out.
@@ -195,7 +196,7 @@ const QRScannerScreen: React.FC = () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <FontAwesomeIcon icon="exclamation-triangle" size={64} color={Colors.error} />
+          <FontAwesomeIcon icon="exclamation-triangle" size={Responsive.iconSize(64)} color={Colors.error} />
           <Text style={styles.errorTitle}>Camera Not Available</Text>
           <Text style={styles.errorText}>
             No camera device found on this device.
@@ -225,7 +226,7 @@ const QRScannerScreen: React.FC = () => {
             <TouchableOpacity
               style={styles.closeButton}
               onPress={() => navigation.goBack()}>
-              <FontAwesomeIcon icon="times" size={24} color={Colors.white} />
+              <FontAwesomeIcon icon="times" size={Responsive.iconSize(24)} color={Colors.white} />
             </TouchableOpacity>
             
             <Text style={styles.title}>
@@ -271,7 +272,7 @@ const QRScannerScreen: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <FontAwesomeIcon icon="search" size={20} color={Colors.white} />
+                  <FontAwesomeIcon icon="search" size={Responsive.iconSize(20)} color={Colors.white} />
                   <Text style={styles.scanButtonText}>Tap to Scan QR Code</Text>
                 </>
               )}

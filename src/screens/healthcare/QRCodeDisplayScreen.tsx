@@ -18,6 +18,7 @@ import { Typography } from '../../constants/typography';
 import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import { JobAssignment, QRCodeData } from '../../types';
 import { generateQRCodeData } from '../../utils/qrCodeUtils';
+import Responsive from '../../utils/responsive';
 
 interface QRCodeDisplayScreenProps {
   assignment: JobAssignment;
@@ -157,7 +158,7 @@ const QRCodeDisplayScreen: React.FC = () => {
             style={[styles.actionButton, { backgroundColor: Colors.success }]}
             onPress={handleSaveToGallery}
             disabled={isProcessing}>
-            <FontAwesomeIcon icon="download" size={20} color={Colors.white} />
+            <FontAwesomeIcon icon="download" size={Responsive.iconSize(20)} color={Colors.white} />
             <Text style={styles.actionButtonText}>Save to Gallery</Text>
           </TouchableOpacity>
 
@@ -165,7 +166,7 @@ const QRCodeDisplayScreen: React.FC = () => {
             style={[styles.actionButton, { backgroundColor: Colors.primary }]}
             onPress={handleShare}
             disabled={isProcessing}>
-            <FontAwesomeIcon icon="share" size={20} color={Colors.white} />
+            <FontAwesomeIcon icon="share" size={Responsive.iconSize(20)} color={Colors.white} />
             <Text style={styles.actionButtonText}>Share</Text>
           </TouchableOpacity>
 
@@ -173,7 +174,7 @@ const QRCodeDisplayScreen: React.FC = () => {
             style={[styles.actionButton, { backgroundColor: Colors.warning }]}
             onPress={handlePrint}
             disabled={isProcessing}>
-            <FontAwesomeIcon icon="print" size={20} color={Colors.white} />
+            <FontAwesomeIcon icon="print" size={Responsive.iconSize(20)} color={Colors.white} />
             <Text style={styles.actionButtonText}>Print</Text>
           </TouchableOpacity>
         </View>

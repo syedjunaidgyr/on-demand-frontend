@@ -17,6 +17,7 @@ import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
 import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import ApiService from '../../services/api';
+import Responsive from '../../utils/responsive';
 
 const JobAssignmentScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -194,24 +195,24 @@ const JobAssignmentScreen: React.FC = () => {
       
       <View style={styles.staffDetails}>
         <View style={styles.staffDetail}>
-          <FontAwesomeIcon icon="user-md" size={16} color={Colors.textTertiary} />
+          <FontAwesomeIcon icon="user-md" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
           <Text style={styles.staffDetailText}>{staff.department}</Text>
         </View>
         
         {staff.specialization && (
           <View style={styles.staffDetail}>
-            <FontAwesomeIcon icon="stethoscope" size={16} color={Colors.textTertiary} />
+            <FontAwesomeIcon icon="stethoscope" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
             <Text style={styles.staffDetailText}>{staff.specialization}</Text>
           </View>
         )}
         
         <View style={styles.staffDetail}>
-          <FontAwesomeIcon icon="map-marker-alt" size={16} color={Colors.textTertiary} />
+          <FontAwesomeIcon icon="map-marker-alt" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
           <Text style={styles.staffDetailText}>{staff.location}</Text>
         </View>
         
         <View style={styles.staffDetail}>
-          <FontAwesomeIcon icon="envelope" size={16} color={Colors.textTertiary} />
+          <FontAwesomeIcon icon="envelope" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
           <Text style={styles.staffDetailText}>{staff.email}</Text>
         </View>
       </View>
@@ -237,24 +238,24 @@ const JobAssignmentScreen: React.FC = () => {
         
         <View style={styles.staffDetails}>
           <View style={styles.staffDetail}>
-            <FontAwesomeIcon icon="user-md" size={16} color={Colors.textTertiary} />
+            <FontAwesomeIcon icon="user-md" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
             <Text style={styles.staffDetailText}>{staff.department || job.department}</Text>
           </View>
           
           {staff.role === 'DOCTOR' && job.specialization && (
             <View style={styles.staffDetail}>
-              <FontAwesomeIcon icon="stethoscope" size={16} color={Colors.textTertiary} />
+              <FontAwesomeIcon icon="stethoscope" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
               <Text style={styles.staffDetailText}>{job.specialization}</Text>
             </View>
           )}
           
           <View style={styles.staffDetail}>
-            <FontAwesomeIcon icon="map-marker-alt" size={16} color={Colors.textTertiary} />
+            <FontAwesomeIcon icon="map-marker-alt" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
             <Text style={styles.staffDetailText}>{staff.location || job.location}</Text>
           </View>
           
           <View style={styles.staffDetail}>
-            <FontAwesomeIcon icon="envelope" size={16} color={Colors.textTertiary} />
+            <FontAwesomeIcon icon="envelope" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
             <Text style={styles.staffDetailText}>{staff.email || 'N/A'}</Text>
           </View>
         </View>
@@ -331,18 +332,18 @@ const JobAssignmentScreen: React.FC = () => {
             </View>
             
             <View style={styles.jobDetail}>
-              <FontAwesomeIcon icon="map-marker-alt" size={16} color={Colors.textTertiary} />
+              <FontAwesomeIcon icon="map-marker-alt" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
               <Text style={styles.jobDetailText}>{job?.location || 'Loading...'}</Text>
             </View>
             
             <View style={styles.jobDetail}>
-              <FontAwesomeIcon icon="user-md" size={16} color={Colors.textTertiary} />
+              <FontAwesomeIcon icon="user-md" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
               <Text style={styles.jobDetailText}>{job?.department || 'Loading...'}</Text>
             </View>
             
             {job?.specialization && (
               <View style={styles.jobDetail}>
-                <FontAwesomeIcon icon="stethoscope" size={16} color={Colors.textTertiary} />
+                <FontAwesomeIcon icon="stethoscope" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
                 <Text style={styles.jobDetailText}>{job.specialization}</Text>
               </View>
             )}

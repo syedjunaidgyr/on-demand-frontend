@@ -21,6 +21,7 @@ import { Typography } from '../../constants/typography';
 import { User } from '../../types';
 import ApiService from '../../services/api';
 import { useAuth } from '../../navigation/AppNavigator';
+import Responsive from '../../utils/responsive';
 
 const ProfileScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -29,9 +30,9 @@ const ProfileScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-  const isSmallScreen = screenWidth < 375;
-  const isLargeScreen = screenHeight > 800;
-  const isVerySmallScreen = screenHeight < 600;
+  const isSmallScreen = Responsive.getScreenWidth() < 375;
+  const isLargeScreen = Responsive.getScreenHeight() > 800;
+  const isVerySmallScreen = Responsive.getScreenHeight() < 600;
 
   useEffect(() => {
     loadUserProfile();
@@ -135,7 +136,7 @@ const ProfileScreen: React.FC = () => {
     return (
       <View style={styles.container}>
         <View style={styles.errorContainer}>
-          <FontAwesomeIcon icon="exclamation-triangle" size={48} color="#EF4444" />
+          <FontAwesomeIcon icon="exclamation-triangle" size={Responsive.iconSize(48)} color="#EF4444" />
           <Text style={styles.errorText}>Failed to load profile</Text>
         </View>
       </View>
@@ -156,12 +157,12 @@ const ProfileScreen: React.FC = () => {
             <TouchableOpacity 
               style={styles.headerButton}
               onPress={() => (navigation as any).navigate('ProfileSettings')}>
-              <FontAwesomeIcon icon="cog" size={20} color="#FFFFFF" />
+              <FontAwesomeIcon icon="cog" size={Responsive.iconSize(20)} color="#FFFFFF" />
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.headerButton}
               onPress={handleLogout}>
-              <FontAwesomeIcon icon="sign-out-alt" size={20} color="#FFFFFF" />
+              <FontAwesomeIcon icon="sign-out-alt" size={Responsive.iconSize(20)} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
         }
@@ -332,7 +333,7 @@ const InfoItem = ({
 }) => (
   <View style={[styles.infoRow, isLast && styles.infoRowLast]}>
     <View style={styles.infoIconContainer}>
-      <FontAwesomeIcon icon={icon} size={18} color="#1C2A3A" />
+      <FontAwesomeIcon icon={icon} size={Responsive.iconSize(18)} color="#1C2A3A" />
     </View>
     <View style={styles.infoContent}>
       <Text style={styles.infoLabel}>{label}</Text>

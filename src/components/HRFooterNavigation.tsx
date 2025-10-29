@@ -4,20 +4,24 @@ import {
   TouchableOpacity,
   StyleSheet,
   Text,
+  Platform,
   Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../utils/icons';
+import { Typography } from '../constants/typography';
+import Responsive from '../utils/responsive';
 
 interface HRFooterNavigationProps {
-  activeRoute?: 'Dashboard' | 'Jobs' | 'Users'; // | 'Reports';
-  scrollY?: Animated.Value; // Add scroll position for transparency
+  activeRoute?: 'Dashboard' | 'Jobs' | 'Users';
+  scrollY?: Animated.Value;
 }
 
 const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, scrollY }) => {
   const navigation = useNavigation();
+  const translateY = useRef(new Animated.Value(0)).current;
   const lastScrollY = useRef(0);
-  const opacityValue = useRef(new Animated.Value(1)).current;
+  const scrollThreshold = 50;
 
   const handleNavigation = (route: string) => {
     (navigation as any).navigate(route);
@@ -28,87 +32,92 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, sc
       const listener = scrollY.addListener(({ value }) => {
         const currentScrollY = value;
         const scrollDirection = currentScrollY > lastScrollY.current ? 'down' : 'up';
-        
-        if (scrollDirection === 'down' && currentScrollY > 50) {
-          // Scrolling down - fade out
-          Animated.timing(opacityValue, {
-            toValue: 0.3,
-            duration: 200,
-            useNativeDriver: true,
-          }).start();
-        } else if (scrollDirection === 'up' || currentScrollY < 50) {
-          // Scrolling up or near top - show fully
-          Animated.timing(opacityValue, {
-            toValue: 1,
-            duration: 200,
-            useNativeDriver: true,
-          }).start();
+        const scrollDelta = Math.abs(currentScrollY - lastScrollY.current);
+
+        if (scrollDelta > 10) {
+          if (scrollDirection === 'down' && currentScrollY > scrollThreshold) {
+            // Scroll down - hide footer
+            Animated.spring(translateY, {
+              toValue: 150, // Move footer down out of view
+              useNativeDriver: true,
+              tension: 65,
+              friction: 11,
+            }).start();
+          } else if (scrollDirection === 'up') {
+            // Scroll up - show footer
+            Animated.spring(translateY, {
+              toValue: 0, // Move footer back to visible position
+              useNativeDriver: true,
+              tension: 65,
+              friction: 11,
+            }).start();
+          }
         }
-        
+
         lastScrollY.current = currentScrollY;
       });
 
       return () => scrollY.removeListener(listener);
     }
-  }, [scrollY, opacityValue]);
-
-  const animatedOpacity = scrollY ? opacityValue : new Animated.Value(1);
+  }, [scrollY, translateY]);
 
   return (
-    <Animated.View style={[styles.floatingContainer, { opacity: animatedOpacity }]}>
-      <View style={styles.footerRow}>
-        {/* Dashboard - Mail Icon */}
-        <TouchableOpacity
-          style={styles.footerButton}
-          onPress={() => handleNavigation('HRDashboard')}
-          activeOpacity={0.7}
-        >
-          <View style={styles.iconWrapper}>
-            <FontAwesomeIcon
-              icon="envelope"
-              size={28}
-              color="#4A4A4A"
-            />
-            {/* Badge */}
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>99+</Text>
+    <Animated.View style={[styles.floatingContainer, { transform: [{ translateY }] }]}>
+      <View style={styles.footerWrapper}>
+        <View style={styles.footerRow}>
+          {/* Home - Left */}
+          <TouchableOpacity
+            style={styles.footerButton}
+            onPress={() => handleNavigation('HRDashboard')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.iconWrapper}>
+              <FontAwesomeIcon
+                icon="home"
+                size={Responsive.iconSize(24)}
+                color="#FFFFFF"
+              />
+              <Text style={styles.label}>Home</Text>
             </View>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
 
-        {/* Jobs - Message Icon */}
-        <TouchableOpacity
-          style={styles.footerButton}
-          onPress={() => handleNavigation('HRJobs')}
-          activeOpacity={0.7}
-        >
-          <View style={styles.iconWrapper}>
-            <FontAwesomeIcon
-              icon="comment"
-              size={28}
-              color="#4A4A4A"
-            />
-            {/* Badge */}
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>2</Text>
+          {/* Jobs - Center */}
+          <TouchableOpacity
+            style={styles.footerButton}
+            onPress={() => handleNavigation('HRJobs')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.iconWrapper}>
+              <FontAwesomeIcon
+                icon="briefcase"
+                size={Responsive.iconSize(24)}
+                color="#FFFFFF"
+              />
+              {activeRoute === 'Jobs' && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>2</Text>
+                </View>
+              )}
+              <Text style={styles.label}>Jobs</Text>
             </View>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
 
-        {/* Users - Video Icon */}
-        <TouchableOpacity
-          style={styles.footerButton}
-          onPress={() => handleNavigation('HRUsers')}
-          activeOpacity={0.7}
-        >
-          <View style={styles.iconWrapper}>
-            <FontAwesomeIcon
-              icon="video"
-              size={28}
-              color="#4A4A4A"
-            />
-          </View>
-        </TouchableOpacity>
+          {/* Users - Right */}
+          <TouchableOpacity
+            style={styles.footerButton}
+            onPress={() => handleNavigation('HRUsers')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.iconWrapper}>
+              <FontAwesomeIcon
+                icon="users"
+                size={Responsive.iconSize(24)}
+                color="#FFFFFF"
+              />
+              <Text style={styles.label}>Users</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
       </View>
     </Animated.View>
   );
@@ -117,46 +126,61 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, sc
 const styles = StyleSheet.create({
   floatingContainer: {
     position: 'absolute',
-    bottom: 0,
+    bottom: Responsive.verticalScale(-60),
     left: 0,
     right: 0,
-    pointerEvents: 'box-none',
     zIndex: 1000,
+  },
+  footerWrapper: {
+    backgroundColor: '#1C2A3A',
+    width: '100%',
+    paddingBottom: Responsive.verticalScale(50),
   },
   footerRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-evenly',
     alignItems: 'center',
-    backgroundColor: '#F5E6D3',
-    paddingVertical: 20,
-    paddingHorizontal: 40,
+    backgroundColor: '#1C2A3A',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    paddingTop: Responsive.verticalScale(4),
+    paddingBottom: Responsive.verticalScale(10),
+    paddingHorizontal: Responsive.scale(10),
+    minHeight: Responsive.verticalScale(50),
   },
   footerButton: {
-    padding: 12,
+    padding: Responsive.scale(8),
     justifyContent: 'center',
     alignItems: 'center',
+    flex: 1,
   },
   iconWrapper: {
     position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  label: {
+    marginTop: Responsive.verticalScale(4),
+    fontSize: Responsive.fontSize(Typography.fontSize.xs - 1),
+    fontFamily: Typography.fontFamily.regular,
+    color: '#FFFFFF',
+  },
   badge: {
     position: 'absolute',
-    top: -8,
-    right: -12,
+    top: Responsive.verticalScale(-6),
+    right: Responsive.scale(-10),
     backgroundColor: '#B71C1C',
-    borderRadius: 12,
-    minWidth: 24,
-    height: 24,
-    paddingHorizontal: 6,
+    borderRadius: Responsive.scale(10),
+    minWidth: Responsive.scale(20),
+    height: Responsive.verticalScale(20),
+    paddingHorizontal: Responsive.scale(4),
     justifyContent: 'center',
     alignItems: 'center',
   },
   badgeText: {
     color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: Responsive.fontSize(Typography.fontSize.xs - 2),
+    fontFamily: Typography.fontFamily.bold,
   },
 });
 

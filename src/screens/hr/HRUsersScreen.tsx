@@ -23,6 +23,7 @@ import { Typography } from '../../constants/typography';
 import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import { User } from '../../types';
 import ApiService from '../../services/api';
+import Responsive from '../../utils/responsive';
 
 const HRUsersScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -234,7 +235,7 @@ const HRUsersScreen: React.FC = () => {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.avatarContainer}>
-            <FontAwesomeIcon icon={getRoleIcon(user.role)} size={28} color="#FFFFFF" />
+            <FontAwesomeIcon icon={getRoleIcon(user.role)} size={Responsive.iconSize(28)} color="#FFFFFF" />
           </LinearGradient>
 
         <View style={styles.userInfo}>
@@ -262,7 +263,7 @@ const HRUsersScreen: React.FC = () => {
         <View style={styles.detailsGrid}>
           <View style={styles.detailItem}>
             <View style={styles.detailIcon}>
-              <FontAwesomeIcon icon="building" size={14} color={Colors.primary} />
+              <FontAwesomeIcon icon="building" size={Responsive.iconSize(14)} color={Colors.primary} />
             </View>
             <Text style={styles.detailLabel}>Department</Text>
             <Text style={styles.detailValue} numberOfLines={1}>
@@ -272,7 +273,7 @@ const HRUsersScreen: React.FC = () => {
 
           <View style={styles.detailItem}>
             <View style={styles.detailIcon}>
-              <FontAwesomeIcon icon="map-marker-alt" size={14} color={Colors.primary} />
+              <FontAwesomeIcon icon="map-marker-alt" size={Responsive.iconSize(14)} color={Colors.primary} />
             </View>
             <Text style={styles.detailLabel}>Location</Text>
             <Text style={styles.detailValue} numberOfLines={1}>
@@ -282,7 +283,7 @@ const HRUsersScreen: React.FC = () => {
 
           <View style={styles.detailItem}>
             <View style={styles.detailIcon}>
-              <FontAwesomeIcon icon="phone" size={14} color={Colors.primary} />
+              <FontAwesomeIcon icon="phone" size={Responsive.iconSize(14)} color={Colors.primary} />
         </View>
             <Text style={styles.detailLabel}>Phone</Text>
             <Text style={styles.detailValue} numberOfLines={1}>
@@ -293,7 +294,7 @@ const HRUsersScreen: React.FC = () => {
         {user.specialization && (
             <View style={styles.detailItem}>
               <View style={styles.detailIcon}>
-                <FontAwesomeIcon icon="stethoscope" size={14} color={Colors.primary} />
+                <FontAwesomeIcon icon="stethoscope" size={Responsive.iconSize(14)} color={Colors.primary} />
               </View>
               <Text style={styles.detailLabel}>Specialization</Text>
               <Text style={styles.detailValue} numberOfLines={1}>
@@ -308,10 +309,10 @@ const HRUsersScreen: React.FC = () => {
         <Text style={styles.joinDate}>Joined {formatDate(user.createdAt)}</Text>
         <View style={styles.userActions}>
             <TouchableOpacity style={styles.actionButton} activeOpacity={0.6}>
-              <FontAwesomeIcon icon="edit" size={16} color={Colors.primary} />
+              <FontAwesomeIcon icon="edit" size={Responsive.iconSize(16)} color={Colors.primary} />
           </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton} activeOpacity={0.6}>
-              <FontAwesomeIcon icon="envelope" size={16} color="#06B6D4" />
+              <FontAwesomeIcon icon="envelope" size={Responsive.iconSize(16)} color="#06B6D4" />
           </TouchableOpacity>
         </View>
       </View>
@@ -353,7 +354,7 @@ const HRUsersScreen: React.FC = () => {
             style={styles.filterButton} 
             onPress={openFilterModal}
             activeOpacity={0.7}>
-            <FontAwesomeIcon icon="filter" size={20} color={Colors.white} />
+            <FontAwesomeIcon icon="filter" size={Responsive.iconSize(20)} color={Colors.white} />
           </TouchableOpacity>
         }
       />
@@ -368,7 +369,7 @@ const HRUsersScreen: React.FC = () => {
       {/* Enhanced Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <FontAwesomeIcon icon="search" size={18} color={Colors.primary} />
+          <FontAwesomeIcon icon="search" size={Responsive.iconSize(18)} color={Colors.primary} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search by name, email, or role..."
@@ -380,7 +381,7 @@ const HRUsersScreen: React.FC = () => {
             <TouchableOpacity 
               onPress={() => setSearchQuery('')}
               activeOpacity={0.6}>
-              <FontAwesomeIcon icon="times" size={18} color={Colors.textTertiary} />
+              <FontAwesomeIcon icon="times" size={Responsive.iconSize(18)} color={Colors.textTertiary} />
             </TouchableOpacity>
           )}
         </View>
@@ -403,7 +404,7 @@ const HRUsersScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={() => (
           <View style={styles.emptyState}>
-            <FontAwesomeIcon icon="users" size={48} color={Colors.textTertiary} />
+            <FontAwesomeIcon icon="users" size={Responsive.iconSize(48)} color={Colors.textTertiary} />
             <Text style={styles.emptyTitle}>No Users Found</Text>
             <Text style={styles.emptySubtitle}>
               {searchQuery ? 'Try adjusting your search terms' : 'No users available at the moment'}
@@ -519,9 +520,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   filterButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: Responsive.scale(40),
+    height: Responsive.verticalScale(40),
+    borderRadius: Responsive.scale(20),
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -587,9 +588,9 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
   },
   listContainer: {
-    padding: Spacing.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: 100,
+    padding: Responsive.scale(Spacing.lg),
+    paddingTop: Responsive.verticalScale(Spacing.md),
+    paddingBottom: Responsive.verticalScale(80),
   },
   userCard: {
     marginBottom: Spacing.md,
@@ -610,9 +611,9 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   avatarContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: Responsive.scale(56),
+    height: Responsive.verticalScale(56),
+    borderRadius: Responsive.scale(28),
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: Spacing.md,
@@ -658,9 +659,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: Responsive.scale(8),
+    height: Responsive.verticalScale(8),
+    borderRadius: Responsive.scale(4),
     marginRight: Spacing.xs,
   },
   statusLabel: {
@@ -680,9 +681,9 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   detailIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: Responsive.scale(24),
+    height: Responsive.verticalScale(24),
+    borderRadius: Responsive.scale(12),
     backgroundColor: Colors.primary + '10',
     justifyContent: 'center',
     alignItems: 'center',
@@ -717,9 +718,9 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   actionButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: Responsive.scale(36),
+    height: Responsive.verticalScale(36),
+    borderRadius: Responsive.scale(18),
     backgroundColor: '#F1F5F9',
     justifyContent: 'center',
     alignItems: 'center',

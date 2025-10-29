@@ -19,6 +19,7 @@ import GlobalHeader from '../../components/GlobalHeader';
 import { Typography } from '../../constants/typography';
 import { Colors } from '../../constants/colors';
 import ApiService from '../../services/api';
+import Responsive from '../../utils/responsive';
 
 const ChangePasswordScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -148,7 +149,7 @@ const ChangePasswordScreen: React.FC = () => {
           <View style={styles.section}>
             <View style={styles.infoCard}>
               <View style={styles.infoIcon}>
-                <FontAwesomeIcon icon="shield-alt" size={24} color="#1C2A3A" />
+                <FontAwesomeIcon icon="shield-alt" size={Responsive.iconSize(24)} color="#1C2A3A" />
               </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoTitle}>Password Security</Text>
@@ -181,7 +182,7 @@ const ChangePasswordScreen: React.FC = () => {
                     onPress={() => togglePasswordVisibility('current')}>
                     <FontAwesomeIcon 
                       icon={showPasswords.current ? "eye-slash" : "eye"} 
-                      size={18} 
+                      size={Responsive.iconSize(18)} 
                       color="#6B7280" 
                     />
                   </TouchableOpacity>
@@ -205,7 +206,7 @@ const ChangePasswordScreen: React.FC = () => {
                     onPress={() => togglePasswordVisibility('new')}>
                     <FontAwesomeIcon 
                       icon={showPasswords.new ? "eye-slash" : "eye"} 
-                      size={18} 
+                      size={Responsive.iconSize(18)} 
                       color="#6B7280" 
                     />
                   </TouchableOpacity>
@@ -232,7 +233,7 @@ const ChangePasswordScreen: React.FC = () => {
                     onPress={() => togglePasswordVisibility('confirm')}>
                     <FontAwesomeIcon 
                       icon={showPasswords.confirm ? "eye-slash" : "eye"} 
-                      size={18} 
+                      size={Responsive.iconSize(18)} 
                       color="#6B7280" 
                     />
                   </TouchableOpacity>
@@ -247,15 +248,15 @@ const ChangePasswordScreen: React.FC = () => {
             
             <View style={styles.requirementsCard}>
               <View style={styles.requirementItem}>
-                <FontAwesomeIcon icon="check" size={14} color="#10B981" />
+                <FontAwesomeIcon icon="check" size={Responsive.iconSize(14)} color="#10B981" />
                 <Text style={styles.requirementText}>At least 6 characters long</Text>
               </View>
               <View style={styles.requirementItem}>
-                <FontAwesomeIcon icon="check" size={14} color="#10B981" />
+                <FontAwesomeIcon icon="check" size={Responsive.iconSize(14)} color="#10B981" />
                 <Text style={styles.requirementText}>Different from current password</Text>
               </View>
               <View style={styles.requirementItem}>
-                <FontAwesomeIcon icon="check" size={14} color="#10B981" />
+                <FontAwesomeIcon icon="check" size={Responsive.iconSize(14)} color="#10B981" />
                 <Text style={styles.requirementText}>Confirmed correctly</Text>
               </View>
             </View>
@@ -271,7 +272,7 @@ const ChangePasswordScreen: React.FC = () => {
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <>
-                  <FontAwesomeIcon icon="lock" size={18} color="#FFFFFF" />
+                  <FontAwesomeIcon icon="lock" size={Responsive.iconSize(18)} color="#FFFFFF" />
                   <Text style={styles.changePasswordButtonText}>Change Password</Text>
                 </>
               )}
@@ -301,7 +302,7 @@ const ChangePasswordScreen: React.FC = () => {
               },
             ]}>
             <View style={styles.successIconContainer}>
-              <FontAwesomeIcon icon="check-circle" size={80} color="#FFFFFF" />
+              <FontAwesomeIcon icon="check-circle" size={Responsive.iconSize(80)} color="#FFFFFF" />
             </View>
             <Text style={styles.successTitle}>Success!</Text>
             <Text style={styles.successMessage}>

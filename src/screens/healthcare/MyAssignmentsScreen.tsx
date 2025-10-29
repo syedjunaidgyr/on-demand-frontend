@@ -17,6 +17,7 @@ import { Typography } from '../../constants/typography';
 import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import { JobAssignment, User } from '../../types';
 import ApiService from '../../services/api';
+import Responsive from '../../utils/responsive';
 
 const MyAssignmentsScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -121,26 +122,26 @@ const MyAssignmentsScreen: React.FC = () => {
       
       <View style={styles.assignmentDetails}>
         <View style={styles.assignmentDetail}>
-          <FontAwesomeIcon icon="map-marker-alt" size={16} color={Colors.textTertiary} />
+          <FontAwesomeIcon icon="map-marker-alt" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
           <Text style={styles.assignmentDetailText}>{assignment.job?.location || 'Unknown Location'}</Text>
         </View>
         
         <View style={styles.assignmentDetail}>
-          <FontAwesomeIcon icon="calendar" size={16} color={Colors.textTertiary} />
+          <FontAwesomeIcon icon="calendar" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
           <Text style={styles.assignmentDetailText}>
             {assignment.job ? formatDate(assignment.job.startDate) : 'Date not available'}
           </Text>
         </View>
         
         <View style={styles.assignmentDetail}>
-          <FontAwesomeIcon icon="clock" size={16} color={Colors.textTertiary} />
+          <FontAwesomeIcon icon="clock" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
           <Text style={styles.assignmentDetailText}>
             {assignment.job ? `${formatTime(assignment.job.startTime)} - ${formatTime(assignment.job.endTime)}` : 'Time not available'}
           </Text>
         </View>
         
         <View style={styles.assignmentDetail}>
-          <FontAwesomeIcon icon="dollar-sign" size={16} color={Colors.textTertiary} />
+          <FontAwesomeIcon icon="dollar-sign" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
           <Text style={styles.assignmentDetailText}>${assignment.hourlyRate}/hour</Text>
         </View>
       </View>
@@ -150,7 +151,7 @@ const MyAssignmentsScreen: React.FC = () => {
           <TouchableOpacity 
             style={[styles.actionButton, { backgroundColor: Colors.primary }]}
             onPress={() => (navigation as any).navigate('CheckInOut')}>
-            <FontAwesomeIcon icon="clock" size={16} color={Colors.white} />
+            <FontAwesomeIcon icon="clock" size={Responsive.iconSize(16)} color={Colors.white} />
             <Text style={styles.actionButtonText}>Check In/Out</Text>
           </TouchableOpacity>
         </View>
@@ -178,7 +179,7 @@ const MyAssignmentsScreen: React.FC = () => {
           <TouchableOpacity 
             style={styles.backButton}
             onPress={() => navigation.goBack()}>
-            <FontAwesomeIcon icon="arrow-left" size={24} color={Colors.white} />
+            <FontAwesomeIcon icon="arrow-left" size={Responsive.iconSize(24)} color={Colors.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{roleConfig.title}</Text>
           <View style={styles.headerSpacer} />
@@ -196,7 +197,7 @@ const MyAssignmentsScreen: React.FC = () => {
           ))
         ) : (
           <View style={styles.emptyState}>
-            <FontAwesomeIcon icon="calendar" size={64} color={Colors.textTertiary} />
+            <FontAwesomeIcon icon="calendar" size={Responsive.iconSize(64)} color={Colors.textTertiary} />
             <Text style={styles.emptyStateTitle}>No Assignments</Text>
             <Text style={styles.emptyStateText}>
               You don't have any assignments yet. Check the available jobs to find new opportunities.
@@ -204,7 +205,7 @@ const MyAssignmentsScreen: React.FC = () => {
             <TouchableOpacity 
               style={[styles.primaryButton, { backgroundColor: roleConfig.color }]}
               onPress={() => (navigation as any).navigate('AvailableJobs')}>
-              <FontAwesomeIcon icon="search" size={16} color={Colors.white} />
+              <FontAwesomeIcon icon="search" size={Responsive.iconSize(16)} color={Colors.white} />
               <Text style={styles.primaryButtonText}>Find Jobs</Text>
             </TouchableOpacity>
           </View>

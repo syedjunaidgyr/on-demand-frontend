@@ -16,6 +16,7 @@ import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
 import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import ApiService from '../../services/api';
+import Responsive from '../../utils/responsive';
 
 const AssignmentDetailsScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -181,7 +182,7 @@ const AssignmentDetailsScreen: React.FC = () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
-          <FontAwesomeIcon icon="exclamation-triangle" size={64} color={Colors.error} />
+          <FontAwesomeIcon icon="exclamation-triangle" size={Responsive.iconSize(64)} color={Colors.error} />
           <Text style={styles.errorTitle}>Assignment Not Found</Text>
           <Text style={styles.errorText}>The assignment you're looking for doesn't exist or has been removed.</Text>
           <TouchableOpacity 
@@ -204,7 +205,7 @@ const AssignmentDetailsScreen: React.FC = () => {
         <TouchableOpacity 
           style={styles.headerBackButton}
           onPress={() => navigation.goBack()}>
-          <FontAwesomeIcon icon="arrow-left" size={24} color={Colors.textPrimary} />
+          <FontAwesomeIcon icon="arrow-left" size={Responsive.iconSize(24)} color={Colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Assignment Details</Text>
         <View style={styles.headerSpacer} />
@@ -214,7 +215,7 @@ const AssignmentDetailsScreen: React.FC = () => {
         {/* Assignment Status */}
         <View style={styles.statusCard}>
           <View style={styles.statusHeader}>
-            <FontAwesomeIcon icon={statusConfig.icon} size={24} color={statusConfig.color} />
+            <FontAwesomeIcon icon={statusConfig.icon} size={Responsive.iconSize(24)} color={statusConfig.color} />
             <Text style={styles.statusTitle}>Assignment Status</Text>
           </View>
           <Text style={[styles.statusText, { color: statusConfig.color }]}>
@@ -229,30 +230,30 @@ const AssignmentDetailsScreen: React.FC = () => {
           
           <View style={styles.jobDetails}>
             <View style={styles.jobDetail}>
-              <FontAwesomeIcon icon="building" size={16} color={Colors.textTertiary} />
+              <FontAwesomeIcon icon="building" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
               <Text style={styles.jobDetailText}>{job.facilityName || 'Unknown Facility'}</Text>
             </View>
             
             <View style={styles.jobDetail}>
-              <FontAwesomeIcon icon="map-marker-alt" size={16} color={Colors.textTertiary} />
+              <FontAwesomeIcon icon="map-marker-alt" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
               <Text style={styles.jobDetailText}>{job.location || 'Unknown Location'}</Text>
             </View>
             
             <View style={styles.jobDetail}>
-              <FontAwesomeIcon icon="user-md" size={16} color={Colors.textTertiary} />
+              <FontAwesomeIcon icon="user-md" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
               <Text style={styles.jobDetailText}>{job.department || 'Unknown Department'}</Text>
             </View>
             
             {job.specialization && (
               <View style={styles.jobDetail}>
-                <FontAwesomeIcon icon="stethoscope" size={16} color={Colors.textTertiary} />
+                <FontAwesomeIcon icon="stethoscope" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
                 <Text style={styles.jobDetailText}>{job.specialization}</Text>
               </View>
             )}
             
             {job.hourlyRate && (
               <View style={styles.jobDetail}>
-                <FontAwesomeIcon icon="rupee-sign" size={16} color={Colors.success} />
+                <FontAwesomeIcon icon="rupee-sign" size={Responsive.iconSize(16)} color={Colors.success} />
                 <Text style={styles.jobDetailText}>₹{job.hourlyRate}/hour</Text>
               </View>
             )}
@@ -264,7 +265,7 @@ const AssignmentDetailsScreen: React.FC = () => {
           <Text style={styles.cardTitle}>Schedule</Text>
           
           <View style={styles.scheduleItem}>
-            <FontAwesomeIcon icon="calendar" size={16} color={Colors.textTertiary} />
+            <FontAwesomeIcon icon="calendar" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
             <Text style={styles.scheduleLabel}>Start Date:</Text>
             <Text style={styles.scheduleValue}>
               {job.startDate ? formatDate(job.startDate) : 'TBD'}
@@ -272,7 +273,7 @@ const AssignmentDetailsScreen: React.FC = () => {
           </View>
           
           <View style={styles.scheduleItem}>
-            <FontAwesomeIcon icon="calendar" size={16} color={Colors.textTertiary} />
+            <FontAwesomeIcon icon="calendar" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
             <Text style={styles.scheduleLabel}>End Date:</Text>
             <Text style={styles.scheduleValue}>
               {job.endDate ? formatDate(job.endDate) : 'TBD'}
@@ -280,7 +281,7 @@ const AssignmentDetailsScreen: React.FC = () => {
           </View>
           
           <View style={styles.scheduleItem}>
-            <FontAwesomeIcon icon="clock" size={16} color={Colors.textTertiary} />
+            <FontAwesomeIcon icon="clock" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
             <Text style={styles.scheduleLabel}>Time:</Text>
             <Text style={styles.scheduleValue}>
               {job.startTime && job.endTime ? `${formatTime(job.startTime)} - ${formatTime(job.endTime)}` : 'TBD'}
@@ -293,19 +294,19 @@ const AssignmentDetailsScreen: React.FC = () => {
           <Text style={styles.cardTitle}>Payment Details</Text>
           
           <View style={styles.paymentItem}>
-            <FontAwesomeIcon icon="dollar-sign" size={16} color={Colors.textTertiary} />
+            <FontAwesomeIcon icon="dollar-sign" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
             <Text style={styles.paymentLabel}>Hourly Rate:</Text>
             <Text style={styles.paymentValue}>${job.hourlyRate || 0}/hour</Text>
           </View>
           
           <View style={styles.paymentItem}>
-            <FontAwesomeIcon icon="users" size={16} color={Colors.textTertiary} />
+            <FontAwesomeIcon icon="users" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
             <Text style={styles.paymentLabel}>Max Assignments:</Text>
             <Text style={styles.paymentValue}>{job.maxAssignments || 1}</Text>
           </View>
           
           <View style={styles.paymentItem}>
-            <FontAwesomeIcon icon="flag" size={16} color={getPriorityColor(job.priority)} />
+            <FontAwesomeIcon icon="flag" size={Responsive.iconSize(16)} color={getPriorityColor(job.priority)} />
             <Text style={styles.paymentLabel}>Priority:</Text>
             <Text style={[styles.paymentValue, { color: getPriorityColor(job.priority) }]}>
               {job.priority || 'MEDIUM'}
@@ -319,25 +320,25 @@ const AssignmentDetailsScreen: React.FC = () => {
             <Text style={styles.cardTitle}>Contact Information</Text>
             
             <View style={styles.contactItem}>
-              <FontAwesomeIcon icon="user" size={16} color={Colors.textTertiary} />
+              <FontAwesomeIcon icon="user" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
               <Text style={styles.contactLabel}>Contact:</Text>
               <Text style={styles.contactValue}>{job.contactPerson.name}</Text>
             </View>
             
             <View style={styles.contactItem}>
-              <FontAwesomeIcon icon="phone" size={16} color={Colors.textTertiary} />
+              <FontAwesomeIcon icon="phone" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
               <Text style={styles.contactLabel}>Phone:</Text>
               <Text style={styles.contactValue}>{job.contactPerson.phone}</Text>
             </View>
             
             <View style={styles.contactItem}>
-              <FontAwesomeIcon icon="envelope" size={16} color={Colors.textTertiary} />
+              <FontAwesomeIcon icon="envelope" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
               <Text style={styles.contactLabel}>Email:</Text>
               <Text style={styles.contactValue}>{job.contactPerson.email}</Text>
             </View>
             
             <View style={styles.contactItem}>
-              <FontAwesomeIcon icon="briefcase" size={16} color={Colors.textTertiary} />
+              <FontAwesomeIcon icon="briefcase" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
               <Text style={styles.contactLabel}>Position:</Text>
               <Text style={styles.contactValue}>{job.contactPerson.position}</Text>
             </View>
@@ -350,14 +351,14 @@ const AssignmentDetailsScreen: React.FC = () => {
             <TouchableOpacity 
               style={styles.rejectButton}
               onPress={handleRejectAssignment}>
-              <FontAwesomeIcon icon="times" size={16} color={Colors.white} />
+              <FontAwesomeIcon icon="times" size={Responsive.iconSize(16)} color={Colors.white} />
               <Text style={styles.rejectButtonText}>Reject Assignment</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
               style={styles.acceptButton}
               onPress={handleAcceptAssignment}>
-              <FontAwesomeIcon icon="check" size={16} color={Colors.white} />
+              <FontAwesomeIcon icon="check" size={Responsive.iconSize(16)} color={Colors.white} />
               <Text style={styles.acceptButtonText}>Accept Assignment</Text>
             </TouchableOpacity>
           </View>

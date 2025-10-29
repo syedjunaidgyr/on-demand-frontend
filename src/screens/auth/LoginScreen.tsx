@@ -25,12 +25,13 @@ import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import ApiService from '../../services/api';
 import messaging from '@react-native-firebase/messaging';
 import { useAuth } from '../../navigation/AppNavigator';
+import Responsive from '../../utils/responsive';
 
 const { width, height } = Dimensions.get('window');
 
-// Device size detection for responsive design
-const IS_SMALL_DEVICE = height < 700;
-const IS_VERY_SMALL_DEVICE = height < 600;
+// Device size detection for responsive design - now using Responsive utility
+const IS_SMALL_DEVICE = Responsive.isSmallScreen();
+const IS_VERY_SMALL_DEVICE = Responsive.getScreenHeight() < 600;
 
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -176,7 +177,7 @@ const LoginScreen: React.FC = () => {
             {/* Email Input */}
             <View style={styles.inputContainer}>
               <View style={styles.inputWrapper}>
-                <FontAwesomeIcon icon="envelope" size={18} color={Colors.textTertiary} style={styles.inputIcon} />
+                <FontAwesomeIcon icon="envelope" size={Responsive.iconSize(18)} color={Colors.textTertiary} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="Email Address"
@@ -194,7 +195,7 @@ const LoginScreen: React.FC = () => {
             {/* Password Input */}
             <View style={styles.inputContainer}>
               <View style={styles.inputWrapper}>
-                <FontAwesomeIcon icon="lock" size={18} color={Colors.textTertiary} style={styles.inputIcon} />
+                <FontAwesomeIcon icon="lock" size={Responsive.iconSize(18)} color={Colors.textTertiary} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="Password"
@@ -212,7 +213,7 @@ const LoginScreen: React.FC = () => {
                   style={styles.eyeIcon}>
                   <FontAwesomeIcon
                     icon={showPassword ? "eye-slash" : "eye"}
-                    size={18}
+                    size={Responsive.iconSize(18)}
                     color={Colors.textTertiary}
                   />
                 </TouchableOpacity>
@@ -276,7 +277,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: width * 0.05,
+    paddingHorizontal: Responsive.wp('5%'),
   },
   topSpacer: {
     flex: 0.3,
@@ -286,17 +287,17 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: height * 0.05,
+    marginBottom: Responsive.verticalScale(height * 0.05),
   },
   logoPlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 10,
+    padding: Responsive.scale(10),
   },
   logoWrapper: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: Responsive.scale(90),
+    height: Responsive.verticalScale(90),
+    borderRadius: Responsive.scale(45),
     overflow: 'hidden',
     backgroundColor: Colors.white,
     shadowColor: '#000',
@@ -304,7 +305,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
-    marginBottom: 12,
+    marginBottom: Responsive.verticalScale(12),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -313,49 +314,49 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   logoText: {
-    fontSize: width * 0.07,
+    fontSize: Responsive.fontSize(width * 0.07),
     fontFamily: Typography.fontFamily.bold, // DM Sans Bold
     color: Colors.primary,
     letterSpacing: 1,
-    marginTop: 3,
+    marginTop: Responsive.verticalScale(3),
   },
   logoSubtext: {
-    fontSize: width * 0.035,
+    fontSize: Responsive.fontSize(width * 0.035),
     fontFamily: Typography.fontFamily.regular, // DM Sans Regular
     color: Colors.textSecondary,
-    marginTop: 1,
+    marginTop: Responsive.verticalScale(1),
   },
   logoSubtext2: {
-    fontSize: width * 0.035,
+    fontSize: Responsive.fontSize(width * 0.035),
     fontFamily: Typography.fontFamily.regular, // DM Sans Regular
     color: Colors.textSecondary,
-    marginTop: 1,
+    marginTop: Responsive.verticalScale(1),
   },
   card: {
     backgroundColor: Colors.white,
     borderRadius: BorderRadius.lg,
-    padding: width * 0.06,
+    padding: Responsive.scale(width * 0.06),
     ...Shadow.md,
-    marginHorizontal: width * 0.08,
+    marginHorizontal: Responsive.wp('8%'),
     alignSelf: 'center',
-    width: width * 0.84,
+    width: Responsive.wp('84%'),
   },
   welcomeText: {
-    fontSize: 24,
+    fontSize: Responsive.fontSize(24),
     fontFamily: Typography.fontFamily.bold, // DM Sans Bold for headers
     color: Colors.textPrimary,
-    marginBottom: 8,
+    marginBottom: Responsive.verticalScale(8),
     textAlign: 'center',
   },
   subtitleText: {
-    fontSize: 16,
+    fontSize: Responsive.fontSize(16),
     fontFamily: Typography.fontFamily.regular, // DM Sans Regular for subtitles
     color: Colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: Responsive.verticalScale(24),
   },
   inputContainer: {
-    marginBottom: height * 0.02,
+    marginBottom: Responsive.verticalScale(height * 0.02),
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -366,14 +367,14 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderWidth: 1,
     borderColor: Colors.border,
-    height: 50,
+    height: Responsive.verticalScale(50),
   },
   inputIcon: {
     marginRight: Spacing.sm,
   },
   input: {
     flex: 1,
-    fontSize: Typography.fontSize.base,
+    fontSize: Responsive.fontSize(Typography.fontSize.base),
     fontFamily: Typography.fontFamily.regular, // DM Sans Regular for input text
     color: Colors.textPrimary,
     paddingVertical: 0,
@@ -384,11 +385,11 @@ const styles = StyleSheet.create({
   signInButton: {
     backgroundColor: Colors.primary,
     borderRadius: BorderRadius.lg,
-    paddingVertical: height * 0.02,
+    paddingVertical: Responsive.verticalScale(height * 0.02),
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: height * 0.01,
-    marginBottom: height * 0.02,
+    marginTop: Responsive.verticalScale(height * 0.01),
+    marginBottom: Responsive.verticalScale(height * 0.02),
     ...Shadow.md,
   },
   signInButtonDisabled: {
@@ -396,12 +397,12 @@ const styles = StyleSheet.create({
   },
   signInButtonText: {
     color: Colors.white,
-    fontSize: width * 0.045,
+    fontSize: Responsive.fontSize(width * 0.045),
     fontFamily: Typography.fontFamily.medium, // DM Sans Medium for button text
     fontWeight: Typography.fontWeight.medium,
   },
   retryMessage: {
-    fontSize: Typography.fontSize.sm,
+    fontSize: Responsive.fontSize(Typography.fontSize.sm),
     fontFamily: Typography.fontFamily.regular, // DM Sans Regular
     color: Colors.warning,
     textAlign: 'center',
@@ -412,38 +413,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    marginTop: 16,
-    marginHorizontal: width * 0.08,
+    paddingVertical: Responsive.verticalScale(12),
+    marginTop: Responsive.verticalScale(16),
+    marginHorizontal: Responsive.wp('8%'),
   },
   accountLinkText: {
-    fontSize: 14,
+    fontSize: Responsive.fontSize(14),
     fontFamily: Typography.fontFamily.regular, // DM Sans Regular
     color: '#000000',
   },
   signUpLink: {
-    fontSize: 16,
+    fontSize: Responsive.fontSize(16),
     color: Colors.primary,
     fontFamily: Typography.fontFamily.medium, // DM Sans Medium
     fontWeight: Typography.fontWeight.medium,
   },
   poweredByContainer: {
     position: 'absolute',
-    bottom: IS_VERY_SMALL_DEVICE ? height * 0.02 : height * 0.01,
-    right: IS_VERY_SMALL_DEVICE ? width * 0.03 : width * 0.02,
+    bottom: IS_VERY_SMALL_DEVICE ? Responsive.hp('2%') : Responsive.hp('1%'),
+    right: IS_VERY_SMALL_DEVICE ? Responsive.wp('3%') : Responsive.wp('2%'),
     flexDirection: 'row',
     alignItems: 'center',
-    maxWidth: width * 0.4,
+    maxWidth: Responsive.wp('40%'),
   },
   poweredByText: {
-    fontSize: 12,
+    fontSize: Responsive.fontSize(12),
     fontFamily: Typography.fontFamily.medium, // DM Sans Medium
     color: '#000000',
-    marginRight: IS_VERY_SMALL_DEVICE ? -15 : -25,
+    marginRight: IS_VERY_SMALL_DEVICE ? Responsive.scale(-15) : Responsive.scale(-25),
   },
   companyLogo: {
-    height: IS_VERY_SMALL_DEVICE ? 12 : 15,
-    width: IS_VERY_SMALL_DEVICE ? 80 : 95,
+    height: IS_VERY_SMALL_DEVICE ? Responsive.verticalScale(12) : Responsive.verticalScale(15),
+    width: IS_VERY_SMALL_DEVICE ? Responsive.scale(80) : Responsive.scale(95),
   },
 });
 

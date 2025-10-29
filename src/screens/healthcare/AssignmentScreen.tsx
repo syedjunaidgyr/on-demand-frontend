@@ -19,6 +19,7 @@ import { Typography } from '../../constants/typography';
 import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import { User } from '../../types';
 import ApiService from '../../services/api';
+import Responsive from '../../utils/responsive';
 
 const AssignmentScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -218,26 +219,26 @@ const AssignmentScreen: React.FC = () => {
         
         <View style={styles.assignmentDetails}>
           <View style={styles.assignmentDetail}>
-            <FontAwesomeIcon icon="map-marker-alt" size={16} color={Colors.textTertiary} />
+            <FontAwesomeIcon icon="map-marker-alt" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
             <Text style={styles.assignmentDetailText}>{job.location || 'Unknown Location'}</Text>
           </View>
           
           <View style={styles.assignmentDetail}>
-            <FontAwesomeIcon icon="calendar" size={16} color={Colors.textTertiary} />
+            <FontAwesomeIcon icon="calendar" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
             <Text style={styles.assignmentDetailText}>
               {job.startDate ? formatDate(job.startDate) : 'TBD'}
             </Text>
           </View>
           
           <View style={styles.assignmentDetail}>
-            <FontAwesomeIcon icon="clock" size={16} color={Colors.textTertiary} />
+            <FontAwesomeIcon icon="clock" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
             <Text style={styles.assignmentDetailText}>
               {job.startTime && job.endTime ? `${formatTime(job.startTime)} - ${formatTime(job.endTime)}` : 'TBD'}
             </Text>
           </View>
           
           <View style={styles.assignmentDetail}>
-            <FontAwesomeIcon icon="dollar-sign" size={16} color={Colors.textTertiary} />
+            <FontAwesomeIcon icon="dollar-sign" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
             <Text style={styles.assignmentDetailText}>${job.hourlyRate || 0}/hour</Text>
           </View>
         </View>
@@ -247,14 +248,14 @@ const AssignmentScreen: React.FC = () => {
             <TouchableOpacity 
               style={[styles.rejectButton, { flex: 1, marginRight: Spacing.sm }]}
               onPress={() => handleRejectAssignment(assignment)}>
-              <FontAwesomeIcon icon="times" size={16} color={Colors.white} />
+              <FontAwesomeIcon icon="times" size={Responsive.iconSize(16)} color={Colors.white} />
               <Text style={styles.rejectButtonText}>Reject</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
               style={[styles.acceptButton, { flex: 1, marginLeft: Spacing.sm }]}
               onPress={() => handleAcceptAssignment(assignment)}>
-              <FontAwesomeIcon icon="check" size={16} color={Colors.white} />
+              <FontAwesomeIcon icon="check" size={Responsive.iconSize(16)} color={Colors.white} />
               <Text style={styles.acceptButtonText}>Accept</Text>
             </TouchableOpacity>
           </View>
@@ -296,7 +297,7 @@ const AssignmentScreen: React.FC = () => {
           <TouchableOpacity 
             style={styles.backButton}
             onPress={() => navigation.goBack()}>
-            <FontAwesomeIcon icon="arrow-left" size={24} color={Colors.white} />
+            <FontAwesomeIcon icon="arrow-left" size={Responsive.iconSize(24)} color={Colors.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{roleConfig.title}</Text>
           <View style={styles.headerSpacer} />
@@ -314,7 +315,7 @@ const AssignmentScreen: React.FC = () => {
           ))
         ) : (
           <View style={styles.emptyState}>
-            <FontAwesomeIcon icon="clipboard-list" size={64} color={Colors.textTertiary} />
+            <FontAwesomeIcon icon="clipboard-list" size={Responsive.iconSize(64)} color={Colors.textTertiary} />
             <Text style={styles.emptyStateTitle}>No Job Assignments</Text>
             <Text style={styles.emptyStateText}>
               You don't have any job assignments at the moment. HR will assign compatible jobs to you based on your profile.
@@ -322,7 +323,7 @@ const AssignmentScreen: React.FC = () => {
             <TouchableOpacity 
               style={[styles.primaryButton, { backgroundColor: roleConfig.color }]}
               onPress={onRefresh}>
-              <FontAwesomeIcon icon="sync" size={16} color={Colors.white} />
+              <FontAwesomeIcon icon="sync" size={Responsive.iconSize(16)} color={Colors.white} />
               <Text style={styles.primaryButtonText}>Refresh</Text>
             </TouchableOpacity>
           </View>

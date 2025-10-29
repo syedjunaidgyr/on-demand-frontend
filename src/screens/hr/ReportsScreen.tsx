@@ -23,6 +23,7 @@ import { Typography } from '../../constants/typography';
 import { Spacing, Shadow, BorderRadius } from '../../constants/spacing';
 import ApiService from '../../services/api';
 import GlobalHeader from '../../components/GlobalHeader';
+import Responsive from '../../utils/responsive';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ExportUtils from '../../utils/exportUtils';
 import { getFinalApiUrl } from '../../config/api';
@@ -902,7 +903,7 @@ const ReportsScreen: React.FC = () => {
         onBackPress={() => navigation.goBack()}
         rightComponent={
           <TouchableOpacity style={styles.filterButton}>
-            <FontAwesomeIcon icon="filter" size={20} color={Colors.white} />
+            <FontAwesomeIcon icon="filter" size={Responsive.iconSize(20)} color={Colors.white} />
           </TouchableOpacity>
         }
       />
@@ -942,7 +943,7 @@ const ReportsScreen: React.FC = () => {
               >
                 <FontAwesomeIcon
                   icon={type.icon}
-                  size={16}
+                  size={Responsive.iconSize(16)}
                   color={
                     selectedReportType === type.key
                       ? Colors.white
@@ -977,7 +978,7 @@ const ReportsScreen: React.FC = () => {
                   {isGenerating ? (
                     <ActivityIndicator size="small" color={Colors.white} />
                   ) : (
-                    <FontAwesomeIcon icon="file-pdf" size={18} color={Colors.white} />
+                    <FontAwesomeIcon icon="file-pdf" size={Responsive.iconSize(18)} color={Colors.white} />
                   )}
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -988,14 +989,14 @@ const ReportsScreen: React.FC = () => {
                   {isGenerating ? (
                     <ActivityIndicator size="small" color={Colors.white} />
                   ) : (
-                    <FontAwesomeIcon icon="file-excel" size={18} color={Colors.white} />
+                    <FontAwesomeIcon icon="file-excel" size={Responsive.iconSize(18)} color={Colors.white} />
                   )}
                 </TouchableOpacity>
               </View>
             </View>
             {jobs.length === 0 ? (
               <View style={styles.emptyState}>
-                <FontAwesomeIcon icon="briefcase" size={48} color={Colors.textTertiary} />
+                <FontAwesomeIcon icon="briefcase" size={Responsive.iconSize(48)} color={Colors.textTertiary} />
                 <Text style={styles.emptyStateText}>No jobs found</Text>
                 <Text style={styles.emptyStateSubtext}>
                   Jobs will appear here when they are created
@@ -1034,7 +1035,7 @@ const ReportsScreen: React.FC = () => {
                           {exportingJobId === item.id ? (
                             <ActivityIndicator size="small" color={Colors.white} />
                           ) : (
-                            <FontAwesomeIcon icon="file-pdf" size={16} color={Colors.white} />
+                            <FontAwesomeIcon icon="file-pdf" size={Responsive.iconSize(16)} color={Colors.white} />
                           )}
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -1045,7 +1046,7 @@ const ReportsScreen: React.FC = () => {
                           {exportingJobId === item.id ? (
                             <ActivityIndicator size="small" color={Colors.white} />
                           ) : (
-                            <FontAwesomeIcon icon="file-excel" size={16} color={Colors.white} />
+                            <FontAwesomeIcon icon="file-excel" size={Responsive.iconSize(16)} color={Colors.white} />
                           )}
                         </TouchableOpacity>
                       </View>
@@ -1133,7 +1134,7 @@ const ReportsScreen: React.FC = () => {
                           {exportingAssignmentId === item.id ? (
                             <ActivityIndicator size="small" color={Colors.white} />
                           ) : (
-                            <FontAwesomeIcon icon="file-pdf" size={16} color={Colors.white} />
+                            <FontAwesomeIcon icon="file-pdf" size={Responsive.iconSize(16)} color={Colors.white} />
                           )}
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -1144,7 +1145,7 @@ const ReportsScreen: React.FC = () => {
                           {exportingAssignmentId === item.id ? (
                             <ActivityIndicator size="small" color={Colors.white} />
                           ) : (
-                            <FontAwesomeIcon icon="file-excel" size={16} color={Colors.white} />
+                            <FontAwesomeIcon icon="file-excel" size={Responsive.iconSize(16)} color={Colors.white} />
                           )}
                         </TouchableOpacity>
                       </View>
@@ -1169,7 +1170,7 @@ const ReportsScreen: React.FC = () => {
                   {isGenerating ? (
                     <ActivityIndicator size="small" color={Colors.white} />
                   ) : (
-                    <FontAwesomeIcon icon="file-pdf" size={18} color={Colors.white} />
+                    <FontAwesomeIcon icon="file-pdf" size={Responsive.iconSize(18)} color={Colors.white} />
                   )}
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -1180,7 +1181,7 @@ const ReportsScreen: React.FC = () => {
                   {isGenerating ? (
                     <ActivityIndicator size="small" color={Colors.white} />
                   ) : (
-                    <FontAwesomeIcon icon="file-excel" size={18} color={Colors.white} />
+                    <FontAwesomeIcon icon="file-excel" size={Responsive.iconSize(18)} color={Colors.white} />
                   )}
                 </TouchableOpacity>
               </View>
