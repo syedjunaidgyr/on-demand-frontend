@@ -211,3 +211,14 @@ export interface UserInfo {
   role: 'DOCTOR' | 'NURSE' | 'HR' | 'ADMIN';
   department: string;
 }
+
+// Notification interface
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error' | 'assignment' | 'job';
+  isRead: boolean;
+  createdAt: string;
+  relatedId?: string; // Related job/assignment ID
+}

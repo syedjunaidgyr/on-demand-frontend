@@ -34,6 +34,7 @@ import EditProfileScreen from '../screens/common/EditProfileScreen';
 import ChangePasswordScreen from '../screens/common/ChangePasswordScreen';
 import JobDetailsCommonScreen from '../screens/common/JobDetailsCommonScreen';
 import PDFViewerScreen from '../screens/common/PDFViewerScreen';
+import NotificationsScreen from '../screens/common/NotificationsScreen';
 
 // Test Components
 import GeolocationTest from '../components/GeolocationTest';
@@ -41,6 +42,7 @@ import GeolocationTest from '../components/GeolocationTest';
 import { Colors } from '../constants/colors';
 import { User, Job, JobAssignment } from '../types';
 import { setGlobalLogoutHandler } from '../services/api';
+import { NotificationProvider } from '../contexts/NotificationContext';
 
 // Authentication Context
 interface AuthContextType {
@@ -70,6 +72,7 @@ export type RootStackParamList = {
   ProfileSettings: undefined;
   EditProfile: undefined;
   ChangePassword: undefined;
+  Notifications: undefined;
   JobDetails: { jobId?: string; job?: Job };
   CreateJob: undefined;
   CheckInOut: { assignmentId?: string; scannedQRData?: string; scannedAction?: 'checkin' | 'checkout' };
@@ -242,6 +245,13 @@ const MainNavigator = ({ user }: { user: User }) => {
       <Stack.Screen 
         name="ChangePassword" 
         component={ChangePasswordScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="Notifications" 
+        component={NotificationsScreen}
         options={{
           headerShown: false,
         }}
@@ -427,10 +437,12 @@ const AppNavigator = () => {
   );
 };
 
-// Main export with AuthProvider wrapper
+// Main export with AuthProvider and NotificationProvider wrapper
 const AppNavigatorWithAuth = () => (
   <AuthProvider>
-    <AppNavigator />
+    <NotificationProvider>
+      <AppNavigator />
+    </NotificationProvider>
   </AuthProvider>
 );
 
