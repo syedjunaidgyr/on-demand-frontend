@@ -33,6 +33,7 @@ import ProfileSettingsScreen from '../screens/common/ProfileSettingsScreen';
 import EditProfileScreen from '../screens/common/EditProfileScreen';
 import ChangePasswordScreen from '../screens/common/ChangePasswordScreen';
 import JobDetailsCommonScreen from '../screens/common/JobDetailsCommonScreen';
+import PDFViewerScreen from '../screens/common/PDFViewerScreen';
 
 // Test Components
 import GeolocationTest from '../components/GeolocationTest';
@@ -78,6 +79,7 @@ export type RootStackParamList = {
   QRCodeDisplay: { assignment: JobAssignment; action: 'checkin' | 'checkout' };
   Reports: undefined;
   ReportDetails: { reportId: number };
+  PDFViewer: { uri: string; title?: string };
   GeolocationTest: undefined;
 };
 
@@ -317,6 +319,13 @@ const MainNavigator = ({ user }: { user: User }) => {
       <Stack.Screen 
         name="ReportDetails" 
         component={ReportDetailsScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="PDFViewer" 
+        component={PDFViewerScreen}
         options={{
           headerShown: false,
         }}

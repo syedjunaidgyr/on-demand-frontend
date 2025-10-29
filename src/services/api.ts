@@ -943,6 +943,41 @@ class ApiService {
     }
   }
 
+  // Realtime tracking dashboard
+  async getRealtimeTrackingDashboard(): Promise<{
+    activeStaff: any[];
+    todayCheckIns: number;
+    todayLateArrivals: number;
+    activeJobsToday: number;
+  }> {
+    try {
+      const response = await this.api.get('/tracking/dashboard/realtime');
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to load realtime tracking:', error?.response?.data || error?.message || error);
+      throw error;
+    }
+  }
+
+  // Attendance report (recent check-ins with filters)
+  async getAttendanceReport(params: {
+    startDate: string;
+    endDate: string;
+    userId?: string;
+    department?: string;
+  }): Promise<{
+    summary?: any;
+    checkIns: any[];
+  }> {
+    try {
+      const response = await this.api.post('/reports/attendance', params);
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to load attendance report:', error?.response?.data || error?.message || error);
+      throw error;
+    }
+  }
+
   async deleteReport(reportId: number): Promise<void> {
     try {
       console.log('📊 Deleting report with ID:', reportId);
