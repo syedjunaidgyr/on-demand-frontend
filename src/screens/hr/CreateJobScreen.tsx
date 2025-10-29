@@ -1146,6 +1146,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
     fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.textPrimary,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -1271,10 +1272,12 @@ const styles = StyleSheet.create({
   },
   dropdownTextStyle: {
     fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.textPrimary,
   },
   dropdownPlaceholderStyle: {
     fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.textTertiary,
   },
   dropdownContainerStyle: {

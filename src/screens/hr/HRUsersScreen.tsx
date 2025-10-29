@@ -549,6 +549,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.textPrimary,
     marginLeft: Spacing.md,
     paddingVertical: 0,
