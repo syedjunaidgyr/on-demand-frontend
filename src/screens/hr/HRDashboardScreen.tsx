@@ -742,7 +742,7 @@ const styles = StyleSheet.create({
   scrollableContent: {
     flex: 1,
     marginTop: 260,
-    paddingBottom: 100, // Add padding for footer
+    paddingBottom: 120, // Add padding for footer
   },
   loadingContainer: {
     flex: 1,

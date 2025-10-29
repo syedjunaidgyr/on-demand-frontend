@@ -57,94 +57,58 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, sc
   return (
     <Animated.View style={[styles.floatingContainer, { opacity: animatedOpacity }]}>
       <View style={styles.footerRow}>
-        {/* Dashboard */}
+        {/* Dashboard - Mail Icon */}
         <TouchableOpacity
-          style={[
-            styles.footerButton,
-            activeRoute === 'Dashboard' && styles.activeButton
-          ]}
+          style={styles.footerButton}
           onPress={() => handleNavigation('HRDashboard')}
-          activeOpacity={0.8}
+          activeOpacity={0.7}
         >
-          <FontAwesomeIcon
-            icon="home"
-            size={20}
-            color={activeRoute === 'Dashboard' ? '#FFFFFF' : '#9CA3AF'}
-          />
-          <Text 
-            style={[
-              styles.labelText,
-              activeRoute === 'Dashboard' && styles.activeLabelText
-            ]}
-            numberOfLines={1}
-          >Dashboard</Text>
+          <View style={styles.iconWrapper}>
+            <FontAwesomeIcon
+              icon="envelope"
+              size={28}
+              color="#4A4A4A"
+            />
+            {/* Badge */}
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>99+</Text>
+            </View>
+          </View>
         </TouchableOpacity>
 
-        {/* Jobs */}
+        {/* Jobs - Message Icon */}
         <TouchableOpacity
-          style={[
-            styles.footerButton,
-            activeRoute === 'Jobs' && styles.activeButton
-          ]}
+          style={styles.footerButton}
           onPress={() => handleNavigation('HRJobs')}
-          activeOpacity={0.8}
+          activeOpacity={0.7}
         >
-          <FontAwesomeIcon
-            icon="briefcase"
-            size={20}
-            color={activeRoute === 'Jobs' ? '#FFFFFF' : '#9CA3AF'}
-          />
-          <Text 
-            style={[
-              styles.labelText,
-              activeRoute === 'Jobs' && styles.activeLabelText
-            ]}
-            numberOfLines={1}
-          >Jobs</Text>
+          <View style={styles.iconWrapper}>
+            <FontAwesomeIcon
+              icon="comment"
+              size={28}
+              color="#4A4A4A"
+            />
+            {/* Badge */}
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>2</Text>
+            </View>
+          </View>
         </TouchableOpacity>
 
-        {/* Users */}
+        {/* Users - Video Icon */}
         <TouchableOpacity
-          style={[
-            styles.footerButton,
-            activeRoute === 'Users' && styles.activeButton
-          ]}
+          style={styles.footerButton}
           onPress={() => handleNavigation('HRUsers')}
-          activeOpacity={0.8}
+          activeOpacity={0.7}
         >
-          <FontAwesomeIcon
-            icon="users"
-            size={20}
-            color={activeRoute === 'Users' ? '#FFFFFF' : '#9CA3AF'}
-          />
-          <Text 
-            style={[
-              styles.labelText,
-              activeRoute === 'Users' && styles.activeLabelText
-            ]}
-            numberOfLines={1}
-          >Users</Text>
+          <View style={styles.iconWrapper}>
+            <FontAwesomeIcon
+              icon="video"
+              size={28}
+              color="#4A4A4A"
+            />
+          </View>
         </TouchableOpacity>
-
-        {/* Reports - Commented Out */}
-        {/* <TouchableOpacity
-          style={[
-            styles.footerButton,
-            activeRoute === 'Reports' && styles.activeButton
-          ]}
-          onPress={() => handleNavigation('Reports')}
-          activeOpacity={0.8}
-        >
-          <FontAwesomeIcon
-            icon="file-alt"
-            size={20}
-            color={activeRoute === 'Reports' ? '#FFFFFF' : '#9CA3AF'}
-          />
-          <Text style={[
-            styles.labelText,
-            activeRoute === 'Reports' && styles.activeLabelText
-          ]}>Reports</Text>
-        </TouchableOpacity> */}
       </View>
     </Animated.View>
   );
@@ -153,50 +117,46 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, sc
 const styles = StyleSheet.create({
   floatingContainer: {
     position: 'absolute',
-    bottom: 12,
+    bottom: 0,
     left: 0,
     right: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
     pointerEvents: 'box-none',
-    zIndex: 1000, // Ensure footer stays visible
+    zIndex: 1000,
   },
   footerRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-around',
     alignItems: 'center',
-    backgroundColor: '#1C2A3A',
-    borderRadius: 50,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    gap: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 8,
+    backgroundColor: '#F5E6D3',
+    paddingVertical: 20,
+    paddingHorizontal: 40,
   },
   footerButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 8,
+    padding: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
   },
-  activeButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)', // Increased opacity for better visibility
-    borderRadius: 20,
+  iconWrapper: {
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  labelText: {
-    color: '#9CA3AF',
-    fontSize: 12,
-    fontWeight: '500',
-    textAlign: 'center',
+  badge: {
+    position: 'absolute',
+    top: -8,
+    right: -12,
+    backgroundColor: '#B71C1C',
+    borderRadius: 12,
+    minWidth: 24,
+    height: 24,
+    paddingHorizontal: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  activeLabelText: {
+  badgeText: {
     color: '#FFFFFF',
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
   },
 });
 

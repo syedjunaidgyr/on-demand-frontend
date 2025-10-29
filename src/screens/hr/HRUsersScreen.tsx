@@ -589,6 +589,7 @@ const styles = StyleSheet.create({
   listContainer: {
     padding: Spacing.lg,
     paddingTop: Spacing.md,
+    paddingBottom: 100,
   },
   userCard: {
     marginBottom: Spacing.md,

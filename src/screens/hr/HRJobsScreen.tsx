@@ -433,6 +433,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: Spacing.lg,
+    paddingBottom: 100,
   },
   jobCard: {
     backgroundColor: Colors.white,
