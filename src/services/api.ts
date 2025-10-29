@@ -13,7 +13,7 @@ import {
   PaginatedResponse,
 } from '../types';
 
-import { getFinalApiUrl } from '../config/api';
+import { getFinalApiUrl, TOKEN_REGISTRATION_URL } from '../config/api';
 
 // Global logout handler - will be set by the auth context
 let globalLogoutHandler: (() => Promise<void>) | null = null;
@@ -103,6 +103,23 @@ class ApiService {
     await AsyncStorage.setItem('jwt_token', response.data.token);
     await AsyncStorage.setItem('user_data', JSON.stringify(response.data.user));
     return response.data;
+  }
+
+  // Push token registration to external service
+  async registerPushToken(params: { userId: string; token: string; userType: string }): Promise<void> {
+    try {
+      const payload = {
+        user_id: params.userId,
+        token: params.token,
+        user_type: params.userType,
+      };
+      await axios.post(TOKEN_REGISTRATION_URL, payload, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (error) {
+      console.log('❌ Failed to register push token:', (error as any)?.response?.data || (error as any)?.message);
+      // Do not throw; token registration failure shouldn't block login/registration UX
+    }
   }
 
   async getProfile(): Promise<User> {

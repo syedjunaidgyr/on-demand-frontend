@@ -14,6 +14,7 @@ import {
   TouchableWithoutFeedback,
   KeyboardAvoidingView,
   Platform,
+  PermissionsAndroid,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
@@ -22,6 +23,7 @@ import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
 import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import ApiService from '../../services/api';
+import messaging from '@react-native-firebase/messaging';
 import { useAuth } from '../../navigation/AppNavigator';
 
 const { width, height } = Dimensions.get('window');
@@ -63,6 +65,33 @@ const LoginScreen: React.FC = () => {
       
       login(response.user);
       console.log('✅ Auth context updated, navigation should happen now');
+
+      // Register device push token after successful login
+      try {
+        // Request permissions on login (iOS + Android 13+)
+        if (Platform.OS === 'ios') {
+          await messaging().requestPermission();
+        } else if (Platform.OS === 'android' && Platform.Version >= 33) {
+          await PermissionsAndroid.request('android.permission.POST_NOTIFICATIONS');
+        }
+        // Ensure device is registered for remote messages
+        if (!messaging().isDeviceRegisteredForRemoteMessages) {
+          await messaging().registerDeviceForRemoteMessages();
+        }
+        await messaging().setAutoInitEnabled(true);
+
+        const fcmToken = await messaging().getToken();
+        if (fcmToken) {
+          const userType = (response.user.role || '').toLowerCase();
+          await ApiService.registerPushToken({
+            userId: response.user.id,
+            token: fcmToken,
+            userType,
+          });
+        }
+      } catch (e) {
+        console.log('⚠️ Unable to register push token post-login:', (e as any)?.message);
+      }
     } catch (error: any) {
       console.error('❌ Login error:', error);
       
