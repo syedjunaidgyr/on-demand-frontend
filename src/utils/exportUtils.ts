@@ -322,13 +322,133 @@ export const generateAndSavePDF = async (
 
     const margin = { top: 40, right: 40, bottom: 40, left: 40 };
     const headerGap = 10;
-    const bodyFontSize = 10;
-    const headerFontSize = 11;
-    const lineHeight = 14;
+    const bodyFontSize = 8;
+    const headerFontSize = 9;
+    const lineHeight = 12;
+    const headerRowHeight = 24;
     const usableWidth = A4.w - margin.left - margin.right;
     const colCount = Math.max(columns.length, 1);
-    const colWidth = usableWidth / colCount;
-    const cellPadding = 4;
+    const cellPadding = 7;
+    
+    // Helpers to format header labels (declare BEFORE width calc)
+    const toTitleCaseTop = (input: string): string => {
+        if (!input) return '';
+        const spaced = String(input)
+            .replace(/_/g, ' ')
+            .replace(/([a-z])([A-Z])/g, '$1 $2')
+            .replace(/\s+/g, ' ')
+            .trim();
+        return spaced
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+    };
+
+    const resolveIdHeaderTop = (): string => {
+        const t = (title || '').toLowerCase();
+        if (t.includes('assignment')) return 'Assignment ID';
+        if (t.includes('job')) return 'Job ID';
+        return 'ID';
+    };
+
+    const displayHeadersTop: string[] = columns.map((key) => {
+        if (key === 'id') return resolveIdHeaderTop();
+        return toTitleCaseTop(key);
+    });
+
+    // Calculate optimal column widths based on content
+    const calculateColumnWidths = (): number[] => {
+        const widths: number[] = [];
+        const totalPadding = cellPadding * 2 * colCount;
+        const availableWidth = usableWidth - totalPadding;
+        
+        // Calculate max width needed for each column
+        const maxWidths: number[] = columns.map((key, i) => {
+            const headerText = displayHeadersTop[i] || toTitleCaseTop(String(columns[i] || ''));
+            const headerWidth = font.widthOfTextAtSize(String(headerText), headerFontSize);
+            
+            // Find max content width for this column
+            let maxContentWidth = 0;
+            safeRows.forEach(row => {
+                if (!row) return;
+                const value = row[key];
+                const cellText = value === null || value === undefined ? '' : String(value);
+                const words = cellText.split(/\s+/);
+                words.forEach(word => {
+                    const text = String(word || '');
+                    const wordWidth = font.widthOfTextAtSize(text, bodyFontSize);
+                    maxContentWidth = Math.max(maxContentWidth, wordWidth);
+                });
+            });
+            
+            // Ensure header text always fits + generous buffer for content
+            const headerMinWidth = headerWidth + cellPadding * 2;
+            const contentMinWidth = maxContentWidth * 1.5; // Increased buffer to 50%
+            const neededWidth = Math.max(headerMinWidth, contentMinWidth);
+            
+            // Set generous minimum column widths for specific columns to avoid truncation
+            if (key === 'id') {
+                return Math.max(neededWidth, 40);
+            }
+            if (key === 'title' || key === 'jobTitle') {
+                return Math.max(neededWidth, 600); // Extra large width for titles - very readable, fits 8-10 words per line
+            }
+            if (key === 'specialization') {
+                return Math.max(neededWidth, 80);
+            }
+            if (key === 'department' || key === 'jobDepartment') {
+                return Math.max(neededWidth, 70);
+            }
+            if (key === 'status') {
+                return Math.max(neededWidth, 65); // Status on single line
+            }
+            if (key === 'location' || key === 'facilityName') {
+                return Math.max(neededWidth, 95); // Large width for locations
+            }
+            if (key === 'userName' || key === 'user') {
+                return Math.max(neededWidth, 80);
+            }
+            
+            return Math.max(neededWidth, headerMinWidth); // Always at least header width
+        });
+        
+        const totalMaxWidth = maxWidths.reduce((sum, w) => sum + w, 0);
+        
+        if (totalMaxWidth <= availableWidth) {
+            // Use natural widths if they fit
+            return maxWidths;
+        } else {
+            // Distribute proportionally but maintain minimum widths based on headers
+            const minWidths = columns.map((key, i) => {
+                const headerText = displayHeadersTop[i] || toTitleCaseTop(String(columns[i] || ''));
+                const headerWidth = font.widthOfTextAtSize(String(headerText), headerFontSize);
+                return headerWidth + cellPadding * 2; // Always at least header width + padding
+            });
+            
+            const totalMinWidth = minWidths.reduce((sum, w) => sum + w, 0);
+            
+            if (totalMinWidth > availableWidth) {
+                // If even minimums don't fit, distribute equally
+                return maxWidths.map(() => availableWidth / colCount);
+            }
+            
+            // Distribute remaining space proportionally while respecting minimums
+            const remainingWidth = availableWidth - totalMinWidth;
+            const flexWeights = maxWidths.map((w, i) => Math.max(0, w - minWidths[i]));
+            const totalFlexWeight = flexWeights.reduce((sum, w) => sum + w, 0);
+            
+            if (totalFlexWeight === 0) {
+                return minWidths;
+            }
+            
+            return maxWidths.map((w, i) => {
+                const flexRatio = flexWeights[i] / totalFlexWeight;
+                return minWidths[i] + flexRatio * remainingWidth;
+            });
+        }
+    };
+    
+    const colWidths = calculateColumnWidths();
 
     let cursorY = A4.h - margin.top;
 
@@ -338,25 +458,52 @@ export const generateAndSavePDF = async (
         cursorY -= 24;
         const generated = `Generated: ${new Date().toLocaleString()}`;
         page.drawText(generated, { x: margin.left, y: cursorY, size: 10, font, color: rgb(0.4, 0.4, 0.4) });
-        cursorY -= 20;
+        cursorY -= 32; // Increased gap after header title
 
         // Table header background
-        const headerY = cursorY + lineHeight + 2;
-        page.drawRectangle({ x: margin.left, y: headerY - lineHeight - 4, width: usableWidth, height: lineHeight + 6, color: rgb(0.95, 0.95, 0.97) });
-
-        // Column titles
-        columns.forEach((key, i) => {
-            const x = margin.left + i * colWidth + cellPadding;
-            page.drawText(String(key), { x, y: cursorY, size: headerFontSize, font: bold, color: rgb(0.2, 0.2, 0.3) });
+        page.drawRectangle({ 
+            x: margin.left, 
+            y: cursorY - headerRowHeight, 
+            width: usableWidth, 
+            height: headerRowHeight, 
+            color: rgb(0.9, 0.9, 0.92) 
         });
-        cursorY -= headerGap + lineHeight;
-        // Divider line
-        page.drawLine({ start: { x: margin.left, y: cursorY }, end: { x: margin.left + usableWidth, y: cursorY }, thickness: 1, color: rgb(0.85, 0.85, 0.9) });
-        cursorY -= 6;
+
+        // Draw vertical grid lines for header
+        let currentX = margin.left;
+        for (let i = 0; i <= colCount; i++) {
+            page.drawLine({ 
+                start: { x: currentX, y: cursorY }, 
+                end: { x: currentX, y: cursorY - headerRowHeight }, 
+                thickness: 1, 
+                color: rgb(0.5, 0.5, 0.5) 
+            });
+            if (i < colCount) {
+                currentX += colWidths[i] + cellPadding * 2;
+            }
+        }
+
+        // Draw horizontal lines for header
+        page.drawLine({ start: { x: margin.left, y: cursorY }, end: { x: margin.left + usableWidth, y: cursorY }, thickness: 1, color: rgb(0.5, 0.5, 0.5) });
+        page.drawLine({ start: { x: margin.left, y: cursorY - headerRowHeight }, end: { x: margin.left + usableWidth, y: cursorY - headerRowHeight }, thickness: 1, color: rgb(0.5, 0.5, 0.5) });
+
+        // Column titles - show full text without truncation
+        displayHeadersTop.forEach((label, i) => {
+            const x = margin.left + colWidths.slice(0, i).reduce((sum, w) => sum + w + cellPadding * 2, 0) + cellPadding;
+            page.drawText(String(label), { x, y: cursorY - headerRowHeight / 2 - 1, size: headerFontSize, font: bold, color: rgb(0.1, 0.1, 0.1) });
+        });
+        
+        cursorY -= headerRowHeight;
     };
 
-    const wrapText = (text: string, maxWidth: number) => {
+    const wrapText = (text: string, maxWidth: number, columnKey?: string) => {
         if (!text) return [''];
+        
+        // For status column only - keep on single line, no wrapping
+        if (columnKey === 'status') {
+            return [String(text)];
+        }
+        
         const words = String(text).split(/\s+/);
         const lines: string[] = [];
         let current = '';
@@ -397,29 +544,82 @@ export const generateAndSavePDF = async (
             drawHeader();
         }
     };
+    
+    const truncateText = (text: string, maxWidth: number, fontSize: number): string => {
+        if (!text) return '';
+        const str = String(text);
+        const textWidth = font.widthOfTextAtSize(str, fontSize);
+        if (textWidth <= maxWidth) return str;
+        
+        // Binary search for the right length
+        let left = 0;
+        let right = str.length;
+        let bestFit = '';
+        
+        while (left <= right) {
+            const mid = Math.floor((left + right) / 2);
+            const candidate = str.substring(0, mid) + '...';
+            const candidateWidth = font.widthOfTextAtSize(candidate, fontSize);
+            
+            if (candidateWidth <= maxWidth) {
+                bestFit = candidate;
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+        
+        return bestFit || '...';
+    };
 
     // Start with header
     drawHeader();
 
-    // Render rows with wrapping, computing row height by max cell lines
+    // Render rows with full text wrapped properly
     for (const row of safeRows) {
-        // Prepare cell lines
-        const cellLines: string[][] = columns.map((key) => wrapText(row[key] === null || row[key] === undefined ? '' : String(row[key]), colWidth - cellPadding * 2));
+        // Wrap text for each cell to get line counts
+        const cellLines: string[][] = columns.map((key, i) => {
+            const value = row && row[key] !== undefined && row[key] !== null ? String(row[key]) : '';
+            return wrapText(value, colWidths[i] - cellPadding * 2, key);
+        });
+        
+        // Calculate row height based on max lines
         const maxLines = cellLines.reduce((m, lines) => Math.max(m, lines.length), 1);
-        const rowHeight = maxLines * lineHeight + 6; // padding
+        const rowHeight = maxLines * lineHeight + cellPadding * 2;
+        
         ensureSpace(rowHeight + 2);
 
-        // Optional zebra background
-        page.drawRectangle({ x: margin.left, y: cursorY - (rowHeight - 6), width: usableWidth, height: rowHeight - 6, color: rgb(0.99, 0.99, 1) });
-
-        // Draw each cell
+        // Draw each cell's wrapped text with proper spacing from top
         cellLines.forEach((lines, i) => {
-            const x = margin.left + i * colWidth + cellPadding;
-            let y = cursorY;
+            const x = margin.left + colWidths.slice(0, i).reduce((sum, w) => sum + w + cellPadding * 2, 0) + cellPadding;
+            let y = cursorY - cellPadding - 4; // Added more offset from top border
+            
             for (const line of lines) {
-                page.drawText(line, { x, y, size: bodyFontSize, font, color: rgb(0.1, 0.1, 0.12) });
+                page.drawText(line, { x, y, size: bodyFontSize, font, color: rgb(0.1, 0.1, 0.1) });
                 y -= lineHeight;
             }
+        });
+
+        // Draw complete grid for this row
+        let currentX = margin.left;
+        for (let i = 0; i <= colCount; i++) {
+            page.drawLine({ 
+                start: { x: currentX, y: cursorY }, 
+                end: { x: currentX, y: cursorY - rowHeight }, 
+                thickness: 0.5, 
+                color: rgb(0.7, 0.7, 0.7) 
+            });
+            if (i < colCount) {
+                currentX += colWidths[i] + cellPadding * 2;
+            }
+        }
+
+        // Bottom horizontal line
+        page.drawLine({ 
+            start: { x: margin.left, y: cursorY - rowHeight }, 
+            end: { x: margin.left + usableWidth, y: cursorY - rowHeight }, 
+            thickness: 0.5, 
+            color: rgb(0.7, 0.7, 0.7) 
         });
 
         cursorY -= rowHeight;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -15,13 +15,13 @@ import {
   Share,
   Image,
 } from 'react-native';
+import { useWindowDimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
 import { Spacing, Shadow, BorderRadius } from '../../constants/spacing';
 import ApiService from '../../services/api';
-import HRFooterNavigation from '../../components/HRFooterNavigation';
 import GlobalHeader from '../../components/GlobalHeader';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ExportUtils from '../../utils/exportUtils';
@@ -29,6 +29,10 @@ import { getFinalApiUrl } from '../../config/api';
 // use require inline to ensure Metro resolves assets reliably on all platforms
 
 const { width } = Dimensions.get('window');
+// Static fallbacks (overridden at runtime by useWindowDimensions values)
+const horizontalGutter = width < 360 ? Spacing.sm : width < 400 ? Spacing.md : Spacing.lg;
+const tabsStartPadding = width < 360 ? Spacing.xs : Spacing.sm;
+const tabsEndPadding = horizontalGutter;
 
   // Local icons (static imports)
 
@@ -113,6 +117,12 @@ interface Report {
 
 const ReportsScreen: React.FC = () => {
   const navigation = useNavigation();
+  const scrollRef = useRef<ScrollView>(null);
+  const tabsListRef = useRef<FlatList>(null);
+  const { width: windowWidth } = useWindowDimensions();
+  const dynamicHorizontalGutter = windowWidth < 360 ? Spacing.sm : windowWidth < 400 ? Spacing.md : Spacing.lg;
+  const dynamicTabsStartPadding = windowWidth < 360 ? Spacing.xs : Spacing.sm;
+  const dynamicTabsEndPadding = dynamicHorizontalGutter;
   const [selectedReportType, setSelectedReportType] = useState('job-lists');
   const [filters, setFilters] = useState<ReportFilters>({
     title: '',
@@ -155,7 +165,6 @@ const ReportsScreen: React.FC = () => {
     userId: '',
     department: '',
   });
-  const [checkinSubTab, setCheckinSubTab] = useState<'in' | 'out' | 'recent'>('in');
 
   const buildPdfUrlForJob = (jobId: number) => `${getFinalApiUrl()}/reports/jobs/${jobId}.pdf`;
   const buildPdfUrlForAssignment = (assignmentId: number) => `${getFinalApiUrl()}/reports/assignments/${assignmentId}.pdf`;
@@ -191,6 +200,15 @@ const ReportsScreen: React.FC = () => {
     if (selectedReportType === 'checkin-out') {
       loadRealtimeData();
     }
+    // Always scroll to top when changing tabs
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+    // Ensure the selected tab pill is brought into view
+    const index = reportTypes.findIndex(rt => rt.key === selectedReportType);
+    if (index >= 0) {
+      try {
+        tabsListRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0 });
+      } catch {}
+    }
   }, [selectedReportType]);
 
   const loadRealtimeData = async () => {
@@ -225,64 +243,66 @@ const ReportsScreen: React.FC = () => {
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
   };
 
+  const mapCheckInToTimesheet = (item: any) => ({
+    assignmentId: item.assignmentId || item.id,
+    job: item.job || null,
+    user: item.user || null,
+    checkIns: [
+      {
+        id: item.id,
+        checkInTime: item.checkInTime,
+        checkOutTime: item.checkOutTime,
+        status: item.status,
+        workTime: item.totalWorkTime ? `${item.totalWorkTime}m` : undefined,
+        breakTime: item.totalBreakTime ? `${item.totalBreakTime}m` : undefined,
+        notes: item.notes,
+      },
+    ],
+    totalWorkTime: item.totalWorkTime ? `${item.totalWorkTime}m` : undefined,
+    totalBreakTime: item.totalBreakTime ? `${item.totalBreakTime}m` : undefined,
+    lateMinutes: item.isLate ? '—' : '0',
+    earlyCheckoutMinutes: item.isEarlyCheckout ? '—' : '0',
+  });
+
+  const mapActiveToTimesheet = (active: any) => ({
+    assignmentId: active.assignmentId || active.userId,
+    job: {
+      title: active.jobTitle,
+      department: active.jobDepartment || active.department,
+      location: active.facilityName,
+      startDate: active.checkInTime,
+      endDate: undefined,
+    },
+    user: {
+      firstName: (active.userName || '').split(' ')[0] || active.userName,
+      lastName: (active.userName || '').split(' ').slice(1).join(' '),
+      role: active.role,
+      department: active.department,
+    },
+    checkIns: [
+      {
+        id: active.userId,
+        checkInTime: active.checkInTime,
+        checkOutTime: null,
+        status: 'CHECKED_IN',
+        workTime: active.workTimeMinutes ? `${active.workTimeMinutes}m` : undefined,
+      },
+    ],
+    totalWorkTime: active.workTimeMinutes ? `${active.workTimeMinutes}m` : undefined,
+    totalBreakTime: '0m',
+    lateMinutes: active.isLate ? '—' : '0',
+    earlyCheckoutMinutes: '0',
+  });
+
   const openRealtimeCheckInModal = (item: any) => {
-    // Item from allCheckIns already has user/job structure
-    const mapped = {
-      assignmentId: item.assignmentId || item.id,
-      job: item.job || null,
-      user: item.user || null,
-      checkIns: [
-        {
-          id: item.id,
-          checkInTime: item.checkInTime,
-          checkOutTime: item.checkOutTime,
-          status: item.status,
-          workTime: item.totalWorkTime ? `${item.totalWorkTime}m` : undefined,
-          breakTime: item.totalBreakTime ? `${item.totalBreakTime}m` : undefined,
-          notes: item.notes,
-        },
-      ],
-      totalWorkTime: item.totalWorkTime ? `${item.totalWorkTime}m` : undefined,
-      totalBreakTime: item.totalBreakTime ? `${item.totalBreakTime}m` : undefined,
-      lateMinutes: item.isLate ? '—' : '0',
-      earlyCheckoutMinutes: item.isEarlyCheckout ? '—' : '0',
-    } as any;
-    setSelectedTimesheet(mapped);
+    const mapped = mapCheckInToTimesheet(item);
+    setSelectedTimesheet(mapped as any);
     setShowTimesheetModal(true);
   };
 
   const openRealtimeCheckInModalFromActive = (active: any) => {
-    // Active item from activeStaffDetails has flattened fields
-    const mapped = {
-      assignmentId: active.assignmentId || active.userId,
-      job: {
-        title: active.jobTitle,
-        department: active.jobDepartment || active.department,
-        location: active.facilityName,
-        startDate: active.checkInTime,
-        endDate: undefined,
-      },
-      user: {
-        firstName: (active.userName || '').split(' ')[0] || active.userName,
-        lastName: (active.userName || '').split(' ').slice(1).join(' '),
-        role: active.role,
-        department: active.department,
-      },
-      checkIns: [
-        {
-          id: active.userId,
-          checkInTime: active.checkInTime,
-          checkOutTime: null,
-          status: 'CHECKED_IN',
-          workTime: active.workTimeMinutes ? `${active.workTimeMinutes}m` : undefined,
-        },
-      ],
-      totalWorkTime: active.workTimeMinutes ? `${active.workTimeMinutes}m` : undefined,
-      totalBreakTime: '0m',
-      lateMinutes: active.isLate ? '—' : '0',
-      earlyCheckoutMinutes: '0',
-    } as any;
-    setSelectedTimesheet(mapped);
+    const mapped = mapActiveToTimesheet(active);
+    setSelectedTimesheet(mapped as any);
     setShowTimesheetModal(true);
   };
 
@@ -791,6 +811,27 @@ const ReportsScreen: React.FC = () => {
   };
 
   // Timesheet export functions
+  const handleExportAllCheckIns = async (format: 'pdf' | 'excel') => {
+    try {
+      setIsGenerating(true);
+      const allData = [
+        ...(realtimeData?.activeStaffDetails || []).map((item: any) => mapActiveToTimesheet(item)),
+        ...attendanceData.map((item: any) => mapCheckInToTimesheet(item))
+      ];
+
+      if (format === 'pdf') {
+        await ExportUtils.generateAndSavePDF(allData, 'checkin-out-report', ['assignmentId', 'userName', 'jobTitle', 'checkInTime', 'checkOutTime', 'status', 'totalWorkTime', 'totalBreakTime'], 'Check-In/Out Report');
+      } else {
+        await ExportUtils.exportToXLSXFile(allData, 'checkin-out-report', ['assignmentId', 'userName', 'jobTitle', 'checkInTime', 'checkOutTime', 'status', 'totalWorkTime', 'totalBreakTime']);
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      Alert.alert('Export Failed', 'Failed to export check-in/out data');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleExportTimesheet = async (timesheetData: any, format: 'pdf' | 'excel') => {
     try {
       const fileName = `Timesheet_${timesheetData.assignmentId || timesheetData.id}_${new Date().getTime()}`;
@@ -866,14 +907,21 @@ const ReportsScreen: React.FC = () => {
         }
       />
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} style={[styles.scrollView, { paddingHorizontal: dynamicHorizontalGutter }]} showsVerticalScrollIndicator={false}>
         {/* Report Type Tabs */}
-        <View style={styles.tabsContainer}>
+        <View style={[styles.tabsContainer, { marginHorizontal: -dynamicHorizontalGutter }]}>
           <FlatList
+            ref={tabsListRef}
             data={reportTypes}
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.tabsContent}
+            contentContainerStyle={[styles.tabsInnerContent, { paddingLeft: dynamicTabsStartPadding, paddingRight: dynamicTabsEndPadding }]}
+            onScrollToIndexFailed={(e) => {
+              // Fallback to approximate offset when RN can't compute index position yet
+              const offset = (e.averageItemLength || 100) * e.index;
+              tabsListRef.current?.scrollToOffset({ offset, animated: true });
+              setTimeout(() => tabsListRef.current?.scrollToIndex({ index: e.index, animated: true }), 100);
+            }}
             renderItem={({ item: type }) => (
               <TouchableOpacity
                 key={type.key}
@@ -881,7 +929,16 @@ const ReportsScreen: React.FC = () => {
                   styles.tab,
                   selectedReportType === type.key && styles.tabActive,
                 ]}
-                onPress={() => setSelectedReportType(type.key)}
+                onPress={() => {
+                  setSelectedReportType(type.key);
+                  const idx = reportTypes.findIndex(rt => rt.key === type.key);
+                  if (idx >= 0) {
+                    try {
+                      tabsListRef.current?.scrollToIndex({ index: idx, animated: true, viewPosition: 0 });
+                    } catch {}
+                  }
+                  scrollRef.current?.scrollTo({ y: 0, animated: true });
+                }}
               >
                 <FontAwesomeIcon
                   icon={type.icon}
@@ -1100,206 +1157,110 @@ const ReportsScreen: React.FC = () => {
             )}
           </View>
         ) : selectedReportType === 'checkin-out' ? (
-          <ScrollView style={styles.jobListsContainer}>
-            {/* Overview Summary */}
-            <View style={styles.summaryContainer}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.sm }}>
-                <Text style={styles.sectionTitle}>Check-In/Out Overview</Text>
-              </View>
-              {loadingRealtime ? (
-                <ActivityIndicator size="large" color={Colors.primary} />
-              ) : realtimeData ? (
-                <View style={styles.summaryGrid}>
-                  <View style={styles.summaryCard}>
-                    <Text style={styles.summaryNumber}>{
-                      typeof realtimeData.activeStaff === 'number'
-                        ? realtimeData.activeStaff
-                        : (realtimeData.activeStaffDetails?.length || 0)
-                    }</Text>
-                    <Text style={styles.summaryLabel}>Currently Checked-In</Text>
-                  </View>
-                  <View style={styles.summaryCard}>
-                    <Text style={styles.summaryNumber}>{realtimeData.todayStats?.totalCheckIns ?? realtimeData.summary?.totalCheckIns ?? 0}</Text>
-                    <Text style={styles.summaryLabel}>Today's Check-Ins</Text>
-                  </View>
-                  <View style={styles.summaryCard}>
-                    <Text style={styles.summaryNumber}>{realtimeData.todayStats?.lateArrivals ?? realtimeData.summary?.lateArrivals ?? 0}</Text>
-                    <Text style={styles.summaryLabel}>Late Arrivals</Text>
-                  </View>
-                  <View style={styles.summaryCard}>
-                    <Text style={styles.summaryNumber}>{realtimeData.todayStats?.activeJobs ?? realtimeData.summary?.activeJobs ?? 0}</Text>
-                    <Text style={styles.summaryLabel}>Active Jobs Today</Text>
-                  </View>
-                </View>
-              ) : (
-                <Text style={styles.emptyStateText}>No data available</Text>
-              )}
-            </View>
-
-            {/* Sub Tabs (Registration-style segmented control) */}
-            <View style={styles.checkinSegment}>
-              <TouchableOpacity
-                style={[styles.checkinSegmentTab, checkinSubTab === 'in' && styles.checkinSegmentTabActive]}
-                onPress={() => setCheckinSubTab('in')}
-              >
-                <Text style={[styles.checkinSegmentText, checkinSubTab === 'in' && styles.checkinSegmentTextActive]}>Checked-In</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.checkinSegmentTab, checkinSubTab === 'out' && styles.checkinSegmentTabActive]}
-                onPress={() => setCheckinSubTab('out')}
-              >
-                <Text style={[styles.checkinSegmentText, checkinSubTab === 'out' && styles.checkinSegmentTextActive]}>Checked-Out</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.checkinSegmentTab, checkinSubTab === 'recent' && styles.checkinSegmentTabActive]}
-                onPress={() => setCheckinSubTab('recent')}
-              >
-                <Text
-                  style={[styles.checkinSegmentText, checkinSubTab === 'recent' && styles.checkinSegmentTextActive]}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
+          <View style={styles.jobListsContainer}>
+            <View style={styles.exportHeaderContainer}>
+              <Text style={styles.sectionTitle}>Check-In/Out Lists</Text>
+              <View style={styles.globalExportButtons}>
+                <TouchableOpacity
+                  style={[styles.exportButtonSmall, styles.pdfButton]}
+                  onPress={() => handleExportAllCheckIns('pdf')}
+                  disabled={isGenerating || (attendanceData.length === 0 && (realtimeData?.activeStaffDetails?.length || 0) === 0)}
                 >
-                  Recent Check In
-                </Text>
-              </TouchableOpacity>
+                  {isGenerating ? (
+                    <ActivityIndicator size="small" color={Colors.white} />
+                  ) : (
+                    <FontAwesomeIcon icon="file-pdf" size={18} color={Colors.white} />
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.exportButtonSmall, styles.excelButton]}
+                  onPress={() => handleExportAllCheckIns('excel')}
+                  disabled={isGenerating || (attendanceData.length === 0 && (realtimeData?.activeStaffDetails?.length || 0) === 0)}
+                >
+                  {isGenerating ? (
+                    <ActivityIndicator size="small" color={Colors.white} />
+                  ) : (
+                    <FontAwesomeIcon icon="file-excel" size={18} color={Colors.white} />
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
-
-            {/* Content by sub-tab */}
-            {checkinSubTab === 'in' ? (
-              <View style={styles.jobListsContainer}>
-                {loadingRealtime ? (
-                  <ActivityIndicator size="small" color={Colors.primary} />
-                ) : (realtimeData?.activeStaffDetails?.length || 0) > 0 ? (
-                  <FlatList
-                    data={realtimeData.activeStaffDetails}
-                    renderItem={({ item }) => (
-                      <View style={styles.jobCard}>
-                        <View style={styles.jobCardHeader}>
-                          <View style={styles.jobCardTitleSection}>
-                            <Text style={styles.jobCardTitle} numberOfLines={2}>{item.userName}</Text>
-                            <View style={[styles.statusBadge, { backgroundColor: Colors.success }]}>
-                              <Text style={styles.statusText}>CHECKED_IN</Text>
-                            </View>
-                          </View>
-                        </View>
-                        <Text style={styles.jobCardDepartment}>{item.jobTitle || 'N/A'}</Text>
-                        <Text style={styles.jobCardLocation}>
-                          {(item.department || item.jobDepartment) || 'N/A'} • {item.facilityName || 'N/A'}
-                        </Text>
-                        <Text style={styles.jobCardDates}>
-                          Checked in: {new Date(item.checkInTime).toLocaleString()} • Elapsed {formatElapsedMinutes(item.workTimeMinutes)}
-                        </Text>
-                        <View style={styles.jobCardExportButtonsInside}>
-                          <TouchableOpacity
-                            style={[styles.cardExportBtn, { backgroundColor: Colors.info } ]}
-                            onPress={() => openRealtimeCheckInModalFromActive(item)}
-                          >
-                            <FontAwesomeIcon icon="eye" size={16} color={Colors.white} />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    )}
-                    keyExtractor={(_, idx) => String(idx)}
-                    scrollEnabled={false}
-                  />
-                ) : (
-                  <Text style={styles.emptyStateText}>No one currently checked in</Text>
-                )}
-              </View>
-            ) : checkinSubTab === 'out' ? (
-              <View style={styles.jobListsContainer}>
-                {loadingRealtime ? (
-                  <ActivityIndicator size="small" color={Colors.primary} />
-                ) : attendanceCheckOuts.length > 0 ? (
-                  <FlatList
-                    data={attendanceCheckOuts}
-                    renderItem={({ item }) => (
-                      <View style={styles.jobCard}>
+            {loadingRealtime ? (
+              <ActivityIndicator size="small" color={Colors.primary} />
+            ) : (attendanceData.length > 0 || (realtimeData?.activeStaffDetails?.length || 0) > 0) ? (
+              <FlatList
+                data={[
+                  ...(realtimeData?.activeStaffDetails || []).map((item: any) => ({ ...item, isActive: true })),
+                  ...attendanceData
+                ]}
+                renderItem={({ item }) => (
+                  <View style={styles.jobCardContainer}>
+                    <View style={styles.jobCard}>
+                      <TouchableOpacity onPress={() => item.isActive ? openRealtimeCheckInModalFromActive(item) : openRealtimeCheckInModal(item)}>
                         <View style={styles.jobCardHeader}>
                           <View style={styles.jobCardTitleSection}>
                             <Text style={styles.jobCardTitle} numberOfLines={2}>
-                              {item.user ? `${item.user.firstName} ${item.user.lastName}` : 'Unknown'}
+                              {item.isActive ? item.userName : (item.user ? `${item.user.firstName} ${item.user.lastName}` : 'Unknown')}
                             </Text>
-                            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-                              <Text style={styles.statusText}>{item.status}</Text>
+                            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status || 'CHECKED_IN') }]}>
+                              <Text style={styles.statusText}>{item.status || 'CHECKED_IN'}</Text>
                             </View>
                           </View>
                         </View>
-                        <Text style={styles.jobCardDepartment}>{item.job?.title || 'N/A'}</Text>
-                        <Text style={styles.jobCardDates}>
-                          {new Date(item.checkInTime).toLocaleString()} → {new Date(item.checkOutTime).toLocaleString()}
+                        <Text style={styles.jobCardDepartment}>
+                          {item.isActive ? (item.jobTitle || 'N/A') : (item.job?.title || 'N/A')}
                         </Text>
                         <Text style={styles.jobCardLocation}>
-                          Work: {item.totalWorkTime ?? 'N/A'}m • Break: {item.totalBreakTime ?? 0}m
+                          {item.isActive 
+                            ? `${(item.department || item.jobDepartment) || 'N/A'} • ${item.facilityName || 'N/A'}`
+                            : `${item.job?.department || 'N/A'} • ${item.job?.location || 'N/A'}`
+                          }
                         </Text>
-                        {item.notes ? (
+                        <Text style={styles.jobCardDates}>
+                          {item.isActive 
+                            ? `Checked in: ${new Date(item.checkInTime).toLocaleString()} • Elapsed ${formatElapsedMinutes(item.workTimeMinutes)}`
+                            : `${new Date(item.checkInTime).toLocaleString()} ${item.checkOutTime ? `→ ${new Date(item.checkOutTime).toLocaleString()}` : ''}`
+                          }
+                        </Text>
+                        {!item.isActive && (
+                          <Text style={styles.jobCardLocation}>
+                            Work: {item.totalWorkTime ?? 'N/A'}m • Break: {item.totalBreakTime ?? 0}m
+                          </Text>
+                        )}
+                        {!item.isActive && item.notes && (
                           <Text style={styles.jobCardLocation}>Notes: {item.notes}</Text>
-                        ) : null}
-                        <View style={styles.jobCardExportButtonsInside}>
-                          <TouchableOpacity
-                            style={[styles.cardExportBtn, { backgroundColor: Colors.info }]}
-                            onPress={() => openRealtimeCheckInModal(item)}
-                          >
-                            <FontAwesomeIcon icon="eye" size={16} color={Colors.white} />
-                          </TouchableOpacity>
-                        </View>
+                        )}
+                      </TouchableOpacity>
+                      <View style={styles.jobCardExportButtonsInside}>
+                        <TouchableOpacity
+                          style={[styles.cardExportBtn, { backgroundColor: Colors.error }]}
+                          onPress={() => handleExportTimesheet(item.isActive ? mapActiveToTimesheet(item) : mapCheckInToTimesheet(item), 'pdf')}
+                        >
+                          <FontAwesomeIcon icon="file-pdf" size={16} color={Colors.white} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.cardExportBtn, { backgroundColor: Colors.success }]}
+                          onPress={() => handleExportTimesheet(item.isActive ? mapActiveToTimesheet(item) : mapCheckInToTimesheet(item), 'excel')}
+                        >
+                          <FontAwesomeIcon icon="file-excel" size={16} color={Colors.white} />
+                        </TouchableOpacity>
                       </View>
-                    )}
-                    keyExtractor={(item) => `out-${item.id}`}
-                    scrollEnabled={false}
-                  />
-                ) : (
-                  <Text style={styles.emptyStateText}>No recent check-outs found</Text>
+                    </View>
+                  </View>
                 )}
-              </View>
+                keyExtractor={(item, index) => item.isActive ? `active-${index}` : String(item.id)}
+                scrollEnabled={false}
+              />
             ) : (
-              <View style={styles.jobListsContainer}>
-                {loadingRealtime ? (
-                  <ActivityIndicator size="small" color={Colors.primary} />
-                ) : attendanceData.length > 0 ? (
-                  <FlatList
-                    data={attendanceData}
-                    renderItem={({ item }) => (
-                      <View style={styles.jobCard}>
-                        <View style={styles.jobCardHeader}>
-                          <View style={styles.jobCardTitleSection}>
-                            <Text style={styles.jobCardTitle} numberOfLines={2}>
-                              {item.user ? `${item.user.firstName} ${item.user.lastName}` : 'Unknown'}
-                            </Text>
-                            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-                              <Text style={styles.statusText}>{item.status}</Text>
-                            </View>
-                          </View>
-                        </View>
-                        <Text style={styles.jobCardDepartment}>{item.job?.title || 'N/A'}</Text>
-                        <Text style={styles.jobCardDates}>
-                          {new Date(item.checkInTime).toLocaleString()} {item.checkOutTime ? `→ ${new Date(item.checkOutTime).toLocaleString()}` : ''}
-                        </Text>
-                        <Text style={styles.jobCardLocation}>
-                          Work: {item.totalWorkTime ?? 'N/A'}m • Break: {item.totalBreakTime ?? 0}m
-                        </Text>
-                        {item.notes ? (
-                          <Text style={styles.jobCardLocation}>Notes: {item.notes}</Text>
-                        ) : null}
-                        <View style={styles.jobCardExportButtonsInside}>
-                          <TouchableOpacity
-                            style={[styles.cardExportBtn, { backgroundColor: Colors.info }]}
-                            onPress={() => openRealtimeCheckInModal(item)}
-                          >
-                            <FontAwesomeIcon icon="eye" size={16} color={Colors.white} />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    )}
-                    keyExtractor={(item) => String(item.id)}
-                    scrollEnabled={false}
-                  />
-                ) : (
-                  <Text style={styles.emptyStateText}>No recent check-ins found</Text>
-                )}
+              <View style={styles.emptyState}>
+                <FontAwesomeIcon icon="clock" size={48} color={Colors.textTertiary} />
+                <Text style={styles.emptyStateText}>No check-ins found</Text>
+                <Text style={styles.emptyStateSubtext}>
+                  Check-ins will appear here when staff check in/out
+                </Text>
               </View>
             )}
-          </ScrollView>
+          </View>
         ) : (
           <>
             {/* Generate Report Card */}
@@ -1528,7 +1489,7 @@ const ReportsScreen: React.FC = () => {
       {/* Job Selector Modal */}
       {showJobSelector && (
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
+          <View style={[styles.modalContainer, { width: Math.min(windowWidth * 0.9, 560) }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Job</Text>
               <TouchableOpacity
@@ -1567,7 +1528,7 @@ const ReportsScreen: React.FC = () => {
       {/* Job Detail Modal */}
       {showJobDetailModal && (
         <View style={styles.jobDetailModalOverlay}>
-          <View style={styles.jobDetailModalContainer}>
+          <View style={[styles.jobDetailModalContainer, { width: '100%' }]}>
             <View style={styles.jobDetailModalHeader}>
               <Text style={styles.jobDetailModalTitle}>Job Details</Text>
               <TouchableOpacity
@@ -1918,7 +1879,7 @@ const ReportsScreen: React.FC = () => {
       {/* Assignment Detail Modal */}
       {showAssignmentDetailModal && (
         <View style={styles.jobDetailModalOverlay}>
-          <View style={styles.jobDetailModalContainer}>
+          <View style={[styles.jobDetailModalContainer, { width: '100%' }]}>
             <View style={styles.jobDetailModalHeader}>
               <Text style={styles.jobDetailModalTitle}>Assignment Details</Text>
               <TouchableOpacity
@@ -2284,7 +2245,7 @@ const ReportsScreen: React.FC = () => {
       {/* Timesheet Detail Modal */}
       {showTimesheetModal && (
         <View style={styles.jobDetailModalOverlay}>
-          <View style={styles.jobDetailModalContainer}>
+          <View style={[styles.jobDetailModalContainer, { width: '100%' }]}>
             <View style={styles.jobDetailModalHeader}>
               <Text style={styles.jobDetailModalTitle}>Timesheet Details</Text>
               <TouchableOpacity
@@ -2442,8 +2403,6 @@ const ReportsScreen: React.FC = () => {
         </View>
       )}
 
-      {/* Footer Navigation */}
-      <HRFooterNavigation />
     </View>
   );
 };
@@ -2455,7 +2414,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: horizontalGutter,
     backgroundColor: Colors.background,
   },
   filterButton: {
@@ -2464,11 +2423,13 @@ const styles = StyleSheet.create({
   tabsContainer: {
     backgroundColor: Colors.background,
     marginVertical: Spacing.lg,
+    // Cancel outer ScrollView horizontal padding so tabs can scroll to the true edges
+    marginHorizontal: -horizontalGutter,
   },
-  tabsContent: {
-    paddingHorizontal: Spacing.sm,
-    backgroundColor: Colors.background,
-    alignItems: 'center',
+  tabsInnerContent: {
+    // Re-introduce controlled inset; bias left a bit so first pill hugs the edge nicely
+    paddingLeft: tabsStartPadding,
+    paddingRight: tabsEndPadding,
   },
   tab: {
     flexDirection: 'row',
