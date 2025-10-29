@@ -1,12 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { StatusBar, Alert, Platform } from 'react-native';
+import { StatusBar, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import messaging from '@react-native-firebase/messaging';
 import AppNavigator from './src/navigation/AppNavigator';
 import GifSplashScreen from './src/screens/GifSplashScreen';
+import NotificationBanner from './src/components/NotificationBanner';
 
 function App(): React.JSX.Element {
   const [showSplash, setShowSplash] = useState(true);
+  const [notification, setNotification] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+  });
 
   const handleSplashFinish = () => {
     setShowSplash(false);
@@ -76,10 +86,15 @@ function App(): React.JSX.Element {
     // Foreground message listener
     const unsubscribeMessage = messaging().onMessage(async remoteMessage => {
       console.log('📩 Foreground message:', remoteMessage);
-      Alert.alert(
-        remoteMessage.notification?.title ?? 'New Message',
-        remoteMessage.notification?.body ?? JSON.stringify(remoteMessage.data)
-      );
+      const title = remoteMessage.notification?.title ?? 'New Notification';
+      const message = remoteMessage.notification?.body ?? 
+        (remoteMessage.data ? JSON.stringify(remoteMessage.data) : 'You have a new message');
+      
+      setNotification({
+        visible: true,
+        title,
+        message,
+      });
     });
 
     return () => {
@@ -101,6 +116,13 @@ function App(): React.JSX.Element {
       ) : (
         <AppNavigator />
       )}
+      <NotificationBanner
+        visible={notification.visible}
+        title={notification.title}
+        message={notification.message}
+        onClose={() => setNotification(prev => ({ ...prev, visible: false }))}
+        duration={5000}
+      />
     </SafeAreaProvider>
   );
 }
