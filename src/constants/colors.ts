@@ -10,7 +10,7 @@ export const Colors = {
   secondaryLight: '#7BC85A',
   
   // Background colors
-  background: '#FFFFFF',
+  background: '#F3F9FF',
   backgroundSecondary: '#F8F9FA',
   backgroundTertiary: '#F1F3F4',
   
@@ -27,7 +27,7 @@ export const Colors = {
   info: '#4A90E2',
   
   // Border colors
-  border: '#E0E0E0',
+  border: '#D3D3D3',
   borderLight: '#F0F0F0',
   borderDark: '#CCCCCC',
   
