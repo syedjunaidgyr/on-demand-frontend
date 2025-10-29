@@ -17,6 +17,9 @@ interface GlobalHeaderProps {
   titleColor?: string;
   onBackPress?: () => void;
   rightComponent?: React.ReactNode;
+  showNotificationIcon?: boolean;
+  notificationCount?: number;
+  onNotificationPress?: () => void;
 }
 
 const GlobalHeader: React.FC<GlobalHeaderProps> = ({
@@ -26,6 +29,9 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
   titleColor = Colors.white,
   onBackPress,
   rightComponent,
+  showNotificationIcon = false,
+  notificationCount = 0,
+  onNotificationPress,
 }) => {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor }]}>
@@ -44,7 +50,24 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
           </Text>
           
           <View style={styles.rightSection}>
-            {rightComponent || <View style={styles.headerSpacer} />}
+            {showNotificationIcon ? (
+              <TouchableOpacity
+                style={styles.notificationButton}
+                onPress={onNotificationPress}>
+                <FontAwesomeIcon icon="bell" size={22} color={titleColor} />
+                {notificationCount > 0 && (
+                  <View style={styles.badgeContainer}>
+                    <Text style={styles.badgeText}>
+                      {notificationCount > 99 ? '99+' : notificationCount}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            ) : rightComponent ? (
+              rightComponent
+            ) : (
+              <View style={styles.headerSpacer} />
+            )}
           </View>
         </View>
       </View>
@@ -86,6 +109,34 @@ const styles = StyleSheet.create({
   },
   headerSpacer: {
     width: 40,
+  },
+  notificationButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  badgeContainer: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: Colors.error,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 5,
+    borderWidth: 2,
+    borderColor: Colors.primary,
+  },
+  badgeText: {
+    color: Colors.white,
+    fontSize: 10,
+    fontFamily: Typography.fontFamily.bold,
   },
 });
 

@@ -19,9 +19,11 @@ import { Typography } from '../../constants/typography';
 import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import { Job, JobAssignment, User } from '../../types';
 import ApiService from '../../services/api';
+import { useNotifications } from '../../contexts/NotificationContext';
 
 const HealthcareProviderDashboardScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { unreadCount } = useNotifications();
   const [availableJobs, setAvailableJobs] = useState<Job[]>([]);
   const [upcomingJobs, setUpcomingJobs] = useState<Job[]>([]);
   const [myAssignments, setMyAssignments] = useState<JobAssignment[]>([]);
@@ -462,8 +464,17 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
                 </Text>
               </View>
             </View>
-            <TouchableOpacity style={styles.notificationButton}>
+            <TouchableOpacity 
+              style={styles.notificationButton}
+              onPress={() => navigation.navigate('Notifications' as never)}>
               <FontAwesomeIcon icon="bell" size={18} color="#FFFFFF" />
+              {unreadCount > 0 && (
+                <View style={styles.notificationBadge}>
+                  <Text style={styles.notificationBadgeText}>
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </Text>
+                </View>
+              )}
             </TouchableOpacity>
           </TouchableOpacity>
 
@@ -693,6 +704,26 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: '#FF4757',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: '#6366F1',
+  },
+  notificationBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontFamily: Typography.fontFamily.bold,
   },
   titleSection: {
     paddingHorizontal: 20,
