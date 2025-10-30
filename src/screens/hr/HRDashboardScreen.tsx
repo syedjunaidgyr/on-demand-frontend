@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   RefreshControl,
@@ -14,6 +13,7 @@ import {
   StatusBar,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -775,13 +775,17 @@ const styles = StyleSheet.create({
   quickActionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    // Avoid gap for cross-device consistency
+    // Horizontal spacing handled by space-between and child widths
     marginTop: 16,
+    justifyContent: 'space-between',
   },
   quickActionWrapper: {
-    flex: 1,
-    maxWidth: '48%',
-    minWidth: 160,
+    width: '48%',
+    flexBasis: '48%',
+    flexGrow: 0,
+    flexShrink: 0,
+    marginBottom: 8,
   },
   quickActionCard: {
     backgroundColor: '#FFFFFF',

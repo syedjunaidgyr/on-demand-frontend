@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   TouchableOpacity,
   RefreshControl,
@@ -16,6 +15,7 @@ import {
   StatusBar,
   TextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -48,6 +48,7 @@ const HRJobsScreen: React.FC = () => {
   const [filterTo, setFilterTo] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterPriority, setFilterPriority] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   useEffect(() => {
     loadJobs();
@@ -336,6 +337,14 @@ const HRJobsScreen: React.FC = () => {
   // Compute filtered jobs for display
   const displayJobs = jobs.filter((j) => {
     try {
+      // Text search (title, location, department)
+      if (searchQuery && searchQuery.trim().length > 0) {
+        const q = searchQuery.trim().toLowerCase();
+        const title = (j.title || '').toLowerCase();
+        const location = (j.location || '').toLowerCase();
+        const department = (j.department || '').toLowerCase();
+        if (!title.includes(q) && !location.includes(q) && !department.includes(q)) return false;
+      }
       // Status filter
       if (filterStatus && (j.status || '').toUpperCase() !== filterStatus.toUpperCase()) return false;
       // Priority filter
@@ -377,6 +386,25 @@ const HRJobsScreen: React.FC = () => {
           </TouchableOpacity>
         }
       />
+
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBar}>
+          <FontAwesomeIcon icon="search" size={16} color={Colors.textSecondary} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by title, location, or department"
+            placeholderTextColor={Colors.textTertiary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <FontAwesomeIcon icon="times" size={16} color={Colors.textTertiary} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
 
       {/* Jobs List */}
       <FlatList
@@ -825,8 +853,33 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingHorizontal: Responsive.scale(Spacing.md),
-    paddingTop: Responsive.verticalScale(Spacing.sm),
+    paddingTop: Responsive.verticalScale(Spacing.xs),
     paddingBottom: Responsive.verticalScale(80),
+  },
+  searchContainer: {
+    paddingHorizontal: Responsive.scale(Spacing.md),
+    paddingBottom: Responsive.verticalScale(Spacing.xs),
+    backgroundColor: Colors.background,
+    marginTop: Responsive.verticalScale(Spacing.xs),
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius['2xl'] || BorderRadius.xl,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    minHeight: 48,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.textPrimary,
+    marginLeft: Spacing.sm,
+    paddingVertical: 0,
   },
   jobCard: {
     backgroundColor: Colors.white,
