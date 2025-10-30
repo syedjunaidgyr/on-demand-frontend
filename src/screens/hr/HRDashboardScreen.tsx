@@ -523,14 +523,15 @@ const HRDashboardScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* Powered By */}
-          <View style={styles.poweredByContainer}>
-            <Text style={styles.poweredByText}>Powered by</Text>
-            <Image source={require('../../assets/footer_logo.png')} style={styles.companyLogo} resizeMode="contain" />
-          </View>
-        </ScrollView>
+      </ScrollView>
 
-        <HRFooterNavigation activeRoute="Dashboard" scrollY={scrollY} />
+      {/* Powered By */}
+      <View style={styles.poweredByContainer}>
+        <Text style={styles.poweredByText}>Powered by</Text>
+        <Image source={require('../../assets/footer_logo.png')} style={styles.companyLogo} resizeMode="contain" />
+      </View>
+
+      <HRFooterNavigation activeRoute="Dashboard" scrollY={scrollY} />
       </View>
     </SafeAreaView>
   );
@@ -649,7 +650,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContentContainer: {
-    paddingBottom: 20,
+    paddingBottom: 8,
   },
   loadingContainer: {
     flex: 1,
@@ -989,19 +990,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingVertical: 10,
-    marginTop: 8,
-    paddingHorizontal: 20,
+    paddingVertical: 6,
+    marginTop: 0,
   },
   poweredByText: {
     fontSize: 12,
     fontFamily: Typography.fontFamily.medium,
     color: '#6B7280',
-    marginLeft: 16,
+    marginRight: -2,
   },
   companyLogo: {
     height: 15,
-    width: 95,
+    width: 80,
+    marginLeft: -12,
   },
 });
 
