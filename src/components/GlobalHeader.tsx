@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Platform,
 } from 'react-native';
 import { FontAwesomeIcon } from '../utils/icons';
 import { Colors } from '../constants/colors';
@@ -20,6 +21,8 @@ interface GlobalHeaderProps {
   showNotificationIcon?: boolean;
   notificationCount?: number;
   onNotificationPress?: () => void;
+  backButtonStyle?: any;
+  headerStyle?: any;
 }
 
 const GlobalHeader: React.FC<GlobalHeaderProps> = ({
@@ -32,14 +35,16 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
   showNotificationIcon = false,
   notificationCount = 0,
   onNotificationPress,
+  backButtonStyle,
+  headerStyle,
 }) => {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor }]}>
-      <View style={[styles.header, { backgroundColor }]}>
+      <View style={[styles.header, headerStyle, { backgroundColor }]}>
         <View style={styles.headerContent}>
           {showBackButton && (
             <TouchableOpacity
-              style={styles.backButton}
+              style={[styles.backButton, backButtonStyle]}
               onPress={onBackPress}>
               <FontAwesomeIcon icon="arrow-left" size={24} color={titleColor} />
             </TouchableOpacity>
@@ -80,9 +85,14 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   header: {
-    paddingVertical: 20,
+    paddingTop: Platform.OS === 'android' ? 10 : 0,
     paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
   headerContent: {
     flexDirection: 'row',
@@ -93,7 +103,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
     justifyContent: 'center',
     alignItems: 'center',
   },

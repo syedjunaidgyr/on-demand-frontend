@@ -120,7 +120,9 @@ const HRJobsScreen: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return '—';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '—';
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -129,15 +131,29 @@ const HRJobsScreen: React.FC = () => {
   };
 
   const formatTime = (timeString: string) => {
+    if (!timeString || typeof timeString !== 'string' || !timeString.includes(':')) return '—';
     const [hours, minutes] = timeString.split(':');
-    const hour = parseInt(hours);
+    const hour = parseInt(hours, 10);
+    if (isNaN(hour)) return '—';
     const ampm = hour >= 12 ? 'PM' : 'AM';
     const displayHour = hour % 12 || 12;
-    return `${displayHour}:${minutes} ${ampm}`;
+    const mins = (minutes ?? '00').slice(0, 2);
+    return `${displayHour}:${mins} ${ampm}`;
   };
 
-  const handleJobPress = (job: Job) => {
-    (navigation as any).navigate('JobDetails', { jobId: job.id });
+  const handleJobPress = async (job: Job) => {
+    try {
+      const allAssignmentsResponse = await ApiService.getJobAssignments(job.id.toString());
+      const allAssignments = allAssignmentsResponse.assignments || allAssignmentsResponse.data || allAssignmentsResponse || [];
+      const acceptedAssignments = allAssignments.filter((assignment: any) => assignment.status === 'ACCEPTED');
+      (navigation as any).navigate('JobAssignment', { 
+        jobId: job.id, 
+        acceptedAssignments: acceptedAssignments 
+      });
+    } catch (error) {
+      console.error('❌ Failed to open assignment selector:', error);
+      Alert.alert('Error', 'Failed to open candidate selection. Please try again.');
+    }
   };
 
   const handleCreateJob = () => {
@@ -221,103 +237,50 @@ const HRJobsScreen: React.FC = () => {
     const pendingAssignments = job.assignments?.filter(a => a.status === 'PENDING').length || 0;
     const acceptedAssignments = job.assignments?.filter(a => a.status === 'ACCEPTED').length || 0;
     const assignedAssignments = job.assignments?.filter(a => a.status === 'ASSIGNED').length || 0;
+
+    const initials = (job.title || 'J').trim().slice(0, 2).toUpperCase();
+    const timeRange = `${formatTime(job.startTime)} - ${formatTime(job.endTime)}`;
+    const dateRange = `${formatDate(job.startDate)} - ${formatDate(job.endDate)}`;
+    const subtitleLeft = job.location || '—';
+    const subtitleRight = timeRange;
     
     return (
       <TouchableOpacity style={styles.jobCard} onPress={() => handleJobPress(job)}>
-        <View style={styles.jobHeader}>
-          <View style={styles.jobTitleContainer}>
-            <Text style={styles.jobTitle} numberOfLines={2}>
-              {job.title}
-            </Text>
-            <View style={styles.jobMeta}>
-              <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(job.priority) }]}>
+        {/* Date header with edit button */}
+        <View style={styles.cardTopRow}>
+          <Text style={styles.cardTimeText}>{dateRange}</Text>
+          <TouchableOpacity style={styles.editTopButton} onPress={() => handleJobPress(job)}>
+            <FontAwesomeIcon icon="edit" size={Responsive.iconSize(16)} color={Colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.cardDivider} />
+
+        {/* Profile row */}
+        <View style={styles.profileRow}>
+          <View style={styles.profileContent}>
+            <Text style={styles.cardTitle} numberOfLines={1}>{job.title}</Text>
+            <View style={styles.subtitleRow}>
+              <Text style={styles.subtitleText} numberOfLines={1}>{subtitleLeft}</Text>
+              <Text style={styles.subtitleDot}> • </Text>
+              <Text style={styles.subtitleText} numberOfLines={1}>{subtitleRight}</Text>
+            </View>
+            <View style={[styles.statusPill, { backgroundColor: getStatusColor(job.status) + '33' }]}> 
+              <Text style={[styles.statusPillText, { color: getStatusColor(job.status) }]}>{job.status}</Text>
+            </View>
+
+            {/* Assignments + Priority row */}
+            <View style={styles.assignmentRow}>
+              <Text style={styles.assignmentText}>Accepted: {acceptedAssignments}</Text>
+              <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(job.priority) }]}> 
                 <Text style={styles.priorityText}>{job.priority}</Text>
               </View>
-              <View style={[styles.statusBadge, { backgroundColor: getStatusColor(job.status) }]}>
-                <Text style={styles.statusText}>{job.status}</Text>
-              </View>
             </View>
-          </View>
-          <View style={styles.jobRate}>
-            <Text style={styles.rateAmount}>Rs/-{job.hourlyRate}</Text>
-            <Text style={styles.rateLabel}>/hour</Text>
+
+            <Text style={styles.cardRateText}>₹{job.hourlyRate}/hr</Text>
           </View>
         </View>
 
-        <View style={styles.jobDetails}>
-          <View style={styles.jobDetailRow}>
-            <FontAwesomeIcon icon="building" size={Responsive.iconSize(16)} color={Colors.textTertiary}  />
-            <Text style={styles.jobDetailText}>{job.department}</Text>
-          </View>
-          <View style={styles.jobDetailRow}>
-            <FontAwesomeIcon icon="map-marker-alt" size={Responsive.iconSize(16)} color={Colors.textTertiary}  />
-            <Text style={styles.jobDetailText}>{job.location}</Text>
-          </View>
-          <View style={styles.jobDetailRow}>
-            <FontAwesomeIcon icon="calendar" size={Responsive.iconSize(16)} color={Colors.textTertiary}  />
-            <Text style={styles.jobDetailText}>
-              {formatDate(job.startDate)} - {formatDate(job.endDate)}
-            </Text>
-          </View>
-          <View style={styles.jobDetailRow}>
-            <FontAwesomeIcon icon="clock" size={Responsive.iconSize(16)} color={Colors.textTertiary}  />
-            <Text style={styles.jobDetailText}>
-              {formatTime(job.startTime)} - {formatTime(job.endTime)}
-            </Text>
-          </View>
-          {job.specialization && (
-            <View style={styles.jobDetailRow}>
-              <FontAwesomeIcon icon="stethoscope" size={Responsive.iconSize(16)} color={Colors.textTertiary}  />
-              <Text style={styles.jobDetailText}>{job.specialization}</Text>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.jobFooter}>
-          <View style={styles.assignmentInfo}>
-            <Text style={styles.assignmentText}>
-              {currentAssignments}/{job.maxAssignments} assigned
-            </Text>
-            {pendingAssignments > 0 && (
-              <Text style={styles.pendingText}>
-                {pendingAssignments} pending response
-              </Text>
-            )}
-            {acceptedAssignments > 0 && (
-              <Text style={styles.acceptedText}>
-                {acceptedAssignments} accepted
-              </Text>
-            )}
-            {assignedAssignments > 0 && (
-              <Text style={[styles.acceptedText, { color: Colors.primary }]}>
-                {assignedAssignments} assigned
-              </Text>
-            )}
-          </View>
-          <View style={styles.jobActions}>
-            {acceptedAssignments > 0 ? (
-              <TouchableOpacity 
-                style={[styles.reviewButton, { opacity: job.status === 'ACTIVE' ? 1 : 0.5 }]}
-                onPress={() => job.status === 'ACTIVE' && handleReviewCandidates(job)}
-                disabled={job.status !== 'ACTIVE'}>
-                <FontAwesomeIcon icon="users" size={Responsive.iconSize(16)} color={Colors.white}  />
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity 
-                style={[styles.assignButton, { opacity: job.status === 'ACTIVE' ? 1 : 0.5 }]}
-                onPress={() => job.status === 'ACTIVE' && handleAssignJobToStaff(job)}
-                disabled={job.status !== 'ACTIVE'}>
-                <FontAwesomeIcon icon="user-plus" size={Responsive.iconSize(16)} color={Colors.white}  />
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity style={styles.actionButton}>
-              <FontAwesomeIcon icon="edit" size={Responsive.iconSize(16)} color={Colors.primary}  />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
-              <FontAwesomeIcon icon="ellipsis-v" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
-            </TouchableOpacity>
-          </View>
-        </View>
+        
       </TouchableOpacity>
     );
   };
@@ -346,13 +309,15 @@ const HRJobsScreen: React.FC = () => {
     <View style={styles.container}>
       <GlobalHeader 
         title="Job Management"
-        backgroundColor={Colors.primary}
+        backgroundColor="#FFFFFF"
+        titleColor="#111827"
         onBackPress={() => navigation.goBack()}
-        rightComponent={
-          <TouchableOpacity style={styles.createButton} onPress={handleCreateJob}>
-            <FontAwesomeIcon icon="plus" size={Responsive.iconSize(24)} color={Colors.white} />
-          </TouchableOpacity>
-        }
+        headerStyle={{ paddingTop: 10, paddingHorizontal: 20, paddingBottom: 16 }}
+        // rightComponent={
+        //   <TouchableOpacity style={[styles.createButton, { backgroundColor: '#111827' }]} onPress={handleCreateJob}>
+        //     <FontAwesomeIcon icon="plus" size={Responsive.iconSize(24)} color={Colors.white} />
+        //   </TouchableOpacity>
+        // }
       />
 
       {/* Jobs List */}
@@ -433,14 +398,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   listContainer: {
-    padding: Responsive.scale(Spacing.lg),
+    paddingHorizontal: Responsive.scale(Spacing.md),
+    paddingTop: Responsive.verticalScale(Spacing.sm),
     paddingBottom: Responsive.verticalScale(80),
   },
   jobCard: {
     backgroundColor: Colors.white,
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -450,6 +416,93 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  cardTimeText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textTertiary,
+    marginBottom: Spacing.xs,
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: Colors.borderLight,
+    marginBottom: Spacing.md,
+  },
+  cardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  editTopButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  avatarCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#EDE9FE',
+    borderWidth: 1,
+    borderColor: '#DDD6FE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing.md,
+  },
+  avatarInitials: {
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#4C1D95',
+  },
+  profileContent: {
+    flex: 1,
+  },
+  cardTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+    marginBottom: 4,
+    flexShrink: 1,
+  },
+  subtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    flexWrap: 'nowrap',
+  },
+  subtitleText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.textSecondary,
+    flexShrink: 1,
+    maxWidth: '45%',
+  },
+  subtitleDot: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+    marginHorizontal: 6,
+  },
+  statusPill: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  statusPillText: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.bold,
+    textTransform: 'capitalize',
+  },
+  cardRateText: {
+    marginTop: 6,
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+  },
+  // removed action buttons styles
   jobHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -505,11 +558,20 @@ const styles = StyleSheet.create({
   },
   jobDetails: {
     marginBottom: Spacing.md,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
   jobDetailRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: Spacing.xs,
+  },
+  jobDetailCol: {
+    width: '48%',
+  },
+  jobDetailFull: {
+    width: '100%',
   },
   jobDetailText: {
     fontSize: Typography.fontSize.sm,
@@ -517,17 +579,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginLeft: Spacing.sm,
   },
-  jobFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: Spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: Colors.borderLight,
-  },
-  assignmentInfo: {
-    flex: 1,
-  },
+  // footer removed
   assignmentText: {
     fontSize: Typography.fontSize.sm,
     fontFamily: Typography.fontFamily.regular,
@@ -543,34 +595,12 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.medium,
     color: Colors.success,
   },
-  jobActions: {
+  assignmentRow: {
     flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  actionButton: {
-    width: Responsive.scale(32),
-    height: Responsive.verticalScale(32),
-    borderRadius: Responsive.scale(16),
-    backgroundColor: Colors.backgroundSecondary,
-    justifyContent: 'center',
     alignItems: 'center',
+    gap: 8,
   },
-  assignButton: {
-    width: Responsive.scale(32),
-    height: Responsive.verticalScale(32),
-    borderRadius: Responsive.scale(16),
-    backgroundColor: Colors.success,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  reviewButton: {
-    width: Responsive.scale(32),
-    height: Responsive.verticalScale(32),
-    borderRadius: Responsive.scale(16),
-    backgroundColor: Colors.warning,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  // removed action button variants
   fab: {
     position: 'absolute',
     bottom: Responsive.verticalScale(Spacing['2xl']),
