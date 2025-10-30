@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   Alert,
@@ -11,6 +10,7 @@ import {
   Dimensions,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -123,28 +123,28 @@ const ProfileScreen: React.FC = () => {
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#6366F1" />
           <Text style={styles.loadingText}>Loading profile...</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (!user) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
           <FontAwesomeIcon icon="exclamation-triangle" size={Responsive.iconSize(48)} color="#EF4444" />
           <Text style={styles.errorText}>Failed to load profile</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Header with Back Button and Settings */}
       <GlobalHeader
         title="Profile"
@@ -152,7 +152,7 @@ const ProfileScreen: React.FC = () => {
         backgroundColor="#FFFFFF"
         titleColor="#111827"
         onBackPress={() => navigation.goBack()}
-        headerStyle={{ paddingTop: 10, paddingHorizontal: 20, paddingBottom: 16 }}
+        headerStyle={{ paddingTop: 10, paddingHorizontal: 20, paddingBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 8 }}
         backButtonStyle={{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#d1d5db' }}
         rightComponent={
           <View style={styles.headerButtons}>
@@ -229,7 +229,7 @@ const ProfileScreen: React.FC = () => {
         </View>
 
         {/* Emergency Contact */}
-        <View style={styles.section}>
+        <View style={[styles.section, { marginTop: -4 }]}>
           <Text style={styles.sectionTitle}>Emergency Contact</Text>
           
           <View style={styles.infoCard}>
@@ -256,7 +256,7 @@ const ProfileScreen: React.FC = () => {
         </View>
 
         {/* Address */}
-        <View style={styles.section}>
+        <View style={[styles.section, { marginTop: -4, marginBottom: 0 }]}>
           <Text style={styles.sectionTitle}>Address</Text>
           
           <View style={styles.infoCard}>
@@ -298,7 +298,7 @@ const ProfileScreen: React.FC = () => {
           />
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
   },
   scrollContentContainer: {
     flexGrow: 1,
-    paddingBottom: 20,
+    paddingBottom: 8,
     backgroundColor: '#FFFFFF',
   },
   section: {
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
   infoCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 20,
+    padding: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -461,23 +461,24 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    paddingVertical: 6,
+    borderBottomWidth: 0,
+    marginBottom: 4,
   },
   infoRowLast: {
     borderBottomWidth: 0,
+    marginBottom: 0,
   },
   infoIconContainer: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     borderRadius: 12,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#6B7280', // Changed to match email label color
+    borderColor: '#d3d3d3',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 10,
   },
   infoContent: {
     flex: 1,
@@ -486,7 +487,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: Typography.fontFamily.bold,
     color: '#111827', // Changed to text color
-    marginBottom: 4,
+    marginBottom: 2,
   },
   infoValue: {
     fontSize: 16,
@@ -534,8 +535,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingVertical: 10,
-    marginTop: 45,
+    paddingVertical: 6,
+    marginTop: 4,
   },
   poweredByText: {
     fontSize: 12,

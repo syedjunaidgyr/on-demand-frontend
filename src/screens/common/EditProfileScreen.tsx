@@ -13,6 +13,7 @@ import {
   Modal,
   Animated,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import GlobalHeader from '../../components/GlobalHeader';
@@ -21,6 +22,7 @@ import { Colors } from '../../constants/colors';
 import { User } from '../../types';
 import ApiService from '../../services/api';
 import Responsive from '../../utils/responsive';
+import SuccessOverlay from '../../components/SuccessOverlay';
 
 // Dropdown options
 const relationshipOptions = [
@@ -103,8 +105,6 @@ const EditProfileScreen: React.FC = () => {
   const [showSpecializationDropdown, setShowSpecializationDropdown] = useState(false);
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [scaleAnim] = useState(new Animated.Value(0));
-  const [fadeAnim] = useState(new Animated.Value(0));
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -237,40 +237,6 @@ const EditProfileScreen: React.FC = () => {
 
   const showSuccessAnimation = () => {
     setShowSuccessModal(true);
-    
-    // Animate the modal appearance
-    Animated.parallel([
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 50,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Navigate back after 2 seconds
-    setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(scaleAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setShowSuccessModal(false);
-        navigation.goBack();
-      });
-    }, 2000);
   };
 
   const handleSave = async () => {
@@ -359,13 +325,15 @@ const EditProfileScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <GlobalHeader
         title="Edit Profile"
         showBackButton={true}
-        backgroundColor="#1C2A3A"
-        titleColor="#FFFFFF"
+        backgroundColor="#FFFFFF"
+        titleColor="#111827"
         onBackPress={() => navigation.goBack()}
+        headerStyle={{ paddingTop: 10, paddingHorizontal: 20, paddingBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 8 }}
+        backButtonStyle={{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#d1d5db' }}
       />
 
       <KeyboardAvoidingView 
@@ -716,37 +684,15 @@ const EditProfileScreen: React.FC = () => {
        </KeyboardAvoidingView>
 
        {/* Success Screen */}
-       <Modal
-         transparent={false}
-         visible={showSuccessModal}
-         animationType="none"
-         onRequestClose={() => {}}>
-         <Animated.View 
-           style={[
-             styles.successFullScreen,
-             {
-               opacity: fadeAnim,
-             },
-           ]}>
-           <Animated.View 
-             style={[
-               styles.successContent,
-               {
-                 transform: [{ scale: scaleAnim }],
-               },
-             ]}>
-             <View style={styles.successIconContainer}>
-               <FontAwesomeIcon icon="check-circle" size={Responsive.iconSize(80)} color="#FFFFFF" />
-             </View>
-             <Text style={styles.successTitle}>Success!</Text>
-             <Text style={styles.successMessage}>
-               Profile updated successfully
-             </Text>
-           </Animated.View>
-         </Animated.View>
-       </Modal>
+      <SuccessOverlay 
+        visible={showSuccessModal}
+        title="Success!"
+        message="Profile updated successfully"
+        durationMs={2000}
+        onDismiss={() => { setShowSuccessModal(false); (navigation as any).goBack(); }}
+      />
 
-     </View>
+     </SafeAreaView>
    );
  };
 
@@ -760,7 +706,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flex: 1,
-    marginTop: -5,
+    marginTop: 0,
     backgroundColor: '#FFFFFF',
   },
   scrollContentContainer: {

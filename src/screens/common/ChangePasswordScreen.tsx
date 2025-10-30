@@ -13,6 +13,7 @@ import {
   Modal,
   Animated,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import GlobalHeader from '../../components/GlobalHeader';
@@ -20,13 +21,16 @@ import { Typography } from '../../constants/typography';
 import { Colors } from '../../constants/colors';
 import ApiService from '../../services/api';
 import Responsive from '../../utils/responsive';
+import SuccessOverlay from '../../components/SuccessOverlay';
+import NotificationBanner from '../../components/NotificationBanner';
 
 const ChangePasswordScreen: React.FC = () => {
   const navigation = useNavigation();
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [scaleAnim] = useState(new Animated.Value(0));
-  const [fadeAnim] = useState(new Animated.Value(0));
+  const [bannerVisible, setBannerVisible] = useState(false);
+  const bannerTitle = 'Success';
+  const bannerMessage = 'Password changed successfully';
   const [formData, setFormData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -40,40 +44,6 @@ const ChangePasswordScreen: React.FC = () => {
 
   const showSuccessAnimation = () => {
     setShowSuccessModal(true);
-    
-    // Animate the modal appearance
-    Animated.parallel([
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 50,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Navigate back after 2 seconds
-    setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(scaleAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setShowSuccessModal(false);
-        navigation.goBack();
-      });
-    }, 2000);
   };
 
   const handleChangePassword = async () => {
@@ -104,7 +74,11 @@ const ChangePasswordScreen: React.FC = () => {
 
     setIsLoading(true);
     try {
-      await ApiService.changePassword(formData.currentPassword, formData.newPassword);
+      await ApiService.changePassword(
+        formData.currentPassword,
+        formData.newPassword,
+        formData.confirmPassword
+      );
       setIsLoading(false);
       showSuccessAnimation();
     } catch (error: any) {
@@ -128,13 +102,15 @@ const ChangePasswordScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <GlobalHeader
         title="Change Password"
         showBackButton={true}
-        backgroundColor="#1C2A3A"
-        titleColor="#FFFFFF"
+        backgroundColor="#FFFFFF"
+        titleColor="#111827"
         onBackPress={() => navigation.goBack()}
+        headerStyle={{ paddingTop: 10, paddingHorizontal: 20, paddingBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 8 }}
+        backButtonStyle={{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#d1d5db' }}
       />
 
       <KeyboardAvoidingView 
@@ -282,36 +258,25 @@ const ChangePasswordScreen: React.FC = () => {
       </KeyboardAvoidingView>
 
       {/* Success Screen */}
-      <Modal
-        transparent={false}
+      <SuccessOverlay 
         visible={showSuccessModal}
-        animationType="none"
-        onRequestClose={() => {}}>
-        <Animated.View 
-          style={[
-            styles.successFullScreen,
-            {
-              opacity: fadeAnim,
-            },
-          ]}>
-          <Animated.View 
-            style={[
-              styles.successContent,
-              {
-                transform: [{ scale: scaleAnim }],
-              },
-            ]}>
-            <View style={styles.successIconContainer}>
-              <FontAwesomeIcon icon="check-circle" size={Responsive.iconSize(80)} color="#FFFFFF" />
-            </View>
-            <Text style={styles.successTitle}>Success!</Text>
-            <Text style={styles.successMessage}>
-              Password changed successfully
-            </Text>
-          </Animated.View>
-        </Animated.View>
-      </Modal>
-    </View>
+        title="Success!"
+        message="Password changed successfully"
+        durationMs={2000}
+        onDismiss={() => { 
+          setShowSuccessModal(false); 
+          setTimeout(() => setBannerVisible(true), 400);
+        }}
+      />
+
+      <NotificationBanner 
+        visible={bannerVisible}
+        title={bannerTitle}
+        message={bannerMessage}
+        onClose={() => setBannerVisible(false)}
+        duration={3000}
+      />
+    </SafeAreaView>
   );
 };
 
@@ -325,7 +290,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flex: 1,
-    marginTop: -5,
+    marginTop: 0,
     backgroundColor: '#FFFFFF',
   },
   scrollContentContainer: {

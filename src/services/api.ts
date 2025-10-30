@@ -132,10 +132,11 @@ class ApiService {
     return response.data;
   }
 
-  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  async changePassword(currentPassword: string, newPassword: string, confirmPassword: string): Promise<void> {
     await this.api.put('/auth/change-password', {
       currentPassword,
       newPassword,
+      confirmPassword,
     });
   }
 

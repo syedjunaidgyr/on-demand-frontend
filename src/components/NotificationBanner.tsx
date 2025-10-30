@@ -6,6 +6,7 @@ import {
   Animated,
   TouchableOpacity,
   Dimensions,
+  Modal,
 } from 'react-native';
 import { FontAwesomeIcon } from '../utils/icons';
 import { Colors } from '../constants/colors';
@@ -29,7 +30,7 @@ const NotificationBanner: React.FC<NotificationBannerProps> = ({
   onClose,
   duration = 5000,
 }) => {
-  const slideAnim = useRef(new Animated.Value(-100)).current;
+  const slideAnim = useRef(new Animated.Value(-20)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -59,7 +60,7 @@ const NotificationBanner: React.FC<NotificationBannerProps> = ({
       // Slide out animation
       Animated.parallel([
         Animated.timing(slideAnim, {
-          toValue: -100,
+          toValue: -20,
           duration: 250,
           useNativeDriver: true,
         }),
@@ -94,15 +95,17 @@ const NotificationBanner: React.FC<NotificationBannerProps> = ({
   }
 
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        {
-          transform: [{ translateY: slideAnim }],
-          opacity: opacityAnim,
-        },
-      ]}>
-      <View style={styles.banner}>
+    <Modal 
+      visible={visible} 
+      transparent={true} 
+      animationType="none" 
+      onRequestClose={handleClose}
+      statusBarTranslucent={true}
+      presentationStyle="overFullScreen"
+    >
+      <View pointerEvents="box-none" style={styles.container}>
+      <Animated.View style={[styles.bannerWrapper, { transform: [{ translateY: slideAnim }], opacity: opacityAnim }]}>
+        <View style={styles.banner}>
         <View style={styles.iconContainer}>
           <FontAwesomeIcon icon="bell" size={22} color={Colors.white} />
         </View>
@@ -122,8 +125,10 @@ const NotificationBanner: React.FC<NotificationBannerProps> = ({
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <FontAwesomeIcon icon="times" size={16} color={Colors.textSecondary} />
         </TouchableOpacity>
+          </View>
+        </Animated.View>
       </View>
-    </Animated.View>
+    </Modal>
   );
 };
 
@@ -133,9 +138,15 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
+    bottom: 0,
     zIndex: 9999,
+    justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
+  },
+  bannerWrapper: {
+    width: '100%',
+    paddingHorizontal: Spacing.md,
   },
   banner: {
     flexDirection: 'row',
