@@ -221,7 +221,7 @@ const HRDashboardScreen: React.FC = () => {
         activeOpacity={1}>
         <Animated.View style={[styles.quickActionCard, { transform: [{ scale: scaleAnim }] }]}>
           <LinearGradient colors={gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.quickActionGradient}>
-            <FontAwesomeIcon icon={icon} size={Responsive.iconSize(26)} color="#FFFFFF" />
+            <FontAwesomeIcon icon={icon} size={Responsive.iconSize(22)} color="#FFFFFF" />
           </LinearGradient>
           <Text style={styles.quickActionTitle}>{title}</Text>
           <Text style={styles.quickActionSubtitle}>{subtitle}</Text>
@@ -250,7 +250,7 @@ const HRDashboardScreen: React.FC = () => {
       activeOpacity={0.7}>
       <View style={styles.iconStatContainer}>
         <View style={[styles.iconStatIconWrapper, { backgroundColor: iconColor + '15' }]}>
-          <FontAwesomeIcon icon={icon} size={Responsive.iconSize(26)} color={iconColor} />
+          <FontAwesomeIcon icon={icon} size={Responsive.iconSize(22)} color={iconColor} />
         </View>
         <View style={styles.iconStatBadge}>
           <Text style={styles.iconStatValue}>{value.toLocaleString()}</Text>
@@ -553,6 +553,11 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'android' ? 10 : 0,
     paddingHorizontal: 20,
     paddingBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
   headerContent: {
     flexDirection: 'row',
@@ -586,16 +591,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 6,
-    paddingVertical: 6,
-    borderRadius: 50,
-    borderWidth: 1,
-    borderColor: '#1C2A3A',
+    backgroundColor: 'transparent',
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    borderRadius: 0,
+    borderWidth: 0,
+    borderColor: 'transparent',
   },
   simpleNotificationButton: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     borderRadius: 22,
     backgroundColor: '#FEF3C7',
     justifyContent: 'center',
@@ -622,12 +627,12 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
   },
   headerProfileImage: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     borderRadius: 22,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#1C2A3A',
+    borderWidth: 0,
+    borderColor: 'transparent',
   },
   headerProfileGradient: {
     width: '100%',
@@ -644,7 +649,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContentContainer: {
-    paddingBottom: 100,
+    paddingBottom: 20,
   },
   loadingContainer: {
     flex: 1,
@@ -664,7 +669,7 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   dashboardTitle: {
-    fontSize: 22,
+    fontSize: 16,
     fontFamily: Typography.fontFamily.bold,
     color: '#111827',
     letterSpacing: -0.3,
@@ -688,7 +693,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#1C2A3A',
+    borderColor: '#d3d3d3',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -700,7 +705,7 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 12,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
+    // borderWidth: 1,
     borderColor: '#1C2A3A',
     justifyContent: 'center',
     alignItems: 'center',
@@ -726,7 +731,7 @@ const styles = StyleSheet.create({
   },
   overviewSection: {
     paddingHorizontal: 20,
-    marginTop: 16,
+    marginTop: 2,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -735,7 +740,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 16,
     fontFamily: Typography.fontFamily.bold,
     color: '#111827',
     letterSpacing: -0.3,
@@ -764,7 +769,7 @@ const styles = StyleSheet.create({
   },
   quickActionsSection: {
     paddingHorizontal: 20,
-    marginTop: 24,
+    marginTop: 10,
   },
   quickActionsGrid: {
     flexDirection: 'row',
@@ -782,7 +787,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 24,
     alignItems: 'center',
-    minHeight: 180,
+    minHeight: 120,
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
@@ -793,9 +798,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0, 0, 0, 0.04)',
   },
   quickActionGradient: {
-    width: 64,
-    height: 64,
-    borderRadius: 18,
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -809,7 +814,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: Typography.fontFamily.bold,
     color: '#111827',
-    marginBottom: 6,
+    marginBottom: 1,
     textAlign: 'center',
     letterSpacing: -0.2,
   },
@@ -974,7 +979,7 @@ const styles = StyleSheet.create({
   },
   iconStatTitle: {
     fontSize: 12,
-    fontFamily: Typography.fontFamily.bold,
+    fontFamily: Typography.fontFamily.regular,
     color: '#374151',
     textAlign: 'center',
     lineHeight: 15,
@@ -992,7 +997,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: Typography.fontFamily.medium,
     color: '#6B7280',
-    marginRight: 8,
+    marginLeft: 16,
   },
   companyLogo: {
     height: 15,

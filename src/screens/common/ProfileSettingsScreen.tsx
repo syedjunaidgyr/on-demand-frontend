@@ -27,9 +27,11 @@ const ProfileSettingsScreen: React.FC = () => {
       <GlobalHeader
         title="Settings"
         showBackButton={true}
-        backgroundColor="#1C2A3A"
-        titleColor="#FFFFFF"
+        backgroundColor="#FFFFFF"
+        titleColor="#111827"
         onBackPress={() => navigation.goBack()}
+        headerStyle={{ paddingTop: 10, paddingHorizontal: 20, paddingBottom: 16 }}
+        backButtonStyle={{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#d1d5db' }}
       />
 
       <ScrollView 

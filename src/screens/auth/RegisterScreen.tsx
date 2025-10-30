@@ -126,6 +126,7 @@ const HospitalDropdown = ({
       textStyle={styles.dropdownTextStyle}
       placeholderStyle={styles.dropdownPlaceholderStyle}
       dropDownContainerStyle={styles.dropdownContainerStyle}
+      listItemContainerStyle={styles.dropdownListItemContainerStyle}
       listItemLabelStyle={styles.dropdownListItemStyle}
       closeAfterSelecting={true}
       searchable={false}
@@ -175,6 +176,7 @@ const UnitDropdown = ({
       textStyle={styles.dropdownTextStyle}
       placeholderStyle={styles.dropdownPlaceholderStyle}
       dropDownContainerStyle={styles.dropdownContainerStyle}
+      listItemContainerStyle={styles.dropdownListItemContainerStyle}
       listItemLabelStyle={styles.dropdownListItemStyle}
       closeAfterSelecting={true}
       searchable={false}
@@ -218,6 +220,7 @@ const DepartmentDropdown = ({
       textStyle={styles.dropdownTextStyle}
       placeholderStyle={styles.dropdownPlaceholderStyle}
       dropDownContainerStyle={styles.dropdownContainerStyle}
+      listItemContainerStyle={styles.dropdownListItemContainerStyle}
       listItemLabelStyle={styles.dropdownListItemStyle}
       closeAfterSelecting={true}
       searchable={false}
@@ -261,6 +264,7 @@ const SpecializationDropdown = ({
       textStyle={styles.dropdownTextStyle}
       placeholderStyle={styles.dropdownPlaceholderStyle}
       dropDownContainerStyle={styles.dropdownContainerStyle}
+      listItemContainerStyle={styles.dropdownListItemContainerStyle}
       listItemLabelStyle={styles.dropdownListItemStyle}
       closeAfterSelecting={true}
       searchable={false}
@@ -304,6 +308,7 @@ const RelationshipDropdown = ({
       textStyle={styles.dropdownTextStyle}
       placeholderStyle={[styles.dropdownPlaceholderStyle, styles.relationshipPlaceholderStyle]}
       dropDownContainerStyle={styles.dropdownContainerStyle}
+      listItemContainerStyle={styles.dropdownListItemContainerStyle}
       listItemLabelStyle={styles.dropdownListItemStyle}
       closeAfterSelecting={true}
       searchable={false}
@@ -347,6 +352,7 @@ const StateDropdown = ({
       textStyle={styles.dropdownTextStyle}
       placeholderStyle={styles.dropdownPlaceholderStyle}
       dropDownContainerStyle={styles.dropdownContainerStyle}
+      listItemContainerStyle={styles.dropdownListItemContainerStyle}
       listItemLabelStyle={styles.dropdownListItemStyle}
       closeAfterSelecting={true}
       searchable={false}
@@ -393,6 +399,7 @@ const CityDropdown = ({
       textStyle={styles.dropdownTextStyle}
       placeholderStyle={styles.dropdownPlaceholderStyle}
       dropDownContainerStyle={styles.dropdownContainerStyle}
+      listItemContainerStyle={styles.dropdownListItemContainerStyle}
       listItemLabelStyle={styles.dropdownListItemStyle}
       closeAfterSelecting={true}
       searchable={false}
@@ -1598,7 +1605,9 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     borderWidth: 1,
     borderRadius: 16,
-    minHeight: 50,
+    minHeight: 56,
+    paddingHorizontal: Responsive.scale(16),
+    paddingVertical: Responsive.verticalScale(16),
   },
   dropdownStyleError: {
     borderColor: Colors.error,
@@ -1631,6 +1640,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  dropdownListItemContainerStyle: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
   },
   dropdownListItemStyle: {
     fontSize: 16,

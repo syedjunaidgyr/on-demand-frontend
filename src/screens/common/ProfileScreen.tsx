@@ -149,43 +149,28 @@ const ProfileScreen: React.FC = () => {
       <GlobalHeader
         title="Profile"
         showBackButton={true}
-        backgroundColor="#1C2A3A"
-        titleColor="#FFFFFF"
+        backgroundColor="#FFFFFF"
+        titleColor="#111827"
         onBackPress={() => navigation.goBack()}
+        headerStyle={{ paddingTop: 10, paddingHorizontal: 20, paddingBottom: 16 }}
+        backButtonStyle={{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#d1d5db' }}
         rightComponent={
           <View style={styles.headerButtons}>
             <TouchableOpacity 
               style={styles.headerButton}
               onPress={() => (navigation as any).navigate('ProfileSettings')}>
-              <FontAwesomeIcon icon="cog" size={Responsive.iconSize(20)} color="#FFFFFF" />
+              <FontAwesomeIcon icon="cog" size={Responsive.iconSize(20)} color="#111827" />
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.headerButton}
               onPress={handleLogout}>
-              <FontAwesomeIcon icon="sign-out-alt" size={Responsive.iconSize(20)} color="#FFFFFF" />
+              <FontAwesomeIcon icon="sign-out-alt" size={Responsive.iconSize(20)} color="#111827" />
             </TouchableOpacity>
           </View>
         }
       />
 
-      {/* Profile Info Section with Curved Bottom */}
-      <View style={styles.profileInfoSection}>
-        <View style={styles.profileHeader}>
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatarCircle}>
-              <Image 
-                source={require('../../assets/logo.png')} 
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
-            </View>
-          </View>
-          <Text style={styles.userName}>{user.firstName} {user.lastName}</Text>
-          <View style={styles.roleBadge}>
-            <Text style={styles.roleText}>{user.role}</Text>
-          </View>
-        </View>
-      </View>
+      {/* Removed blue header section per request */}
 
       <ScrollView 
         style={styles.scrollContent}
@@ -382,7 +367,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -439,7 +426,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flex: 1,
-    marginTop: -25,
+    marginTop: 0,
     backgroundColor: '#FFFFFF',
     // Ensure proper scrolling on all devices
     minHeight: Dimensions.get('window').height * 0.6,
