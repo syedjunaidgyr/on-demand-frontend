@@ -1159,7 +1159,7 @@ const styles = StyleSheet.create({
   },
   jobDetailLabel: {
     fontSize: Typography.fontSize.xs,
-    fontFamily: Typography.fontFamily.medium,
+    fontFamily: Typography.fontFamily.bold,
     color: Colors.textTertiary,
     width: 96,
   },
