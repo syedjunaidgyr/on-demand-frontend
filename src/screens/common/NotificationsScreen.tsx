@@ -8,6 +8,8 @@ import {
   Modal,
   Animated,
   PanResponder,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
@@ -20,10 +22,23 @@ import Responsive from '../../utils/responsive';
 
 const NotificationsScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { notifications, markAsRead, markAllAsRead, clearAllNotifications, deleteNotification } = useNotifications();
+  const { notifications, markAsRead, markAllAsRead, clearAllNotifications, deleteNotification, isLoading, refreshNotifications } = useNotifications();
   const [modalVisible, setModalVisible] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [selectedNotificationId, setSelectedNotificationId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Pull to refresh handler
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refreshNotifications();
+    } catch (error) {
+      console.error('Failed to refresh notifications:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Mark all notifications as read and close modal
   const handleMarkAllAsRead = () => {
@@ -257,6 +272,14 @@ const NotificationsScreen: React.FC = () => {
         keyExtractor={(item) => item}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors.primary}
+            colors={[Colors.primary]}
+          />
+        }
         renderItem={({ item: section }) => {
           const sectionNotifications = groupedNotifications[section];
           if (sectionNotifications.length === 0) return null;
@@ -273,13 +296,20 @@ const NotificationsScreen: React.FC = () => {
           );
         }}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <FontAwesomeIcon icon="bell-slash" size={Responsive.iconSize(64)} color={Colors.textTertiary} />
-            <Text style={styles.emptyText}>No notifications yet</Text>
-            <Text style={styles.emptySubtext}>
-              You'll see notifications here when there are updates
-            </Text>
-          </View>
+          isLoading ? (
+            <View style={styles.emptyContainer}>
+              <ActivityIndicator size="large" color={Colors.primary} />
+              <Text style={styles.emptyText}>Loading notifications...</Text>
+            </View>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <FontAwesomeIcon icon="bell-slash" size={Responsive.iconSize(64)} color={Colors.textTertiary} />
+              <Text style={styles.emptyText}>No notifications yet</Text>
+              <Text style={styles.emptySubtext}>
+                You'll see notifications here when there are updates
+              </Text>
+            </View>
+          )
         }
       />
 

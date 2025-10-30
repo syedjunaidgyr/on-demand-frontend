@@ -13,7 +13,7 @@ import {
   PaginatedResponse,
 } from '../types';
 
-import { getFinalApiUrl, TOKEN_REGISTRATION_URL } from '../config/api';
+import { getFinalApiUrl, TOKEN_REGISTRATION_URL, NOTIFICATIONS_SERVICE_URL } from '../config/api';
 
 // Global logout handler - will be set by the auth context
 let globalLogoutHandler: (() => Promise<void>) | null = null;
@@ -1088,6 +1088,60 @@ class ApiService {
       console.error('❌ Error data:', error.response?.data);
       console.error('❌ Error headers:', error.response?.headers);
       throw new Error(error.response?.data?.message || 'Failed to fetch assignment details');
+    }
+  }
+
+  // Notification API methods
+  async getNotifications(userId: string): Promise<any[]> {
+    try {
+      console.log('📬 Fetching notifications for user:', userId);
+      const response = await axios.post(`${NOTIFICATIONS_SERVICE_URL}/getNotifications`, {
+        user_id: userId,
+      });
+      console.log('✅ Notifications fetched:', response.data);
+      return response.data.data || [];
+    } catch (error: any) {
+      console.error('❌ Failed to fetch notifications:', error);
+      throw new Error(error.response?.data?.message || 'Failed to fetch notifications');
+    }
+  }
+
+  async markNotificationAsRead(notificationId: string): Promise<void> {
+    try {
+      console.log('✅ Marking notification as read:', notificationId);
+      await axios.post(`${NOTIFICATIONS_SERVICE_URL}/markAsRead`, {
+        notification_id: notificationId,
+      });
+      console.log('✅ Notification marked as read');
+    } catch (error: any) {
+      console.error('❌ Failed to mark notification as read:', error);
+      throw new Error(error.response?.data?.message || 'Failed to mark notification as read');
+    }
+  }
+
+  async markAllNotificationsAsRead(userId: string): Promise<void> {
+    try {
+      console.log('✅ Marking all notifications as read for user:', userId);
+      await axios.post(`${NOTIFICATIONS_SERVICE_URL}/markAllAsRead`, {
+        user_id: userId,
+      });
+      console.log('✅ All notifications marked as read');
+    } catch (error: any) {
+      console.error('❌ Failed to mark all notifications as read:', error);
+      throw new Error(error.response?.data?.message || 'Failed to mark all notifications as read');
+    }
+  }
+
+  async deleteNotification(notificationId: string): Promise<void> {
+    try {
+      console.log('🗑️ Deleting notification:', notificationId);
+      await axios.post(`${NOTIFICATIONS_SERVICE_URL}/deleteNotification`, {
+        notification_id: notificationId,
+      });
+      console.log('✅ Notification deleted');
+    } catch (error: any) {
+      console.error('❌ Failed to delete notification:', error);
+      throw new Error(error.response?.data?.message || 'Failed to delete notification');
     }
   }
 }

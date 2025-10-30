@@ -42,7 +42,7 @@ import GeolocationTest from '../components/GeolocationTest';
 import { Colors } from '../constants/colors';
 import { User, Job, JobAssignment } from '../types';
 import { setGlobalLogoutHandler } from '../services/api';
-import { NotificationProvider } from '../contexts/NotificationContext';
+import { NotificationProvider, setGlobalRefreshNotifications } from '../contexts/NotificationContext';
 
 // Authentication Context
 interface AuthContextType {
@@ -371,6 +371,20 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       setGlobalLogoutHandler(() => Promise.resolve());
     };
   }, []);
+
+  // Watch for user changes and refresh notifications
+  useEffect(() => {
+    if (user && isAuthenticated) {
+      // User logged in, refresh notifications
+      setTimeout(() => {
+        setGlobalRefreshNotifications(() => async () => {
+          // This will be set by NotificationContext
+        });
+      }, 500);
+    } else if (!isAuthenticated) {
+      // User logged out, notifications will be cleared by NotificationContext
+    }
+  }, [user, isAuthenticated]);
 
   const checkAuthStatus = async () => {
     try {

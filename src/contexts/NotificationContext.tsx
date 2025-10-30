@@ -1,134 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Notification } from '../types';
-
-// Dummy notification data
-const initialNotifications: Notification[] = [
-  {
-    id: '1',
-    title: 'New Job Assignment',
-    message: 'You have been assigned to Emergency Room shift on Dec 15, 2024',
-    type: 'assignment',
-    isRead: false,
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    relatedId: 'job-001',
-  },
-  {
-    id: '2',
-    title: 'Shift Reminder',
-    message: 'Your shift at General Hospital starts in 3 hours',
-    type: 'warning',
-    isRead: false,
-    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-    relatedId: 'job-002',
-  },
-  {
-    id: '3',
-    title: 'Payment Processed',
-    message: 'Your payment of $1,250.00 has been processed successfully',
-    type: 'success',
-    isRead: false,
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '4',
-    title: 'New Application Received',
-    message: 'Dr. Sarah Johnson has applied for the Cardiology position',
-    type: 'info',
-    isRead: false,
-    createdAt: new Date(Date.now() - 1.5 * 24 * 60 * 60 * 1000).toISOString(),
-    relatedId: 'job-005',
-  },
-  {
-    id: '5',
-    title: 'Assignment Cancelled',
-    message: 'Your ICU shift scheduled for Dec 18 has been cancelled',
-    type: 'error',
-    isRead: false,
-    createdAt: new Date(Date.now() - 1.8 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '6',
-    title: 'Profile Update Required',
-    message: 'Please update your license information to continue receiving assignments',
-    type: 'warning',
-    isRead: true,
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '7',
-    title: 'New Job Posted',
-    message: 'A new ICU shift matching your profile has been posted',
-    type: 'job',
-    isRead: true,
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    relatedId: 'job-003',
-  },
-  {
-    id: '8',
-    title: 'Assignment Accepted',
-    message: 'Your request for the Pediatrics shift has been accepted',
-    type: 'success',
-    isRead: true,
-    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-    relatedId: 'job-004',
-  },
-  {
-    id: '9',
-    title: 'Timesheet Approved',
-    message: 'Your timesheet for Week 48 has been approved by HR',
-    type: 'success',
-    isRead: true,
-    createdAt: new Date(Date.now() - 4.5 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '10',
-    title: 'Document Upload Required',
-    message: 'Please upload your vaccination certificate by Dec 25, 2024',
-    type: 'warning',
-    isRead: true,
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '11',
-    title: 'System Maintenance',
-    message: 'The app will undergo maintenance on Dec 20, 2024 from 2 AM to 4 AM',
-    type: 'info',
-    isRead: true,
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '12',
-    title: 'Bonus Payment',
-    message: 'You have received a bonus of $500 for exceptional performance',
-    type: 'success',
-    isRead: true,
-    createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '13',
-    title: 'New Message',
-    message: 'You have a new message from Dr. Michael Brown regarding shift swap',
-    type: 'info',
-    isRead: true,
-    createdAt: new Date(Date.now() - 6.5 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '14',
-    title: 'Training Mandatory',
-    message: 'Complete the mandatory COVID-19 safety training by end of month',
-    type: 'warning',
-    isRead: true,
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: '15',
-    title: 'Holiday Schedule',
-    message: 'Holiday shift schedule for December has been posted',
-    type: 'info',
-    isRead: true,
-    createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-];
+import ApiService from '../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface NotificationContextType {
   notifications: Notification[];
@@ -137,37 +10,199 @@ interface NotificationContextType {
   markAllAsRead: () => void;
   clearAllNotifications: () => void;
   deleteNotification: (id: string) => void;
+  refreshNotifications: () => Promise<void>;
+  isLoading: boolean;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
+// Helper function to map template name to notification type and title
+const getNotificationTypeFromTemplate = (templateName: string): { type: Notification['type'], title: string } => {
+  const name = templateName.toLowerCase();
+  
+  if (name.includes('candidateselected')) {
+    return { type: 'success', title: 'Candidate Selected' };
+  } else if (name.includes('jobcreated')) {
+    return { type: 'job', title: 'Job Created' };
+  } else if (name.includes('checkout')) {
+    return { type: 'info', title: 'Check Out' };
+  } else if (name.includes('checkin')) {
+    return { type: 'info', title: 'Check In' };
+  } else if (name.includes('assigned')) {
+    return { type: 'assignment', title: 'New Assignment' };
+  } else if (name.includes('accepted')) {
+    return { type: 'success', title: 'Request Accepted' };
+  } else if (name.includes('rejected') || name.includes('cancelled')) {
+    return { type: 'error', title: 'Request Cancelled' };
+  } else if (name.includes('reminder')) {
+    return { type: 'warning', title: 'Reminder' };
+  } else if (name.includes('payment')) {
+    return { type: 'success', title: 'Payment' };
+  }
+  
+  return { type: 'info', title: 'Notification' };
+};
+
+// Global reference to refresh function for external access
+let globalRefreshNotifications: (() => Promise<void>) | null = null;
+
+export const setGlobalRefreshNotifications = (refreshFn: () => Promise<void>) => {
+  globalRefreshNotifications = refreshFn;
+};
+
 export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
-  const markAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(notification =>
-        notification.id === id
-          ? { ...notification, isRead: true }
-          : notification
-      )
-    );
+  // Fetch notifications from API
+  const refreshNotifications = async () => {
+    try {
+      setIsLoading(true);
+      const userDataStr = await AsyncStorage.getItem('user_data');
+      if (!userDataStr) {
+        console.log('⚠️ No user data found, skipping notification fetch');
+        return;
+      }
+
+      const userData = JSON.parse(userDataStr);
+      const apiNotifications = await ApiService.getNotifications(userData.id);
+
+      // Transform API response to Notification format
+      const transformedNotifications: Notification[] = apiNotifications.map((notif: any) => {
+        const { type, title } = getNotificationTypeFromTemplate(notif.template_name);
+        return {
+          id: notif.notification_id,
+          title,
+          message: notif.message,
+          type,
+          isRead: notif.is_read === 1,
+          createdAt: notif.createdAt,
+          relatedId: notif.template_id, // Using template_id as relatedId
+        };
+      });
+
+      setNotifications(transformedNotifications);
+    } catch (error) {
+      console.error('❌ Failed to fetch notifications:', error);
+      // Don't throw - just log and continue with empty array
+      setNotifications([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(notification => ({ ...notification, isRead: true }))
-    );
+  // Fetch notifications on mount
+  useEffect(() => {
+    refreshNotifications();
+  }, []);
+
+  // Register global refresh function
+  useEffect(() => {
+    setGlobalRefreshNotifications(refreshNotifications);
+  }, []);
+
+  // Watch for storage changes (user logout/login)
+  useEffect(() => {
+    let lastUserId: string | null = null;
+    
+    const checkUserChange = async () => {
+      try {
+        const userDataStr = await AsyncStorage.getItem('user_data');
+        if (!userDataStr) {
+          if (notifications.length > 0) {
+            // User has logged out, clear notifications
+            console.log('🧹 Clearing notifications due to logout');
+            setNotifications([]);
+          }
+          lastUserId = null;
+          return;
+        }
+
+        const userData = JSON.parse(userDataStr);
+        const currentUserId = userData.id;
+
+        // Check if user has changed (different user logged in)
+        if (lastUserId !== null && lastUserId !== currentUserId && lastUserId !== undefined) {
+          console.log('🔄 Different user logged in, refreshing notifications');
+          await refreshNotifications();
+        }
+
+        // Check if user_data appeared (user logged in)
+        if (lastUserId === null && currentUserId) {
+          console.log('✅ User logged in, fetching notifications');
+          await refreshNotifications();
+        }
+
+        lastUserId = currentUserId;
+      } catch (error) {
+        console.error('Error checking user change:', error);
+      }
+    };
+
+    // Check for user changes periodically
+    const interval = setInterval(checkUserChange, 1000);
+
+    return () => clearInterval(interval);
+  }, [notifications.length]);
+
+  const markAsRead = async (id: string) => {
+    try {
+      await ApiService.markNotificationAsRead(id);
+      setNotifications(prev =>
+        prev.map(notification =>
+          notification.id === id
+            ? { ...notification, isRead: true }
+            : notification
+        )
+      );
+    } catch (error) {
+      console.error('❌ Failed to mark notification as read:', error);
+      // Still update UI optimistically
+      setNotifications(prev =>
+        prev.map(notification =>
+          notification.id === id
+            ? { ...notification, isRead: true }
+            : notification
+        )
+      );
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      const userDataStr = await AsyncStorage.getItem('user_data');
+      if (!userDataStr) return;
+      
+      const userData = JSON.parse(userDataStr);
+      await ApiService.markAllNotificationsAsRead(userData.id);
+      
+      setNotifications(prev =>
+        prev.map(notification => ({ ...notification, isRead: true }))
+      );
+    } catch (error) {
+      console.error('❌ Failed to mark all notifications as read:', error);
+      // Still update UI optimistically
+      setNotifications(prev =>
+        prev.map(notification => ({ ...notification, isRead: true }))
+      );
+    }
   };
 
   const clearAllNotifications = () => {
     setNotifications([]);
   };
 
-  const deleteNotification = (id: string) => {
-    setNotifications(prev => prev.filter(notification => notification.id !== id));
+  const deleteNotification = async (id: string) => {
+    try {
+      await ApiService.deleteNotification(id);
+      setNotifications(prev => prev.filter(notification => notification.id !== id));
+    } catch (error) {
+      console.error('❌ Failed to delete notification:', error);
+      // Still update UI optimistically
+      setNotifications(prev => prev.filter(notification => notification.id !== id));
+    }
   };
 
   return (
@@ -179,6 +214,8 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         markAllAsRead,
         clearAllNotifications,
         deleteNotification,
+        refreshNotifications,
+        isLoading,
       }}>
       {children}
     </NotificationContext.Provider>

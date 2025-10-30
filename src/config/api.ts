@@ -70,3 +70,6 @@ console.log('🔧 Final URL will be:', getFinalApiUrl());
 
 // Separate token registration service URL (different port/server)
 export const TOKEN_REGISTRATION_URL = 'http://192.168.1.52:3020/api/tokenRegistration';
+
+// Notifications service URL (same port as token registration)
+export const NOTIFICATIONS_SERVICE_URL = 'http://192.168.1.52:3020/api';
