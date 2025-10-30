@@ -247,6 +247,33 @@ class ApiService {
     }
   }
 
+  // Agency nurses list
+  async getAgencyNurses(agencyId: string | number, status?: 'APPROVED' | 'PENDING' | 'REVOKED'): Promise<{ pool: any[]; nurses: any[] }> {
+    try {
+      const response: AxiosResponse<{ pool: any[]; nurses: any[] }> = await this.api.get(`/agency/${agencyId}/nurses`, {
+        params: status ? { status } : undefined,
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to load agency nurses:', error?.response?.data || error?.message || error);
+      return { pool: [], nurses: [] };
+    }
+  }
+
+  // Agency jobs list (eligible jobs for the agency)
+  async getAgencyJobs(params?: { page?: number; limit?: number }): Promise<{ jobs: any[]; pagination?: any }> {
+    try {
+      const response: AxiosResponse<any> = await this.api.get('/agency/jobs', { params });
+      const jobs = Array.isArray(response.data)
+        ? response.data
+        : (response.data.jobs || []);
+      return { jobs, pagination: response.data?.pagination };
+    } catch (error: any) {
+      console.error('Failed to load agency jobs:', error?.response?.data || error?.message || error);
+      return { jobs: [] };
+    }
+  }
+
   // Doctor endpoints
   async getAvailableJobs(params?: {
     page?: number;

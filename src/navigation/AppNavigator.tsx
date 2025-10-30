@@ -38,6 +38,8 @@ import NotificationsScreen from '../screens/common/NotificationsScreen';
 
 // Agency Screens
 import AgencyDashboardScreen from '../screens/agency/AgencyDashboardScreen';
+import AgencyJobsScreen from '../screens/agency/AgencyJobsScreen';
+import AgencyNursesScreen from '../screens/agency/AgencyNursesScreen';
 
 // Test Components
 import GeolocationTest from '../components/GeolocationTest';
@@ -102,6 +104,8 @@ export type MainTabParamList = {
   Assignments: undefined;
   MyAssignments: undefined;
   AgencyDashboard: undefined;
+  AgencyJobs: undefined;
+  AgencyNurses: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -210,10 +214,10 @@ const AgencyTabNavigator = () => {
             case 'AgencyDashboard':
               iconName = 'home';
               break;
-            case 'HRJobs':
+            case 'AgencyJobs':
               iconName = 'briefcase';
               break;
-            case 'HRUsers':
+            case 'AgencyNurses':
               iconName = 'users';
               break;
             default:
@@ -230,8 +234,8 @@ const AgencyTabNavigator = () => {
         headerShown: false,
       })}>
       <MainTab.Screen name="AgencyDashboard" component={AgencyDashboardScreen} options={{ title: 'Dashboard' }} />
-      <MainTab.Screen name="HRJobs" component={HRJobsScreen} options={{ title: 'Jobs' }} />
-      <MainTab.Screen name="HRUsers" component={HRUsersScreen} options={{ title: 'Users' }} />
+      <MainTab.Screen name="AgencyJobs" component={AgencyJobsScreen} options={{ title: 'Jobs' }} />
+      <MainTab.Screen name="AgencyNurses" component={AgencyNursesScreen} options={{ title: 'Nurses' }} />
     </MainTab.Navigator>
   );
 };

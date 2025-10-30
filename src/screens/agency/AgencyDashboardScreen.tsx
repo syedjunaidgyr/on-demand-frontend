@@ -145,13 +145,41 @@ const AgencyDashboardScreen: React.FC = () => {
 
           {/* Overview row */}
           <View style={styles.overviewSection}>
-            <View style={styles.iconStatsRow}>
-              <IconStatItem title="Nurse Approved" value={data?.pool?.approved || 0} icon="user-check" iconColor="#10B981" />
-              <IconStatItem title="Nurse Pending" value={data?.pool?.pending || 0} icon="clock" iconColor="#F59E0B" />
-              <IconStatItem title="Nurse Revoked" value={data?.pool?.revoked || 0} icon="user-times" iconColor="#EF4444" />
-              <IconStatItem title="Active Assignments" value={data?.assignments?.active || 0} icon="list" iconColor="#3B82F6" />
-              <IconStatItem title="Completed (30d)" value={data?.assignments?.completed30Days || 0} icon="check-circle" iconColor="#059669" />
-              <IconStatItem title="Blacklisted Hospitals" value={data?.blacklist?.blacklistedHospitals || 0} icon="exclamation-triangle" iconColor="#DC2626" />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.overviewScroll}
+              contentContainerStyle={styles.overviewScrollContent}
+            >
+              <View style={styles.iconStatsRow}>
+                <IconStatItem title="Nurse Approved" value={data?.pool?.approved || 0} icon="user-check" iconColor="#10B981" />
+                <IconStatItem title="Nurse Pending" value={data?.pool?.pending || 0} icon="clock" iconColor="#F59E0B" />
+                <IconStatItem title="Nurse Revoked" value={data?.pool?.revoked || 0} icon="user-times" iconColor="#EF4444" />
+                <IconStatItem title="Active Assignments" value={data?.assignments?.active || 0} icon="list" iconColor="#3B82F6" />
+                <IconStatItem title="Completed (30d)" value={data?.assignments?.completed30Days || 0} icon="check-circle" iconColor="#059669" />
+                <IconStatItem title="Blacklisted Hospitals" value={data?.blacklist?.blacklistedHospitals || 0} icon="exclamation-triangle" iconColor="#DC2626" />
+              </View>
+            </ScrollView>
+          </View>
+
+          {/* Quick Actions */}
+          <View style={styles.quickActionsSection}>
+            <Text style={styles.sectionTitle}>Quick Actions</Text>
+            <View style={styles.quickActionsRow}>
+              <TouchableOpacity style={styles.quickActionCard} onPress={() => (navigation as any).navigate('AgencyNurses')} activeOpacity={0.85}>
+                <View style={[styles.quickIconWrap, { backgroundColor: '#10B98122' }]}>
+                  <FontAwesomeIcon icon="user-plus" size={16} color="#10B981" />
+                </View>
+                <Text style={styles.quickTitle}>Onboard Nurse</Text>
+                <Text style={styles.quickSub}>Add nurse to agency</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.quickActionCard} onPress={() => (navigation as any).navigate('AgencyJobs')} activeOpacity={0.85}>
+                <View style={[styles.quickIconWrap, { backgroundColor: '#2563EB22' }]}>
+                  <FontAwesomeIcon icon="briefcase" size={16} color="#2563EB" />
+                </View>
+                <Text style={styles.quickTitle}>Agency Jobs</Text>
+                <Text style={styles.quickSub}>Browse and assign</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -186,7 +214,7 @@ const IconStatItem = ({ title, value, icon, iconColor = '#3B82F6' }: { title: st
   <View style={styles.iconStatItem}>
     <View style={styles.iconStatContainer}>
       <View style={[styles.iconStatIconWrapper, { backgroundColor: iconColor + '15' }]}>
-        <FontAwesomeIcon icon={icon} size={Responsive.iconSize(26)} color={iconColor} />
+        <FontAwesomeIcon icon={icon} size={Responsive.iconSize(20)} color={iconColor} />
       </View>
       <View style={styles.iconStatBadge}>
         <Text style={styles.iconStatValue}>{(value || 0).toLocaleString()}</Text>
@@ -207,9 +235,9 @@ const styles = StyleSheet.create({
   },
   simpleHeader: {
     backgroundColor: '#FFFFFF',
-    paddingTop: Platform.OS === 'android' ? 10 : 0,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingTop: Platform.OS === 'android' ? 6 : 0,
+    paddingHorizontal: 14,
+    paddingBottom: 10,
   },
   headerContent: {
     flexDirection: 'row',
@@ -225,13 +253,13 @@ const styles = StyleSheet.create({
     color: '#6366F1',
   },
   headerGreeting: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: Typography.fontFamily.regular,
     color: '#6B7280',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   headerName: {
-    fontSize: 24,
+    fontSize: 18,
     fontFamily: Typography.fontFamily.bold,
     color: '#111827',
   },
@@ -314,32 +342,32 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   dashboardTitleSection: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 4,
+    paddingHorizontal: 14,
+    paddingTop: 8,
+    paddingBottom: 2,
   },
   dashboardTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontFamily: Typography.fontFamily.bold,
     color: '#111827',
     letterSpacing: -0.3,
   },
   mainStatsGrid: {
     flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 20,
-    marginTop: 8,
+    gap: 8,
+    paddingHorizontal: 14,
+    marginTop: 6,
     marginBottom: 0,
   },
   statCard: {
     flex: 1,
-    minHeight: 100,
+    minHeight: 78,
   },
   statContainer: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
@@ -351,104 +379,153 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   statIconWrapper: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#1C2A3A',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
+    marginRight: 10,
   },
   statContent: {
     flex: 1,
     justifyContent: 'center',
   },
   statValue: {
-    fontSize: 28,
+    fontSize: 20,
     fontFamily: Typography.fontFamily.bold,
     color: '#1C2A3A',
-    lineHeight: 32,
+    lineHeight: 24,
     letterSpacing: -0.5,
   },
   statTitle: {
-    fontSize: 13,
+    fontSize: 11,
     fontFamily: Typography.fontFamily.medium,
     color: '#1C2A3A',
-    marginTop: 2,
+    marginTop: 1,
     letterSpacing: 0.1,
   },
   overviewSection: {
-    paddingHorizontal: 20,
-    marginTop: 16,
+    paddingHorizontal: 14,
+    marginTop: 10,
+  },
+  overviewScroll: {
+    marginHorizontal: -14,
+  },
+  overviewScrollContent: {
+    paddingHorizontal: 4,
+    paddingBottom: 2,
   },
   iconStatsRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
+    alignItems: 'center',
   },
   iconStatItem: {
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    minWidth: 95,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    minWidth: 78,
   },
   iconStatContainer: {
     position: 'relative',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   iconStatIconWrapper: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
   },
   iconStatBadge: {
     position: 'absolute',
-    top: -6,
-    right: -6,
+    top: -4,
+    right: -4,
     backgroundColor: '#1C2A3A',
-    borderRadius: 12,
-    minWidth: 28,
-    height: 24,
-    paddingHorizontal: 6,
+    borderRadius: 10,
+    minWidth: 24,
+    height: 20,
+    paddingHorizontal: 5,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#FFFFFF',
   },
   iconStatValue: {
-    fontSize: 13,
+    fontSize: 11,
     fontFamily: Typography.fontFamily.bold,
     color: '#FFFFFF',
   },
   iconStatTitle: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: Typography.fontFamily.bold,
     color: '#374151',
     textAlign: 'center',
-    lineHeight: 15,
-    maxWidth: 100,
+    lineHeight: 13,
+    maxWidth: 92,
+  },
+  quickActionsSection: {
+    paddingHorizontal: 14,
+    marginTop: 12,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#111827',
+    marginBottom: 8,
+  },
+  quickActionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  quickActionCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    alignItems: 'flex-start',
+  },
+  quickIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  quickTitle: {
+    fontSize: 13,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#111827',
+  },
+  quickSub: {
+    fontSize: 11,
+    fontFamily: Typography.fontFamily.medium,
+    color: '#6B7280',
+    marginTop: 2,
   },
   poweredByContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingVertical: 10,
-    marginTop: 8,
-    paddingHorizontal: 20,
+    paddingVertical: 6,
+    marginTop: 6,
+    paddingHorizontal: 14,
   },
   poweredByText: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: Typography.fontFamily.medium,
     color: '#6B7280',
-    marginRight: 8,
+    marginRight: 6,
   },
   companyLogo: {
-    height: 15,
-    width: 95,
+    height: 12,
+    width: 85,
   },
 });
 

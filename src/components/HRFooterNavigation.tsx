@@ -11,6 +11,7 @@ import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../utils/icons';
 import { Typography } from '../constants/typography';
 import Responsive from '../utils/responsive';
+import { useAuth } from '../navigation/AppNavigator';
 
 interface HRFooterNavigationProps {
   activeRoute?: 'Dashboard' | 'Jobs' | 'Users';
@@ -19,12 +20,19 @@ interface HRFooterNavigationProps {
 
 const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, scrollY }) => {
   const navigation = useNavigation();
+  const { user } = useAuth();
   const translateY = useRef(new Animated.Value(0)).current;
   const lastScrollY = useRef(0);
   const scrollThreshold = 50;
 
-  const handleNavigation = (route: string) => {
-    (navigation as any).navigate(route);
+  const handleNavigation = (target: 'home' | 'jobs' | 'users') => {
+    // Map routes based on role
+    const isAgency = user?.role === 'AGENCY';
+    let routeName = '';
+    if (target === 'home') routeName = isAgency ? 'AgencyDashboard' : 'HRDashboard';
+    else if (target === 'jobs') routeName = isAgency ? 'AgencyJobs' : 'HRJobs';
+    else routeName = isAgency ? 'AgencyNurses' : 'HRUsers';
+    (navigation as any).navigate(routeName as never);
   };
 
   useEffect(() => {
@@ -68,7 +76,7 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, sc
           {/* Home - Left */}
           <TouchableOpacity
             style={styles.footerButton}
-            onPress={() => handleNavigation('HRDashboard')}
+            onPress={() => handleNavigation('home')}
             activeOpacity={0.7}
           >
             <View style={styles.iconWrapper}>
@@ -84,7 +92,7 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, sc
           {/* Jobs - Center */}
           <TouchableOpacity
             style={styles.footerButton}
-            onPress={() => handleNavigation('HRJobs')}
+            onPress={() => handleNavigation('jobs')}
             activeOpacity={0.7}
           >
             <View style={styles.iconWrapper}>
@@ -105,7 +113,7 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, sc
           {/* Users - Right */}
           <TouchableOpacity
             style={styles.footerButton}
-            onPress={() => handleNavigation('HRUsers')}
+            onPress={() => handleNavigation('users')}
             activeOpacity={0.7}
           >
             <View style={styles.iconWrapper}>
@@ -114,7 +122,7 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, sc
                 size={Responsive.iconSize(24)}
                 color="#FFFFFF"
               />
-              <Text style={styles.label}>Users</Text>
+              <Text style={styles.label}>{user?.role === 'AGENCY' ? 'Nurses' : 'Users'}</Text>
             </View>
           </TouchableOpacity>
         </View>
