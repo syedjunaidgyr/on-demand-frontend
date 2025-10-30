@@ -8,13 +8,13 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
-  SafeAreaView,
   FlatList,
   Dimensions,
   Platform,
   Share,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useWindowDimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';

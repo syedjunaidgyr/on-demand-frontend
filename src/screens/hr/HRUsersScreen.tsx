@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   TouchableOpacity,
   RefreshControl,
@@ -12,6 +11,7 @@ import {
   TextInput,
   Animated,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -348,6 +348,9 @@ const HRUsersScreen: React.FC = () => {
       <GlobalHeader
         title="Staff Management"
         showBackButton={true}
+        backgroundColor="#FFFFFF"
+        titleColor="#111827"
+        headerStyle={{ paddingTop: 10, paddingHorizontal: 20, paddingBottom: 16 }}
         onBackPress={() => navigation.goBack()}
         rightComponent={
           <TouchableOpacity 
