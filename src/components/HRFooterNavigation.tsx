@@ -16,9 +16,10 @@ import { useAuth } from '../navigation/AppNavigator';
 interface HRFooterNavigationProps {
   activeRoute?: 'Dashboard' | 'Jobs' | 'Users';
   scrollY?: Animated.Value;
+  todaysJobsCount?: number;
 }
 
-const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, scrollY }) => {
+const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, scrollY, todaysJobsCount }) => {
   const navigation = useNavigation();
   const { user } = useAuth();
   const translateY = useRef(new Animated.Value(0)).current;
@@ -101,9 +102,9 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, sc
                 size={Responsive.iconSize(24)}
                 color="#FFFFFF"
               />
-              {activeRoute === 'Jobs' && (
+              {activeRoute === 'Jobs' && typeof todaysJobsCount === 'number' && todaysJobsCount > 0 && (
                 <View style={styles.badge}>
-                  <Text style={styles.badgeText}>2</Text>
+                  <Text style={styles.badgeText}>{todaysJobsCount}</Text>
                 </View>
               )}
               <Text style={styles.label}>Jobs</Text>
