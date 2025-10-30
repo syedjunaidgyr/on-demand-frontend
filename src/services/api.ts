@@ -236,6 +236,17 @@ class ApiService {
     return response.data;
   }
 
+  // Agency dashboard
+  async getAgencyDashboard(): Promise<any> {
+    try {
+      const response: AxiosResponse<any> = await this.api.get('/agency/dashboard');
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to load agency dashboard:', error?.response?.data || error?.message || error);
+      throw error;
+    }
+  }
+
   // Doctor endpoints
   async getAvailableJobs(params?: {
     page?: number;

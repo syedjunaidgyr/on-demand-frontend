@@ -36,6 +36,9 @@ import JobDetailsCommonScreen from '../screens/common/JobDetailsCommonScreen';
 import PDFViewerScreen from '../screens/common/PDFViewerScreen';
 import NotificationsScreen from '../screens/common/NotificationsScreen';
 
+// Agency Screens
+import AgencyDashboardScreen from '../screens/agency/AgencyDashboardScreen';
+
 // Test Components
 import GeolocationTest from '../components/GeolocationTest';
 
@@ -98,6 +101,7 @@ export type MainTabParamList = {
   HRUsers: undefined;
   Assignments: undefined;
   MyAssignments: undefined;
+  AgencyDashboard: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -195,12 +199,51 @@ const HealthcareProviderTabNavigator = () => {
   );
 };
 
+const AgencyTabNavigator = () => {
+  return (
+    <MainTab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName: string;
+
+          switch (route.name) {
+            case 'AgencyDashboard':
+              iconName = 'home';
+              break;
+            case 'HRJobs':
+              iconName = 'briefcase';
+              break;
+            case 'HRUsers':
+              iconName = 'users';
+              break;
+            default:
+              iconName = 'question';
+          }
+
+          return <FontAwesomeIcon icon={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: Colors.textTertiary,
+        tabBarStyle: {
+          display: 'none',
+        },
+        headerShown: false,
+      })}>
+      <MainTab.Screen name="AgencyDashboard" component={AgencyDashboardScreen} options={{ title: 'Dashboard' }} />
+      <MainTab.Screen name="HRJobs" component={HRJobsScreen} options={{ title: 'Jobs' }} />
+      <MainTab.Screen name="HRUsers" component={HRUsersScreen} options={{ title: 'Users' }} />
+    </MainTab.Navigator>
+  );
+};
+
 const MainNavigator = ({ user }: { user: User }) => {
   const getTabNavigator = () => {
     switch (user.role) {
       case 'HR':
       case 'ADMIN':
         return <HRTabNavigator />;
+      case 'AGENCY':
+        return <AgencyTabNavigator />;
       case 'DOCTOR':
       case 'NURSE':
         return <HealthcareProviderTabNavigator />;
