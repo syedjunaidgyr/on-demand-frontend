@@ -249,14 +249,18 @@ class ApiService {
   }
 
   // Agency nurses list
-  async getAgencyNurses(agencyId: string | number, status?: 'APPROVED' | 'PENDING' | 'REVOKED'): Promise<{ pool: any[]; nurses: any[] }> {
+  async getAgencyNurses(agencyId: string | number): Promise<{ pool: any[]; nurses: any[] }> {
     try {
-      const response: AxiosResponse<{ pool: any[]; nurses: any[] }> = await this.api.get(`/agency/${agencyId}/nurses`, {
-        params: status ? { status } : undefined,
-      });
+      const url = `/agency/${agencyId}/nurses`;
+      const token = await AsyncStorage.getItem('jwt_token');
+      console.log('🔑 JWT token (current session):', token);
+      console.log('📡 API getAgencyNurses - Calling:', url);
+      const response: AxiosResponse<{ pool: any[]; nurses: any[] }> = await this.api.get(url);
+      console.log('✅ API getAgencyNurses - Response received:', response.data);
       return response.data;
     } catch (error: any) {
-      console.error('Failed to load agency nurses:', error?.response?.data || error?.message || error);
+      console.error('❌ Failed to load agency nurses:', error?.response?.data || error?.message || error);
+      console.error('❌ Error status:', error?.response?.status);
       return { pool: [], nurses: [] };
     }
   }
@@ -272,6 +276,20 @@ class ApiService {
     } catch (error: any) {
       console.error('Failed to load agency jobs:', error?.response?.data || error?.message || error);
       return { jobs: [] };
+    }
+  }
+
+  // Agency nurse approval
+  async approveAgencyNurse(agencyId: string | number, nurseId: string | number): Promise<any> {
+    try {
+      const url = `/agency/${agencyId}/nurses/${nurseId}/approve`;
+      console.log('📡 API approveAgencyNurse - POST:', url);
+      const response = await this.api.post(url);
+      console.log('✅ Agency nurse approved:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to approve agency nurse:', error?.response?.data || error?.message || error);
+      throw error;
     }
   }
 

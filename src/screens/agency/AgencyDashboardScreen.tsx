@@ -49,6 +49,16 @@ const AgencyDashboardScreen: React.FC = () => {
       try {
         const profile = await ApiService.getProfile();
         setUserProfile(profile);
+        // Debug: also fetch and log agency nurses list here so we can inspect data
+        try {
+          const nursesRes = await ApiService.getAgencyNurses(profile?.id || '');
+          console.log('👀 [Dashboard] Profile:', JSON.stringify(profile, null, 2));
+          console.log('👀 [Dashboard] Agency nurses response:', JSON.stringify(nursesRes, null, 2));
+          console.log('👀 [Dashboard] Agency pool list:', JSON.stringify(nursesRes.pool || [], null, 2));
+          console.log('👀 [Dashboard] Agency nurses list:', JSON.stringify(nursesRes.nurses || [], null, 2));
+        } catch (err) {
+          console.log('⚠️ [Dashboard] Failed to fetch nurses list for debug:', (err as any)?.message || err);
+        }
       } catch (e) {
         setUserProfile(null);
       }

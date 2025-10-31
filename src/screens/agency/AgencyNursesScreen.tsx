@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useAuth } from '../../navigation/AppNavigator';
 import ApiService from '../../services/api';
 import { Typography } from '../../constants/typography';
 import { FontAwesomeIcon } from '../../utils/icons';
+import { useFocusEffect } from '@react-navigation/native';
 
 const AgencyNursesScreen: React.FC = () => {
   const { user } = useAuth();
@@ -19,22 +20,27 @@ const AgencyNursesScreen: React.FC = () => {
       setLoading(true);
       // Ensure we have an agencyId; fetch profile if needed
       let idToUse: string | number | null = agencyId || user?.id || null;
+      console.log('🔍 AgencyNursesScreen - Loading nurses for agencyId:', idToUse, 'user?.id:', user?.id);
       if (!idToUse) {
         try {
           const profile = await ApiService.getProfile();
           idToUse = profile?.id;
           setAgencyId(idToUse as any);
+          console.log('🔍 Fetched profile, agencyId:', idToUse);
         } catch {}
       }
 
       if (!idToUse) {
+        console.log('❌ No agencyId found, cannot load nurses');
         setNurses([]);
         setPool([]);
         setPoolCounts({ approved: 0, pending: 0, revoked: 0 });
         return;
       }
 
+      console.log('📡 Calling getAgencyNurses with agencyId:', idToUse);
       const res = await ApiService.getAgencyNurses(idToUse);
+      console.log('✅ Agency nurses response:', JSON.stringify(res, null, 2));
       setNurses(res.nurses || []);
       setPool(res.pool || []);
       const counts = { approved: 0, pending: 0, revoked: 0 };
@@ -44,6 +50,7 @@ const AgencyNursesScreen: React.FC = () => {
         else if (m.status === 'REVOKED') counts.revoked += 1;
       });
       setPoolCounts(counts);
+      console.log('✅ Final counts:', counts, 'pool.length:', res.pool?.length, 'nurses.length:', res.nurses?.length);
     } finally {
       setLoading(false);
     }
@@ -53,6 +60,13 @@ const AgencyNursesScreen: React.FC = () => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
+
+  // Ensure latest data when navigating back to this tab
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [agencyId, user?.id])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -96,7 +110,9 @@ const AgencyNursesScreen: React.FC = () => {
             </View>
           ) : (
             pool.map((m: any) => {
-              const n = m.nurse || {};
+              // Some backends may omit embedded nurse; fallback to lookup from nurses array
+              const fallback = nurses.find((x: any) => String(x.id) === String(m.nurseId)) || {};
+              const n = m.nurse || fallback || {};
               const status = String(m.status || '').toUpperCase();
               const statusColor = status === 'APPROVED' ? '#10B981' : status === 'PENDING' ? '#F59E0B' : '#EF4444';
               return (
@@ -106,9 +122,25 @@ const AgencyNursesScreen: React.FC = () => {
                     <Text style={styles.name}>{n.firstName} {n.lastName}</Text>
                     <Text style={styles.sub}>{n.email}</Text>
                   </View>
-                  <View style={[styles.statusBadge, { backgroundColor: statusColor + '22', borderColor: statusColor }]}>
-                    <Text style={[styles.statusText, { color: statusColor }]}>{status}</Text>
-                  </View>
+                  {status === 'PENDING' ? (
+                    <TouchableOpacity
+                      style={[styles.actionBtn, { backgroundColor: '#10B981' }]}
+                      onPress={async () => {
+                        try {
+                          const id = agencyId || user?.id;
+                          if (!id) return;
+                          await ApiService.approveAgencyNurse(id, n.id);
+                          await load();
+                        } catch (e) {}
+                      }}
+                    >
+                      <Text style={styles.actionTxt}>Approve</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={[styles.statusBadge, { backgroundColor: statusColor + '22', borderColor: statusColor }]}>
+                      <Text style={[styles.statusText, { color: statusColor }]}>{status}</Text>
+                    </View>
+                  )}
                 </View>
               );
             })
