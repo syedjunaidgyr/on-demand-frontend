@@ -5,8 +5,10 @@ import ApiService from '../../services/api';
 import { Typography } from '../../constants/typography';
 import { FontAwesomeIcon } from '../../utils/icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 
 const AgencyNursesScreen: React.FC = () => {
+  const navigation = useNavigation();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -92,7 +94,12 @@ const AgencyNursesScreen: React.FC = () => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366F1" colors={["#6366F1"]} />}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Nurses</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.title}>Nurses</Text>
+          <TouchableOpacity style={styles.smallBtn} onPress={() => (navigation as any).navigate('AgencyOnboardNurses')}>
+            <Text style={styles.smallBtnTxt}>Onboard</Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.statsRow}>
           <Stat label="Approved" value={poolCounts.approved} icon="user-check" color="#10B981" />
@@ -122,25 +129,43 @@ const AgencyNursesScreen: React.FC = () => {
                     <Text style={styles.name}>{n.firstName} {n.lastName}</Text>
                     <Text style={styles.sub}>{n.email}</Text>
                   </View>
-                  {status === 'PENDING' ? (
-                    <TouchableOpacity
-                      style={[styles.actionBtn, { backgroundColor: '#10B981' }]}
-                      onPress={async () => {
-                        try {
-                          const id = agencyId || user?.id;
-                          if (!id) return;
-                          await ApiService.approveAgencyNurse(id, n.id);
-                          await load();
-                        } catch (e) {}
-                      }}
-                    >
-                      <Text style={styles.actionTxt}>Approve</Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <View style={[styles.statusBadge, { backgroundColor: statusColor + '22', borderColor: statusColor }]}>
-                      <Text style={[styles.statusText, { color: statusColor }]}>{status}</Text>
-                    </View>
-                  )}
+                  <View style={styles.actionsRow}>
+                    {status === 'PENDING' && (
+                      <TouchableOpacity
+                        style={[styles.actionBtn, { backgroundColor: '#10B981' }]}
+                        onPress={async () => {
+                          try {
+                            const id = agencyId || user?.id;
+                            if (!id) return;
+                            await ApiService.approveAgencyNurse(id, n.id);
+                            await load();
+                          } catch (e) {}
+                        }}
+                      >
+                        <Text style={styles.actionTxt}>Approve</Text>
+                      </TouchableOpacity>
+                    )}
+                    {status !== 'REVOKED' && (
+                      <TouchableOpacity
+                        style={[styles.actionBtnOutline]}
+                        onPress={async () => {
+                          try {
+                            const id = agencyId || user?.id;
+                            if (!id) return;
+                            await ApiService.revokeAgencyNurse(id, n.id);
+                            await load();
+                          } catch (e) {}
+                        }}
+                      >
+                        <Text style={styles.actionTxtOutline}>Revoke</Text>
+                      </TouchableOpacity>
+                    )}
+                    {status === 'REVOKED' && (
+                      <View style={[styles.statusBadge, { backgroundColor: statusColor + '22', borderColor: statusColor }]}>
+                        <Text style={[styles.statusText, { color: statusColor }]}>{status}</Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
               );
             })
@@ -188,7 +213,10 @@ const Stat = ({ label, value, icon, color }: { label: string; value: number; ico
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F3F9FF' },
   content: { padding: 16, paddingBottom: 48 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontSize: 22, fontFamily: Typography.fontFamily.bold, color: '#111827', marginBottom: 12 },
+  smallBtn: { backgroundColor: '#111827', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
+  smallBtnTxt: { color: '#FFFFFF', fontFamily: Typography.fontFamily.bold },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 8, color: '#6B7280', fontFamily: Typography.fontFamily.medium },
   statsRow: { flexDirection: 'row', gap: 10 },
@@ -208,8 +236,11 @@ const styles = StyleSheet.create({
   sub: { fontSize: 12, color: '#6B7280' },
   statusBadge: { borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
   statusText: { fontFamily: Typography.fontFamily.bold, fontSize: 10 },
+  actionsRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   actionBtn: { backgroundColor: '#111827', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   actionTxt: { color: '#FFFFFF', fontFamily: Typography.fontFamily.medium },
+  actionBtnOutline: { borderWidth: 1, borderColor: '#EF4444', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+  actionTxtOutline: { color: '#EF4444', fontFamily: Typography.fontFamily.bold, fontSize: 12 },
 });
 
 export default AgencyNursesScreen;

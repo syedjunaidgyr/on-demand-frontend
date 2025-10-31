@@ -40,6 +40,7 @@ import NotificationsScreen from '../screens/common/NotificationsScreen';
 import AgencyDashboardScreen from '../screens/agency/AgencyDashboardScreen';
 import AgencyJobsScreen from '../screens/agency/AgencyJobsScreen';
 import AgencyNursesScreen from '../screens/agency/AgencyNursesScreen';
+import AgencyOnboardNursesScreen from '../screens/agency/AgencyOnboardNursesScreen';
 
 // Test Components
 import GeolocationTest from '../components/GeolocationTest';
@@ -89,6 +90,7 @@ export type RootStackParamList = {
   ReportDetails: { reportId: number };
   PDFViewer: { uri: string; title?: string };
   GeolocationTest: undefined;
+  AgencyOnboardNurses: undefined;
 };
 
 export type AuthStackParamList = {
@@ -393,6 +395,16 @@ const MainNavigator = ({ user }: { user: User }) => {
         options={{
           headerShown: true,
           title: 'Geolocation Test',
+          headerStyle: { backgroundColor: Colors.primary },
+          headerTintColor: Colors.white,
+        }}
+      />
+      <Stack.Screen 
+        name="AgencyOnboardNurses" 
+        component={AgencyOnboardNursesScreen}
+        options={{
+          headerShown: true,
+          title: 'Onboard Nurses',
           headerStyle: { backgroundColor: Colors.primary },
           headerTintColor: Colors.white,
         }}

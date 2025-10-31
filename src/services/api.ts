@@ -293,6 +293,54 @@ class ApiService {
     }
   }
 
+  // Agency nurse revoke
+  async revokeAgencyNurse(agencyId: string | number, nurseId: string | number): Promise<any> {
+    try {
+      const url = `/agency/${agencyId}/nurses/${nurseId}/revoke`;
+      console.log('📡 API revokeAgencyNurse - POST:', url);
+      const response = await this.api.post(url);
+      console.log('✅ Agency nurse revoked:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to revoke agency nurse:', error?.response?.data || error?.message || error);
+      throw error;
+    }
+  }
+
+  // Agency add nurses (bulk)
+  async addNursesToAgency(agencyId: string | number, nurseIds: Array<string | number>): Promise<any> {
+    try {
+      const url = `/agency/${agencyId}/nurses`;
+      console.log('📡 API addNursesToAgency - POST:', url, 'body:', { nurseIds });
+      const response = await this.api.post(url, { nurseIds });
+      console.log('✅ Nurses added to agency:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to add nurses to agency:', error?.response?.data || error?.message || error);
+      throw error;
+    }
+  }
+
+  // Agency available nurses (eligible to onboard)
+  async getAgencyAvailableNurses(agencyId: string | number): Promise<{ availableNurses: any[]; count?: number; excludedCount?: number }> {
+    try {
+      const url = `/agency/${agencyId}/nurses/available`;
+      const token = await AsyncStorage.getItem('jwt_token');
+      console.log('🔑 JWT token (current session):', token);
+      console.log('📡 API getAgencyAvailableNurses - Calling:', url);
+      const response: AxiosResponse<any> = await this.api.get(url);
+      const availableNurses = response.data?.availableNurses || response.data || [];
+      return {
+        availableNurses,
+        count: response.data?.count,
+        excludedCount: response.data?.excludedCount,
+      };
+    } catch (error: any) {
+      console.error('❌ Failed to load available nurses:', error?.response?.data || error?.message || error);
+      return { availableNurses: [] };
+    }
+  }
+
   // Doctor endpoints
   async getAvailableJobs(params?: {
     page?: number;
