@@ -29,10 +29,27 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, sc
   const handleNavigation = (target: 'home' | 'jobs' | 'users') => {
     // Map routes based on role
     const isAgency = user?.role === 'AGENCY';
+    const isHospitalAdmin = user?.role === 'HOSPITAL_ADMIN';
     let routeName = '';
-    if (target === 'home') routeName = isAgency ? 'AgencyDashboard' : 'HRDashboard';
-    else if (target === 'jobs') routeName = isAgency ? 'AgencyJobs' : 'HRJobs';
-    else routeName = isAgency ? 'AgencyNurses' : 'HRUsers';
+    if (target === 'home') {
+      routeName = isAgency
+        ? 'AgencyDashboard'
+        : isHospitalAdmin
+        ? 'HospitalAdminDashboard'
+        : 'HRDashboard';
+    } else if (target === 'jobs') {
+      routeName = isAgency
+        ? 'AgencyJobs'
+        : isHospitalAdmin
+        ? 'HRJobs'
+        : 'HRJobs';
+    } else {
+      routeName = isAgency
+        ? 'AgencyNurses'
+        : isHospitalAdmin
+        ? 'HospitalAdminStaff'
+        : 'HRUsers';
+    }
     (navigation as any).navigate(routeName as never);
   };
 
@@ -123,7 +140,7 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, sc
                 size={Responsive.iconSize(24)}
                 color="#FFFFFF"
               />
-              <Text style={styles.label}>{user?.role === 'AGENCY' ? 'Nurses' : 'Users'}</Text>
+              <Text style={styles.label}>{user?.role === 'AGENCY' ? 'Nurses' : user?.role === 'HOSPITAL_ADMIN' ? 'Staff' : 'Users'}</Text>
             </View>
           </TouchableOpacity>
         </View>

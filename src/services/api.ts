@@ -248,6 +248,7 @@ class ApiService {
     }
   }
 
+
   // Agency nurses list
   async getAgencyNurses(agencyId: string | number): Promise<{ pool: any[]; nurses: any[] }> {
     try {
@@ -432,7 +433,7 @@ class ApiService {
     try {
       const response = await this.api.post(`/staff/assignments/${assignmentId}/respond`, requestBody);
       console.log('✅ Assignment response successful:', response.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Assignment response failed:', error);
       console.error('❌ Error response:', error.response?.data);
       throw error;
@@ -937,7 +938,7 @@ class ApiService {
       const response = await this.api.get(`/hr/jobs/${jobId}/accepted-assignments`);
       console.log('✅ Accepted assignments response:', response.data);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Failed to get accepted assignments:', error);
       console.error('❌ Error response:', error.response?.data);
       console.error('❌ Error status:', error.response?.status);
@@ -957,7 +958,7 @@ class ApiService {
     try {
       const response = await this.api.post(`/hr/jobs/${jobId}/select-candidate`, requestBody);
       console.log('✅ Select candidate successful:', response.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Select candidate failed:', error);
       console.error('❌ Error response:', error.response?.data);
       console.error('❌ Error status:', error.response?.status);

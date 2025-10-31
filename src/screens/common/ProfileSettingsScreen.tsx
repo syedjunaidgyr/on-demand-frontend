@@ -114,6 +114,18 @@ const ProfileSettingsScreen: React.FC = () => {
               <Text style={styles.actionButtonText}>Contact Support</Text>
               <FontAwesomeIcon icon="arrow-right" size={Responsive.iconSize(16)} color="#9CA3AF" />
             </TouchableOpacity>
+
+            <View style={styles.actionDivider} />
+
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={() => navigation.navigate('HospitalAdminThemes')}>
+              <View style={styles.actionIcon}>
+                <FontAwesomeIcon icon="palette" size={17} color="#1C2A3A" />
+              </View>
+              <Text style={styles.actionButtonText}>Manage Themes</Text>
+              <FontAwesomeIcon icon="arrow-right" size={Responsive.iconSize(16)} color="#9CA3AF" />
+            </TouchableOpacity>
           </View>
         </View>
         

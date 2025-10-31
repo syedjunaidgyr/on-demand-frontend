@@ -42,6 +42,13 @@ import AgencyJobsScreen from '../screens/agency/AgencyJobsScreen';
 import AgencyNursesScreen from '../screens/agency/AgencyNursesScreen';
 import AgencyOnboardNursesScreen from '../screens/agency/AgencyOnboardNursesScreen';
 
+// Hospital Admin Screens
+import HospitalAdminDashboardScreen from '../screens/hospitalAdmin/HospitalAdminDashboardScreen';
+import HospitalAdminJobsScreen from '../screens/hospitalAdmin/HospitalAdminJobsScreen';
+import HospitalAdminStaffScreen from '../screens/hospitalAdmin/HospitalAdminStaffScreen';
+import HospitalAdminUploadLogoScreen from '../screens/hospitalAdmin/HospitalAdminUploadLogoScreen';
+import HospitalAdminThemeManageScreen from '../screens/hospitalAdmin/HospitalAdminThemeManageScreen';
+
 // Test Components
 import GeolocationTest from '../components/GeolocationTest';
 
@@ -49,6 +56,7 @@ import { Colors } from '../constants/colors';
 import { User, Job, JobAssignment } from '../types';
 import { setGlobalLogoutHandler } from '../services/api';
 import { NotificationProvider, setGlobalRefreshNotifications } from '../contexts/NotificationContext';
+import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 
 // Authentication Context
 interface AuthContextType {
@@ -91,6 +99,8 @@ export type RootStackParamList = {
   PDFViewer: { uri: string; title?: string };
   GeolocationTest: undefined;
   AgencyOnboardNurses: undefined;
+  HospitalAdminUploadLogo: undefined;
+  HospitalAdminThemes: undefined;
 };
 
 export type AuthStackParamList = {
@@ -108,6 +118,9 @@ export type MainTabParamList = {
   AgencyDashboard: undefined;
   AgencyJobs: undefined;
   AgencyNurses: undefined;
+  HospitalAdminDashboard: undefined;
+  HospitalAdminJobs: undefined;
+  HospitalAdminStaff: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -242,12 +255,51 @@ const AgencyTabNavigator = () => {
   );
 };
 
+const HospitalAdminTabNavigator = () => {
+  return (
+    <MainTab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName: string;
+
+          switch (route.name) {
+            case 'HospitalAdminDashboard':
+              iconName = 'home';
+              break;
+            case 'HospitalAdminJobs':
+              iconName = 'briefcase';
+              break;
+            case 'HospitalAdminStaff':
+              iconName = 'users';
+              break;
+            default:
+              iconName = 'question';
+          }
+
+          return <FontAwesomeIcon icon={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: Colors.textTertiary,
+        tabBarStyle: {
+          display: 'none',
+        },
+        headerShown: false,
+      })}>
+      <MainTab.Screen name="HospitalAdminDashboard" component={HospitalAdminDashboardScreen} options={{ title: 'Dashboard' }} />
+      <MainTab.Screen name="HospitalAdminJobs" component={HRJobsScreen as any} options={{ title: 'Jobs' }} />
+      <MainTab.Screen name="HospitalAdminStaff" component={HospitalAdminStaffScreen} options={{ title: 'Staff' }} />
+    </MainTab.Navigator>
+  );
+};
+
 const MainNavigator = ({ user }: { user: User }) => {
   const getTabNavigator = () => {
     switch (user.role) {
       case 'HR':
       case 'ADMIN':
         return <HRTabNavigator />;
+      case 'HOSPITAL_ADMIN':
+        return <HospitalAdminTabNavigator />;
       case 'AGENCY':
         return <AgencyTabNavigator />;
       case 'DOCTOR':
@@ -409,6 +461,26 @@ const MainNavigator = ({ user }: { user: User }) => {
           headerTintColor: Colors.white,
         }}
       />
+      <Stack.Screen 
+        name="HospitalAdminUploadLogo" 
+        component={HospitalAdminUploadLogoScreen}
+        options={{
+          headerShown: true,
+          title: 'Upload Hospital Logo',
+          headerStyle: { backgroundColor: Colors.primary },
+          headerTintColor: Colors.white,
+        }}
+      />
+      <Stack.Screen 
+        name="HospitalAdminThemes" 
+        component={HospitalAdminThemeManageScreen}
+        options={{
+          headerShown: true,
+          title: 'Manage Themes',
+          headerStyle: { backgroundColor: Colors.primary },
+          headerTintColor: Colors.white,
+        }}
+      />
     </Stack.Navigator>
   );
 };
@@ -495,6 +567,13 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
 const AppNavigator = () => {
   const { isAuthenticated, user, isLoading } = useAuth();
+  const { loadAndApplyDefaultTheme } = useTheme();
+
+  React.useEffect(() => {
+    if (isAuthenticated && user && (user as any).role === 'HOSPITAL_ADMIN') {
+      loadAndApplyDefaultTheme().catch(() => {});
+    }
+  }, [isAuthenticated, user, loadAndApplyDefaultTheme]);
 
   return (
     <NavigationContainer>
@@ -514,7 +593,9 @@ const AppNavigator = () => {
 const AppNavigatorWithAuth = () => (
   <AuthProvider>
     <NotificationProvider>
-      <AppNavigator />
+      <ThemeProvider>
+        <AppNavigator />
+      </ThemeProvider>
     </NotificationProvider>
   </AuthProvider>
 );

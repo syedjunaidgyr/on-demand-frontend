@@ -3,7 +3,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'DOCTOR' | 'NURSE' | 'HR' | 'ADMIN' | 'AGENCY';
+  role: 'DOCTOR' | 'NURSE' | 'HR' | 'ADMIN' | 'AGENCY' | 'HOSPITAL_ADMIN';
   department: string;
   location: string;
   specialization?: string;
@@ -208,7 +208,7 @@ export interface UserInfo {
   firstName: string;
   lastName: string;
   email: string;
-  role: 'DOCTOR' | 'NURSE' | 'HR' | 'ADMIN';
+  role: 'DOCTOR' | 'NURSE' | 'HR' | 'ADMIN' | 'HOSPITAL_ADMIN' | 'AGENCY';
   department: string;
 }
 
