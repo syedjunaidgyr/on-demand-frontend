@@ -403,7 +403,7 @@ const HRDashboardScreen: React.FC = () => {
             <Text style={styles.sectionTitle}>Quick Actions</Text>
             <View style={styles.quickActionsGrid}>
               <QuickAction title="Create Job" subtitle="Post new opening" icon="plus" gradient={['#3B82F6', '#2563EB']} onPress={() => (navigation as any).navigate('CreateJob')} />
-              <QuickAction title="Manage Jobs" subtitle="View & edit" icon="briefcase" gradient={['#8B5CF6', '#7C3AED']} onPress={() => (navigation as any).navigate('HRJobs')} />
+              <QuickAction title="Assign Jobs" subtitle="View & edit" icon="briefcase" gradient={['#8B5CF6', '#7C3AED']} onPress={() => (navigation as any).navigate('HRJobs')} />
               <QuickAction title="Staff" subtitle="Manage users" icon="users" gradient={['#10B981', '#059669']} onPress={() => (navigation as any).navigate('HRUsers')} />
               <QuickAction title="Reports" subtitle="View insights" icon="chart-line" gradient={['#F59E0B', '#D97706']} onPress={() => (navigation as any).navigate('Reports')} />
             </View>
