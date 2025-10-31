@@ -256,13 +256,16 @@ const NotificationsScreen: React.FC = () => {
     <View style={styles.container}>
       <GlobalHeader
         title="Notifications"
+        backgroundColor="#FFFFFF"
+        titleColor="#111827"
         showBackButton={true}
         onBackPress={() => navigation.goBack()}
+        headerStyle={{ paddingTop: 10, paddingHorizontal: 20, paddingBottom: 16 }}
         rightComponent={
           <TouchableOpacity 
             onPress={() => setModalVisible(true)}
-            style={styles.menuButton}>
-            <FontAwesomeIcon icon="ellipsis-v" size={Responsive.iconSize(20)} color={Colors.white} />
+            style={styles.headerIconButton}>
+            <FontAwesomeIcon icon="ellipsis-v" size={Responsive.iconSize(20)} color="#111827" />
           </TouchableOpacity>
         }
       />
@@ -391,8 +394,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F5F5',
   },
-  menuButton: {
-    padding: Responsive.scale(8),
+  headerIconButton: {
+    width: Responsive.scale(40),
+    height: Responsive.verticalScale(40),
+    borderRadius: Responsive.scale(20),
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   listContent: {
     paddingBottom: Responsive.verticalScale(24),

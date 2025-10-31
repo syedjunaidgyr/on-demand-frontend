@@ -337,13 +337,11 @@ const HRJobsScreen: React.FC = () => {
   // Compute filtered jobs for display
   const displayJobs = jobs.filter((j) => {
     try {
-      // Text search (title, location, department)
+      // Text search (title only)
       if (searchQuery && searchQuery.trim().length > 0) {
         const q = searchQuery.trim().toLowerCase();
         const title = (j.title || '').toLowerCase();
-        const location = (j.location || '').toLowerCase();
-        const department = (j.department || '').toLowerCase();
-        if (!title.includes(q) && !location.includes(q) && !department.includes(q)) return false;
+        if (!title.includes(q)) return false;
       }
       // Status filter
       if (filterStatus && (j.status || '').toUpperCase() !== filterStatus.toUpperCase()) return false;
@@ -393,7 +391,7 @@ const HRJobsScreen: React.FC = () => {
           <FontAwesomeIcon icon="search" size={16} color={Colors.textSecondary} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search by title, location, or department"
+            placeholder="Search by title"
             placeholderTextColor={Colors.textTertiary}
             value={searchQuery}
             onChangeText={setSearchQuery}
