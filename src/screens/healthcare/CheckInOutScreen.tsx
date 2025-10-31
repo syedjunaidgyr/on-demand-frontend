@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Modal,
   RefreshControl,
+  TextInput,
 } from 'react-native';
 import { useNavigation, useRoute, CommonActions, useNavigationContainerRef } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -26,6 +27,7 @@ import ApiService from '../../services/api';
 import LocationService, { LocationData } from '../../services/locationService';
 import LocationValidationModal from '../../components/LocationValidationModal';
 import Responsive from '../../utils/responsive';
+import * as ExportUtils from '../../utils/exportUtils';
 
 type CheckInOutScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CheckInOut'>;
 type CheckInOutScreenRouteProp = RouteProp<RootStackParamList, 'CheckInOut'>;
@@ -48,6 +50,13 @@ const CheckInOutScreen: React.FC = () => {
     action: 'checkin' | 'checkout';
     qrData?: string;
   } | null>(null);
+
+  const [showExportAllMenu, setShowExportAllMenu] = useState(false);
+  const [exportingAssignmentId, setExportingAssignmentId] = useState<string | null>(null);
+  const [showAssignmentExportMenuForId, setShowAssignmentExportMenuForId] = useState<string | null>(null);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [filterTitle, setFilterTitle] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string | null>(null);
 
   useEffect(() => {
     loadConfirmedAssignments();
@@ -125,6 +134,91 @@ const CheckInOutScreen: React.FC = () => {
     setRefreshing(true);
     await loadConfirmedAssignments();
     setRefreshing(false);
+  };
+
+  const filteredAssignments = useMemo(() => {
+    const titleQuery = filterTitle.trim().toLowerCase();
+    const statusFilter = filterStatus?.toUpperCase() || '';
+    return confirmedAssignments.filter((a) => {
+      const title = a.job?.title?.toLowerCase() || '';
+      const status = (a.status || '').toUpperCase();
+      const byTitle = titleQuery.length === 0 || title.includes(titleQuery);
+      const byStatus = statusFilter.length === 0 || status === statusFilter;
+      return byTitle && byStatus;
+    });
+  }, [confirmedAssignments, filterTitle, filterStatus]);
+
+  const handleExportAssignmentBrief = async (assignmentId: string, format: 'pdf' | 'excel') => {
+    try {
+      setExportingAssignmentId(assignmentId);
+      const a = confirmedAssignments.find(x => x.id === assignmentId);
+      if (!a) { Alert.alert('Export', 'Assignment not found'); return; }
+      const row = {
+        id: a.id,
+        jobTitle: a.job?.title || '',
+        facilityName: a.job?.facilityName || a.job?.location || '',
+        department: a.job?.department || '',
+        status: a.status || '',
+        startDate: a.job?.startDate || '',
+        endDate: a.job?.endDate || '',
+        checkedIn: a.isCheckedIn ? 'Yes' : 'No',
+      };
+      const fileName = `CheckInOut_${a.id}`;
+      if (format === 'pdf') {
+        await ExportUtils.generateAndSavePDF(
+          [row],
+          fileName,
+          ['id', 'jobTitle', 'facilityName', 'department', 'status', 'startDate', 'endDate', 'checkedIn'],
+          `Assignment #${a.id}`
+        );
+      } else {
+        await ExportUtils.exportToXLSXFile(
+          [row],
+          fileName,
+          ['id', 'jobTitle', 'facilityName', 'department', 'status', 'startDate', 'endDate', 'checkedIn']
+        );
+      }
+    } catch (e) {
+      console.error('Export error:', e);
+      Alert.alert('Export Failed', 'Could not export');
+    } finally {
+      setExportingAssignmentId(null);
+    }
+  };
+
+  const handleExportAllBrief = async (format: 'pdf' | 'excel') => {
+    try {
+      const list = filteredAssignments;
+      if (!list || list.length === 0) { Alert.alert('Nothing to export', 'No data to export'); return; }
+      const rows = list.map(a => ({
+        id: a.id,
+        jobTitle: a.job?.title || '',
+        facilityName: a.job?.facilityName || a.job?.location || '',
+        department: a.job?.department || '',
+        status: a.status || '',
+        startDate: a.job?.startDate || '',
+        endDate: a.job?.endDate || '',
+        checkedIn: a.isCheckedIn ? 'Yes' : 'No',
+      }));
+      const fileName = 'CheckInOut_Assignments';
+      if (format === 'pdf') {
+        await ExportUtils.generateAndSavePDF(
+          rows,
+          fileName,
+          ['id', 'jobTitle', 'facilityName', 'department', 'status', 'startDate', 'endDate', 'checkedIn'],
+          'Check In/Out Assignments'
+        );
+      } else {
+        await ExportUtils.exportToXLSXFile(
+          rows,
+          fileName,
+          ['id', 'jobTitle', 'facilityName', 'department', 'status', 'startDate', 'endDate', 'checkedIn']
+        );
+      }
+    } catch (e) {
+      console.error('Export error:', e);
+      Alert.alert('Export Failed', 'Could not export');
+    }
   };
 
   const handleCheckIn = async (assignment: JobAssignment) => {
@@ -496,6 +590,40 @@ const CheckInOutScreen: React.FC = () => {
             {assignment.status === 'COMPLETED' ? 'Completed' : 'Active'}
           </Text>
         </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity
+            style={styles.exportDropdownButton}
+            onPress={() => setShowAssignmentExportMenuForId(prev => prev === assignment.id ? null : assignment.id)}
+            disabled={exportingAssignmentId === assignment.id}
+          >
+            {exportingAssignmentId === assignment.id ? (
+              <ActivityIndicator size="small" color={Colors.white} />
+            ) : (
+              <>
+                <Text style={styles.exportDropdownText}>Export</Text>
+                <FontAwesomeIcon icon={showAssignmentExportMenuForId === assignment.id ? 'chevron-up' : 'chevron-down'} size={12} color={Colors.white} />
+              </>
+            )}
+          </TouchableOpacity>
+          {showAssignmentExportMenuForId === assignment.id && (
+            <View style={[styles.exportDropdownMenu, { right: 0 }]}> 
+              <TouchableOpacity
+                style={styles.exportDropdownItem}
+                onPress={() => { setShowAssignmentExportMenuForId(null); handleExportAssignmentBrief(assignment.id, 'pdf'); }}
+              >
+                <FontAwesomeIcon icon="file-pdf" size={14} color={Colors.textPrimary} />
+                <Text style={styles.exportDropdownItemText}>PDF</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.exportDropdownItem}
+                onPress={() => { setShowAssignmentExportMenuForId(null); handleExportAssignmentBrief(assignment.id, 'excel'); }}
+              >
+                <FontAwesomeIcon icon="file-excel" size={14} color={Colors.textPrimary} />
+                <Text style={styles.exportDropdownItemText}>Excel</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
       </View>
 
       <Text style={styles.assignmentDescription}>{assignment.job?.description || 'No description available'}</Text>
@@ -626,8 +754,48 @@ const CheckInOutScreen: React.FC = () => {
             tintColor={Colors.primary}
           />
         }>
-        {confirmedAssignments.length > 0 ? (
-          confirmedAssignments.map((assignment) => (
+        {/* Export and Filter Row */}
+        <View style={styles.toolsRow}>
+          <View style={{ flexDirection: 'row' }}>
+            <TouchableOpacity
+              style={styles.exportDropdownButton}
+              onPress={() => setShowExportAllMenu(v => !v)}
+              disabled={filteredAssignments.length === 0}
+            >
+              <Text style={styles.exportDropdownText}>Export All</Text>
+              <FontAwesomeIcon icon={showExportAllMenu ? 'chevron-up' : 'chevron-down'} size={12} color={Colors.white} />
+            </TouchableOpacity>
+            {showExportAllMenu && (
+              <View style={styles.exportDropdownMenu}>
+                <TouchableOpacity
+                  style={styles.exportDropdownItem}
+                  onPress={() => { setShowExportAllMenu(false); handleExportAllBrief('pdf'); }}
+                >
+                  <FontAwesomeIcon icon="file-pdf" size={14} color={Colors.textPrimary} />
+                  <Text style={styles.exportDropdownItemText}>PDF</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.exportDropdownItem}
+                  onPress={() => { setShowExportAllMenu(false); handleExportAllBrief('excel'); }}
+                >
+                  <FontAwesomeIcon icon="file-excel" size={14} color={Colors.textPrimary} />
+                  <Text style={styles.exportDropdownItemText}>Excel</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
+          <TouchableOpacity
+            style={styles.filterOutlineButton}
+            onPress={() => setShowFilterModal(true)}
+          >
+            <FontAwesomeIcon icon="filter" size={14} color={Colors.textPrimary} />
+            <Text style={styles.filterOutlineText}>Filter</Text>
+          </TouchableOpacity>
+        </View>
+
+        {filteredAssignments.length > 0 ? (
+          filteredAssignments.map((assignment) => (
             <AssignmentCard key={assignment.id} assignment={assignment} />
           ))
         ) : (
@@ -655,6 +823,67 @@ const CheckInOutScreen: React.FC = () => {
           </View>
         </View>
       )}
+
+      {/* Filter Modal */}
+      <Modal
+        visible={showFilterModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowFilterModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.filterModal}>
+            <Text style={styles.filterTitle}>Filter Assignments</Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Job Title</Text>
+              <TextInput
+                placeholder="Search by title"
+                placeholderTextColor={Colors.textTertiary}
+                style={styles.textInput}
+                value={filterTitle}
+                onChangeText={setFilterTitle}
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Status</Text>
+              <View style={styles.statusChipsRow}>
+                {['', 'ASSIGNED', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED'].map((s) => (
+                  <TouchableOpacity
+                    key={s || 'ALL'}
+                    style={[
+                      styles.statusChip,
+                      (filterStatus || '') === s && styles.statusChipActive,
+                    ]}
+                    onPress={() => setFilterStatus(s || null)}
+                  >
+                    <Text style={[
+                      styles.statusChipText,
+                      (filterStatus || '') === s && styles.statusChipTextActive,
+                    ]}>
+                      {s || 'All'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: Colors.background }]}
+                onPress={() => { setFilterTitle(''); setFilterStatus(null); }}
+              >
+                <Text style={[styles.modalButtonText, { color: Colors.textPrimary }]}>Reset</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: Colors.primary }]}
+                onPress={() => setShowFilterModal(false)}
+              >
+                <Text style={[styles.modalButtonText, { color: Colors.white }]}>Apply</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Custom Action Sheet Modal */}
       <Modal
@@ -797,6 +1026,64 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: Spacing.lg,
   },
+  toolsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: Spacing.lg,
+  },
+  exportDropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    marginRight: Spacing.sm,
+  },
+  exportDropdownText: {
+    color: Colors.white,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.medium,
+    marginRight: Spacing.xs,
+  },
+  exportDropdownMenu: {
+    position: 'absolute',
+    top: 40,
+    left: 0,
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.xs,
+    ...Shadow.sm,
+    zIndex: 1000,
+  },
+  exportDropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  exportDropdownItemText: {
+    marginLeft: Spacing.xs,
+    color: Colors.textPrimary,
+    fontSize: Typography.fontSize.sm,
+  },
+  filterOutlineButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.white,
+  },
+  filterOutlineText: {
+    marginLeft: Spacing.xs,
+    color: Colors.textPrimary,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.medium,
+  },
   assignmentCard: {
     backgroundColor: Colors.white,
     borderRadius: BorderRadius.lg,
@@ -934,6 +1221,81 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     color: Colors.textPrimary,
     marginTop: Spacing.md,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.lg,
+  },
+  filterModal: {
+    width: '100%',
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+  },
+  filterTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.md,
+  },
+  inputGroup: {
+    marginBottom: Spacing.md,
+  },
+  inputLabel: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.xs,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    color: Colors.textPrimary,
+  },
+  statusChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  statusChip: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    marginRight: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  statusChipActive: {
+    backgroundColor: Colors.primary + '15',
+    borderColor: Colors.primary,
+  },
+  statusChipText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textPrimary,
+  },
+  statusChipTextActive: {
+    color: Colors.primary,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: Spacing.lg,
+  },
+  modalButton: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    marginLeft: Spacing.sm,
+  },
+  modalButtonText: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.medium,
   },
   modalOverlay: {
     flex: 1,

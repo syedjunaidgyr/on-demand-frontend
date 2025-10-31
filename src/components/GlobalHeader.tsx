@@ -6,7 +6,8 @@ import {
   StyleSheet,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesomeIcon } from '../utils/icons';
 import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
@@ -23,6 +24,8 @@ interface GlobalHeaderProps {
   onNotificationPress?: () => void;
   backButtonStyle?: any;
   headerStyle?: any;
+  statusBarStyle?: 'light-content' | 'dark-content';
+  statusBarBackgroundColor?: string;
 }
 
 const GlobalHeader: React.FC<GlobalHeaderProps> = ({
@@ -37,16 +40,23 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
   onNotificationPress,
   backButtonStyle,
   headerStyle,
+  statusBarStyle,
+  statusBarBackgroundColor,
 }) => {
+  const insets = useSafeAreaInsets();
+  const computedTopPadding = Math.max(insets.top || 0, Platform.OS === 'android' ? 10 : 0);
+  const resolvedStatusBarBg = statusBarBackgroundColor || backgroundColor;
+  const resolvedBarStyle = statusBarStyle || (backgroundColor === '#FFFFFF' ? 'dark-content' : 'light-content');
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor }]}>
-      <View style={[styles.header, headerStyle, { backgroundColor }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor }]} edges={['top']}> 
+      <StatusBar translucent={false} backgroundColor={resolvedStatusBarBg} barStyle={resolvedBarStyle} />
+      <View style={[styles.header, headerStyle, { backgroundColor, paddingTop: computedTopPadding }]}>
         <View style={styles.headerContent}>
           {showBackButton && (
             <TouchableOpacity
               style={[styles.backButton, backButtonStyle]}
               onPress={onBackPress}>
-              <FontAwesomeIcon icon="arrow-left" size={24} color={titleColor} />
+              <FontAwesomeIcon icon="arrow-left" size={20} color={titleColor} />
             </TouchableOpacity>
           )}
           
@@ -83,9 +93,10 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
 const styles = StyleSheet.create({
   safeArea: {
     paddingTop: 0,
+    zIndex: 10,
   },
   header: {
-    paddingTop: Platform.OS === 'android' ? 10 : 0,
+    paddingTop: 0,
     paddingHorizontal: 20,
     paddingBottom: 16,
     shadowColor: '#000',

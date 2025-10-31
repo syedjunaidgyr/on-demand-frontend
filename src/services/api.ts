@@ -1208,6 +1208,30 @@ class ApiService {
     }
   }
 
+  // HR Reports – Check-In/Out Payout
+  async getPayoutReport(params: {
+    startDate: string;
+    endDate: string;
+    userId?: string;
+    jobId?: string;
+  }): Promise<{
+    lines: any[];
+    totals: { byUser: Array<{ userId: string; staffName: string; amount: number }>; grandTotal: number };
+    period?: any;
+  }> {
+    try {
+      const { startDate, endDate, userId, jobId } = params;
+      const q: string[] = [`startDate=${encodeURIComponent(startDate)}`, `endDate=${encodeURIComponent(endDate)}`];
+      if (userId) q.push(`userId=${encodeURIComponent(userId)}`);
+      if (jobId) q.push(`jobId=${encodeURIComponent(jobId)}`);
+      const response = await this.api.get(`/hr/reports/payout?${q.join('&')}`);
+      return response.data?.data || response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to fetch payout report:', error?.response?.data || error?.message || error);
+      throw error;
+    }
+  }
+
   // Notification API methods
   async getNotifications(userId: string): Promise<any[]> {
     try {
