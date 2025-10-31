@@ -4,9 +4,9 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesomeIcon } from '../utils/icons';
 import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
@@ -90,9 +90,12 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOpacity: 0.2,
+    shadowRadius: 14,
+    elevation: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    zIndex: 10,
   },
   headerContent: {
     flexDirection: 'row',

@@ -8,6 +8,7 @@ import {
   Image,
   Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigation/AppNavigator';
 import { FontAwesomeIcon } from '../../utils/icons';
@@ -22,7 +23,7 @@ const ProfileSettingsScreen: React.FC = () => {
   const isVerySmallScreen = screenHeight < 600;
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Header with Back Button */}
       <GlobalHeader
         title="Settings"
@@ -30,7 +31,7 @@ const ProfileSettingsScreen: React.FC = () => {
         backgroundColor="#FFFFFF"
         titleColor="#111827"
         onBackPress={() => navigation.goBack()}
-        headerStyle={{ paddingTop: 10, paddingHorizontal: 20, paddingBottom: 16 }}
+        headerStyle={{ paddingTop: 10, paddingHorizontal: 20, paddingBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 8 }}
         backButtonStyle={{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#d1d5db' }}
       />
 
@@ -126,7 +127,7 @@ const ProfileSettingsScreen: React.FC = () => {
           />
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -137,17 +138,17 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flex: 1,
-    marginTop: -5,
+    marginTop: 0,
     backgroundColor: '#FFFFFF',
   },
   scrollContentContainer: {
     flexGrow: 1,
-    paddingBottom: 20,
+    paddingBottom: 0,
     backgroundColor: '#FFFFFF',
   },
   section: {
     paddingHorizontal: 20,
-    marginBottom: 24,
+    marginBottom: 6,
     marginTop: 20,
   },
   sectionTitle: {
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     overflow: 'hidden',
-    marginBottom: 16,
+    marginBottom: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -171,7 +172,7 @@ const styles = StyleSheet.create({
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 18,
+    paddingVertical: 12,
     paddingHorizontal: 20,
   },
   actionIcon: {
@@ -179,11 +180,11 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 12,
     backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#1C2A3A',
+    borderWidth: 1,
+    borderColor: '#d3d3d3',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 10,
   },
   actionButtonText: {
     flex: 1,
@@ -192,16 +193,16 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   actionDivider: {
-    height: 1,
-    backgroundColor: '#F3F4F6',
-    marginLeft: 80,
+    height: 0,
+    backgroundColor: 'transparent',
+    marginLeft: 0,
   },
   poweredByContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingVertical: 10,
-    marginTop: 160,
+    paddingVertical: 6,
+    marginTop: 4,
   },
   poweredByText: {
     fontSize: 12,
