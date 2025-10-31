@@ -470,7 +470,7 @@ const HRDashboardScreen: React.FC = () => {
                     switch (status) {
                       case 'ACCEPTED': return '#10B981';
                       case 'PENDING': return '#F59E0B';
-                      case 'COMPLETED': return '#3B82F6';
+                      case 'COMPLETED': return '#059669';
                       case 'REJECTED': return '#EF4444';
                       default: return '#6B7280';
                     }
