@@ -40,7 +40,9 @@ import NotificationsScreen from '../screens/common/NotificationsScreen';
 import AgencyDashboardScreen from '../screens/agency/AgencyDashboardScreen';
 import AgencyJobsScreen from '../screens/agency/AgencyJobsScreen';
 import AgencyNursesScreen from '../screens/agency/AgencyNursesScreen';
+import AgencyAssignNurseScreen from '../screens/agency/AgencyAssignNurseScreen';
 import AgencyOnboardNursesScreen from '../screens/agency/AgencyOnboardNursesScreen';
+import AgencyNurseDetailsScreen from '../screens/agency/AgencyNurseDetailsScreen';
 
 // Test Components
 import GeolocationTest from '../components/GeolocationTest';
@@ -91,6 +93,8 @@ export type RootStackParamList = {
   PDFViewer: { uri: string; title?: string };
   GeolocationTest: undefined;
   AgencyOnboardNurses: undefined;
+  AgencyNurseDetails: { userId: number };
+  AgencyAssignNurse: { jobId: string; hourlyRate?: number; mode?: 'FULL' | 'PARTIAL' };
 };
 
 export type AuthStackParamList = {
@@ -376,6 +380,13 @@ const MainNavigator = ({ user }: { user: User }) => {
         }}
       />
       <Stack.Screen 
+        name="AgencyAssignNurse" 
+        component={AgencyAssignNurseScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
         name="ReportDetails" 
         component={ReportDetailsScreen}
         options={{
@@ -405,6 +416,16 @@ const MainNavigator = ({ user }: { user: User }) => {
         options={{
           headerShown: true,
           title: 'Onboard Nurses',
+          headerStyle: { backgroundColor: Colors.primary },
+          headerTintColor: Colors.white,
+        }}
+      />
+      <Stack.Screen 
+        name="AgencyNurseDetails" 
+        component={AgencyNurseDetailsScreen}
+        options={{
+          headerShown: true,
+          title: 'Nurse Details',
           headerStyle: { backgroundColor: Colors.primary },
           headerTintColor: Colors.white,
         }}

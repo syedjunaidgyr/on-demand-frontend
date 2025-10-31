@@ -187,7 +187,7 @@ const AgencyDashboardScreen: React.FC = () => {
                 <View style={[styles.quickIconWrap, { backgroundColor: '#2563EB22' }]}>
                   <FontAwesomeIcon icon="briefcase" size={16} color="#2563EB" />
                 </View>
-                <Text style={styles.quickTitle}>Agency Jobs</Text>
+                <Text style={styles.quickTitle}>Jobs</Text>
                 <Text style={styles.quickSub}>Browse and assign</Text>
               </TouchableOpacity>
             </View>
