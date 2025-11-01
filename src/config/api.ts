@@ -7,18 +7,18 @@ import { Platform } from 'react-native';
 // Configuration for different environments
 const API_CONFIG = {
   // For Android emulator
-  EMULATOR: 'http://192.168.1.52:3000/api/v1',
+  EMULATOR: 'http://192.168.1.8:3000/api/v1',
   
   // For iOS simulator
-  SIMULATOR: 'http://192.168.1.52:3000/api/v1',
+  SIMULATOR: 'http://192.168.1.8:3000/api/v1',
   
   // For physical device - REPLACE WITH YOUR COMPUTER'S IP ADDRESS
   // Example: 'http://192.168.1.100:3000/api/v1'
-  PHYSICAL_DEVICE: 'http://192.168.1.52:3000/api/v1', // Your actual IP
+  PHYSICAL_DEVICE: 'http://192.168.1.8:3000/api/v1', // Your actual IP
   
   // Production URL - KEEP AS HTTP for local testing
   // Change this to HTTPS only when you deploy to a real server
-  PRODUCTION: 'http://192.168.1.52:3000/api/v1',
+  PRODUCTION: 'http://192.168.1.8:3000/api/v1',
 };
 
 // Auto-detect the best URL based on platform and environment
@@ -48,7 +48,7 @@ export const getComputerIP = (): string => {
   // macOS: ifconfig | grep "inet " | grep -v 127.0.0.1
   // Windows: ipconfig
   // Linux: hostname -I
-  return '192.168.1.52'; // Your actual IP
+  return '192.168.1.8'; // Your actual IP
 };
 
 // Manual override for testing on physical device
@@ -57,7 +57,7 @@ export const FORCE_PHYSICAL_DEVICE = true; // Set to true when testing on real d
 export const getFinalApiUrl = (): string => {
   // Always use physical device IP for APK builds
   if (FORCE_PHYSICAL_DEVICE) {
-    return `http://192.168.1.52:3000/api/v1`;
+    return `http://192.168.1.8:3000/api/v1`;
   }
   return API_BASE_URL;
 };
@@ -68,5 +68,5 @@ console.log('🔧 Development Mode:', __DEV__);
 console.log('🔧 Force Physical Device:', FORCE_PHYSICAL_DEVICE);
 console.log('🔧 Final URL will be:', getFinalApiUrl());
 
-export const NOTIFICATIONS_SERVICE_URL = 'http://192.168.1.52:3020/api';
-export const TOKEN_REGISTRATION_URL = 'http://192.168.1.79:3020/api/tokenRegistration';
+export const NOTIFICATIONS_SERVICE_URL = 'http://192.168.1.8:3020/api';
+export const TOKEN_REGISTRATION_URL = 'http://192.168.1.8:3020/api/tokenRegistration';

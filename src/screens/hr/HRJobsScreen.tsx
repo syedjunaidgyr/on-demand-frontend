@@ -43,6 +43,8 @@ const HRJobsScreen: React.FC = () => {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [loadingAssignments, setLoadingAssignments] = useState(false);
+  const [jobDetailsVisible, setJobDetailsVisible] = useState(false);
+  const [selectedJobDetails, setSelectedJobDetails] = useState<Job | null>(null);
   const [filterVisible, setFilterVisible] = useState(false);
   const [filterFrom, setFilterFrom] = useState<string>('');
   const [filterTo, setFilterTo] = useState<string>('');
@@ -156,22 +158,6 @@ const HRJobsScreen: React.FC = () => {
     return `${displayHour}:${mins} ${ampm}`;
   };
 
-  const handleJobPress = async (job: Job) => {
-    try {
-      setSelectedJob(job);
-      setAssignVisible(true);
-      setLoadingAssignments(true);
-      const allAssignmentsResponse = await ApiService.getJobAssignments(job.id.toString());
-      const allAssignments = allAssignmentsResponse.assignments || allAssignmentsResponse.data || allAssignmentsResponse || [];
-      setAssignments(Array.isArray(allAssignments) ? allAssignments : []);
-    } catch (error) {
-      console.error('❌ Failed to load assignments:', error);
-      Alert.alert('Error', 'Failed to load candidate details. Please try again.');
-    } finally {
-      setLoadingAssignments(false);
-    }
-  };
-
   const handleCreateJob = () => {
     (navigation as any).navigate('CreateJob');
   };
@@ -201,50 +187,24 @@ const HRJobsScreen: React.FC = () => {
     }
   };
 
+  const handleShowJobDetails = (job: Job) => {
+    setSelectedJobDetails(job);
+    setJobDetailsVisible(true);
+  };
+
   const handleReviewCandidates = async (job: Job) => {
     try {
-      console.log('🔍 HR reviewing candidates for job:', job.id, job.title);
-      console.log('📊 Job assignments count:', job.assignments?.length || 0);
-      console.log('📊 Job assignments:', job.assignments);
-      
-      // Get ALL assignments for this job and filter for accepted ones
-      console.log('🔍 Getting ALL assignments for job:', job.id);
+      setSelectedJob(job);
+      setAssignVisible(true);
+      setLoadingAssignments(true);
       const allAssignmentsResponse = await ApiService.getJobAssignments(job.id.toString());
-      console.log('📦 All assignments response:', allAssignmentsResponse);
-      
-      // Filter for accepted assignments
       const allAssignments = allAssignmentsResponse.assignments || allAssignmentsResponse.data || allAssignmentsResponse || [];
-      console.log('📋 All assignments array:', allAssignments);
-      
-      const acceptedAssignments = allAssignments.filter((assignment: any) => assignment.status === 'ACCEPTED');
-      console.log('📋 Filtered accepted assignments:', acceptedAssignments);
-      console.log('📋 Accepted assignments count:', acceptedAssignments?.length || 0);
-      
-      if (!acceptedAssignments || acceptedAssignments.length === 0) {
-        Alert.alert(
-          'No Accepted Candidates', 
-          `No staff members have accepted this job yet.\n\nCurrent assignments:\n${allAssignments.map((a: any) => `- ${a.user?.firstName || 'Unknown'} ${a.user?.lastName || ''}: ${a.status}`).join('\n')}\n\nYou need staff to accept assignments first.`,
-          [
-            { text: 'OK' },
-            { 
-              text: 'Assign Job to Staff', 
-              onPress: () => {
-                console.log('Navigate to assign job to staff');
-              }
-            }
-          ]
-        );
-        return;
-      }
-      
-      (navigation as any).navigate('JobAssignment', { 
-        jobId: job.id, 
-        acceptedAssignments: acceptedAssignments 
-      });
+      setAssignments(Array.isArray(allAssignments) ? allAssignments : []);
     } catch (error) {
-      console.error('❌ Failed to load accepted assignments:', error);
-      console.error('❌ Job details:', job);
-      Alert.alert('Error', `Failed to load accepted assignments: ${error.message}`);
+      console.error('❌ Failed to load assignments:', error);
+      Alert.alert('Error', 'Failed to load candidate details. Please try again.');
+    } finally {
+      setLoadingAssignments(false);
     }
   };
 
@@ -261,11 +221,13 @@ const HRJobsScreen: React.FC = () => {
     const subtitleRight = timeRange;
     
     return (
-      <TouchableOpacity style={styles.jobCard} onPress={() => handleJobPress(job)}>
+      <View style={styles.jobCard}>
         {/* Date header with edit button */}
         <View style={styles.cardTopRow}>
           <Text style={styles.cardTimeText}>{dateRange}</Text>
-          <TouchableOpacity style={styles.editTopButton} onPress={() => handleJobPress(job)}>
+          <TouchableOpacity 
+            style={styles.editTopButton}
+            disabled={true}>
             <FontAwesomeIcon icon="edit" size={Responsive.iconSize(16)} color={Colors.textSecondary} />
           </TouchableOpacity>
         </View>
@@ -306,11 +268,33 @@ const HRJobsScreen: React.FC = () => {
                 <Text style={styles.infoValue}>₹{job.hourlyRate}/hr</Text>
               </View>
             </View>
+
+            {/* Department row */}
+            <View style={styles.departmentRow}>
+              <Text style={styles.infoLabel}>Department</Text>
+              <Text style={styles.infoValue}>{job.department || '—'}</Text>
+            </View>
+
+            {/* Action Buttons */}
+            <View style={styles.cardActionButtons}>
+              <TouchableOpacity 
+                style={styles.assignButton} 
+                onPress={() => handleReviewCandidates(job)}>
+                <FontAwesomeIcon icon="user-check" size={16} color={Colors.white} />
+                <Text style={styles.assignButtonText}>Assign</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.jobDetailsButton} 
+                onPress={() => handleShowJobDetails(job)}>
+                <FontAwesomeIcon icon="info-circle" size={16} color={Colors.primary} />
+                <Text style={styles.jobDetailsButtonText}>Job Details</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
         
-      </TouchableOpacity>
+      </View>
     );
   };
 
@@ -454,6 +438,12 @@ const HRJobsScreen: React.FC = () => {
           setAssignVisible(false);
           loadJobs(1, true);
         }}
+      />
+
+      <JobDetailsBottomSheet
+        visible={jobDetailsVisible}
+        onClose={() => setJobDetailsVisible(false)}
+        job={selectedJobDetails}
       />
 
       <FilterBottomSheet
@@ -702,6 +692,265 @@ const AssignBottomSheet = ({
             </View>
           </View>
         )}
+      </View>
+    </Modal>
+  );
+};
+
+const JobDetailsBottomSheet = ({
+  visible,
+  onClose,
+  job,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  job: Job | null;
+}) => {
+  const localFormatDate = (dateString: string) => {
+    if (!dateString) return '—';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '—';
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const localFormatTime = (timeString: string) => {
+    if (!timeString || typeof timeString !== 'string' || !timeString.includes(':')) return '—';
+    const [hours, minutes] = timeString.split(':');
+    const hour = parseInt(hours, 10);
+    if (isNaN(hour)) return '—';
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    const mins = (minutes ?? '00').slice(0, 2);
+    return `${displayHour}:${mins} ${ampm}`;
+  };
+
+  const formatDateTime = (dateString: string) => {
+    if (!dateString) return '—';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '—';
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  };
+
+  if (!job) return null;
+
+  const jobAny = job as any;
+  const facilityAddress = jobAny.facilityAddress || {};
+  const creator = jobAny.creator || {};
+  const assignmentStatus = jobAny.assignmentStatus || {};
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.sheetBackdrop}>
+        <Pressable style={styles.sheetBackdropTouchable} onPress={onClose} />
+        <View style={styles.sheetContainer}>
+          <View style={styles.sheetHandle} />
+          <Text style={styles.sheetTitle}>Job Details</Text>
+          <View style={styles.sheetDivider} />
+
+          <ScrollView contentContainerStyle={styles.sheetContent}>
+            {/* Basic Job Information */}
+            <Text style={styles.sheetSectionTitle}>Job Information</Text>
+            <View style={styles.jobDetailCard}>
+              <View style={styles.jobDetailItemRow}>
+                <Text style={styles.jobDetailLabel}>Title</Text>
+                <Text style={styles.jobDetailValue} numberOfLines={3}>{job.title || '—'}</Text>
+              </View>
+              {job.description && (
+                <View style={styles.jobDetailItemRow}>
+                  <Text style={styles.jobDetailLabel}>Description</Text>
+                  <Text style={styles.jobDetailValue} numberOfLines={5}>{job.description}</Text>
+                </View>
+              )}
+              <View style={styles.jobDetailItemRow}>
+                <Text style={styles.jobDetailLabel}>Department</Text>
+                <Text style={styles.jobDetailValue}>{job.department || '—'}</Text>
+              </View>
+              {job.specialization && (
+                <View style={styles.jobDetailItemRow}>
+                  <Text style={styles.jobDetailLabel}>Specialization</Text>
+                  <Text style={styles.jobDetailValue}>{job.specialization}</Text>
+                </View>
+              )}
+              <View style={styles.jobDetailItemRow}>
+                <Text style={styles.jobDetailLabel}>Role</Text>
+                <Text style={styles.jobDetailValue}>{job.requiredRole || '—'}</Text>
+              </View>
+              <View style={styles.jobDetailItemRow}>
+                <Text style={styles.jobDetailLabel}>Location</Text>
+                <Text style={styles.jobDetailValue}>{job.location || '—'}</Text>
+              </View>
+            </View>
+
+            {/* Schedule */}
+            <Text style={styles.sheetSectionTitle}>Schedule</Text>
+            <View style={styles.jobDetailCard}>
+              <View style={styles.jobDetailItemRow}>
+                <Text style={styles.jobDetailLabel}>Start Date</Text>
+                <Text style={styles.jobDetailValue}>{localFormatDate(job.startDate)}</Text>
+              </View>
+              <View style={styles.jobDetailItemRow}>
+                <Text style={styles.jobDetailLabel}>End Date</Text>
+                <Text style={styles.jobDetailValue}>{localFormatDate(job.endDate)}</Text>
+              </View>
+              <View style={styles.jobDetailItemRow}>
+                <Text style={styles.jobDetailLabel}>Start Time</Text>
+                <Text style={styles.jobDetailValue}>{localFormatTime(job.startTime)}</Text>
+              </View>
+              <View style={styles.jobDetailItemRow}>
+                <Text style={styles.jobDetailLabel}>End Time</Text>
+                <Text style={styles.jobDetailValue}>{localFormatTime(job.endTime)}</Text>
+              </View>
+            </View>
+
+            {/* Compensation */}
+            <Text style={styles.sheetSectionTitle}>Compensation</Text>
+            <View style={styles.jobDetailCard}>
+              <View style={styles.jobDetailItemRow}>
+                <Text style={styles.jobDetailLabel}>Hourly Rate</Text>
+                <Text style={styles.jobDetailValue}>₹{job.hourlyRate || '—'}/hr</Text>
+              </View>
+              <View style={styles.jobDetailItemRow}>
+                <Text style={styles.jobDetailLabel}>Max Assignments</Text>
+                <Text style={styles.jobDetailValue}>{jobAny.maxAssignments || '—'}</Text>
+              </View>
+            </View>
+
+            {/* Status & Priority */}
+            <Text style={styles.sheetSectionTitle}>Status & Priority</Text>
+            <View style={styles.jobDetailCard}>
+              <View style={styles.jobDetailItemRow}>
+                <Text style={styles.jobDetailLabel}>Status</Text>
+                <Text style={styles.jobDetailValue}>{job.status || '—'}</Text>
+              </View>
+              <View style={styles.jobDetailItemRow}>
+                <Text style={styles.jobDetailLabel}>Priority</Text>
+                <Text style={styles.jobDetailValue}>{job.priority || '—'}</Text>
+              </View>
+            </View>
+
+            {/* Facility Information */}
+            {(jobAny.facilityName || facilityAddress.street || facilityAddress.city) && (
+              <>
+                <Text style={styles.sheetSectionTitle}>Facility Information</Text>
+                <View style={styles.jobDetailCard}>
+                  {jobAny.facilityName && (
+                    <View style={styles.jobDetailItemRow}>
+                      <Text style={styles.jobDetailLabel}>Facility Name</Text>
+                      <Text style={styles.jobDetailValue}>{jobAny.facilityName}</Text>
+                    </View>
+                  )}
+                  {facilityAddress.street && (
+                    <View style={styles.jobDetailItemRow}>
+                      <Text style={styles.jobDetailLabel}>Street</Text>
+                      <Text style={styles.jobDetailValue}>{facilityAddress.street}</Text>
+                    </View>
+                  )}
+                  {facilityAddress.city && (
+                    <View style={styles.jobDetailItemRow}>
+                      <Text style={styles.jobDetailLabel}>City</Text>
+                      <Text style={styles.jobDetailValue}>{facilityAddress.city}</Text>
+                    </View>
+                  )}
+                  {facilityAddress.state && (
+                    <View style={styles.jobDetailItemRow}>
+                      <Text style={styles.jobDetailLabel}>State</Text>
+                      <Text style={styles.jobDetailValue}>{facilityAddress.state}</Text>
+                    </View>
+                  )}
+                  {facilityAddress.zipCode && (
+                    <View style={styles.jobDetailItemRow}>
+                      <Text style={styles.jobDetailLabel}>ZIP Code</Text>
+                      <Text style={styles.jobDetailValue}>{facilityAddress.zipCode}</Text>
+                    </View>
+                  )}
+                  {facilityAddress.country && (
+                    <View style={styles.jobDetailItemRow}>
+                      <Text style={styles.jobDetailLabel}>Country</Text>
+                      <Text style={styles.jobDetailValue}>{facilityAddress.country}</Text>
+                    </View>
+                  )}
+                  {jobAny.hospitalId && (
+                    <View style={styles.jobDetailItemRow}>
+                      <Text style={styles.jobDetailLabel}>Hospital ID</Text>
+                      <Text style={styles.jobDetailValue}>{jobAny.hospitalId}</Text>
+                    </View>
+                  )}
+                  {jobAny.unitCode && (
+                    <View style={styles.jobDetailItemRow}>
+                      <Text style={styles.jobDetailLabel}>Unit Code</Text>
+                      <Text style={styles.jobDetailValue}>{jobAny.unitCode}</Text>
+                    </View>
+                  )}
+                </View>
+              </>
+            )}
+
+            {/* Assignment Status */}
+            {Object.keys(assignmentStatus).length > 0 && (
+              <>
+                <Text style={styles.sheetSectionTitle}>Assignment Status</Text>
+                <View style={styles.jobDetailCard}>
+                  {Object.entries(assignmentStatus).map(([status, count]: [string, any]) => (
+                    <View key={status} style={styles.jobDetailItemRow}>
+                      <Text style={styles.jobDetailLabel}>{status}</Text>
+                      <Text style={styles.jobDetailValue}>{count || 0}</Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            )}
+
+            {/* Creator Information */}
+            {creator.firstName && (
+              <>
+                <Text style={styles.sheetSectionTitle}>Created By</Text>
+                <View style={styles.jobDetailCard}>
+                  {creator.firstName && (
+                    <View style={styles.jobDetailItemRow}>
+                      <Text style={styles.jobDetailLabel}>Name</Text>
+                      <Text style={styles.jobDetailValue}>
+                        {`${creator.firstName || ''} ${creator.lastName || ''}`.trim() || '—'}
+                      </Text>
+                    </View>
+                  )}
+                  {creator.email && (
+                    <View style={styles.jobDetailItemRow}>
+                      <Text style={styles.jobDetailLabel}>Email</Text>
+                      <Text style={styles.jobDetailValue}>{creator.email}</Text>
+                    </View>
+                  )}
+                </View>
+              </>
+            )}
+
+            {/* Timestamps */}
+            <Text style={styles.sheetSectionTitle}>Timestamps</Text>
+            <View style={styles.jobDetailCard}>
+              {jobAny.createdAt && (
+                <View style={styles.jobDetailItemRow}>
+                  <Text style={styles.jobDetailLabel}>Created At</Text>
+                  <Text style={styles.jobDetailValue}>{formatDateTime(jobAny.createdAt)}</Text>
+                </View>
+              )}
+              {jobAny.updatedAt && (
+                <View style={styles.jobDetailItemRow}>
+                  <Text style={styles.jobDetailLabel}>Updated At</Text>
+                  <Text style={styles.jobDetailValue}>{formatDateTime(jobAny.updatedAt)}</Text>
+                </View>
+              )}
+            </View>
+          </ScrollView>
+
+          <TouchableOpacity style={styles.sheetCloseButton} onPress={onClose}>
+            <Text style={styles.sheetCloseText}>Close</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </Modal>
   );
@@ -1118,6 +1367,46 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.xs,
     fontFamily: Typography.fontFamily.bold,
     textTransform: 'capitalize',
+  },
+  departmentRow: {
+    marginTop: Spacing.sm,
+  },
+  cardActionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: Spacing.md,
+  },
+  assignButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primary,
+    borderRadius: BorderRadius.md,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  assignButtonText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.white,
+  },
+  jobDetailsButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.md,
+    paddingVertical: 12,
+    gap: 8,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+  },
+  jobDetailsButtonText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.primary,
   },
   // removed action button variants
   fab: {

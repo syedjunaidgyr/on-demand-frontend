@@ -153,6 +153,7 @@ export interface LoginRequest {
 export interface RegisterRequest {
   email: string;
   password: string;
+  confirmPassword: string;
   firstName: string;
   lastName: string;
   role: 'DOCTOR' | 'NURSE';
@@ -161,18 +162,20 @@ export interface RegisterRequest {
   specialization?: string;
   licenseNumber?: string;
   phone: string;
-  emergencyContact: {
+  emergencyContact?: {
     name: string;
     phone: string;
     relationship: string;
   };
-  address: {
+  address?: {
     street: string;
     city: string;
     state: string;
     zipCode: string;
     country: string;
   };
+  hospitalId?: number;
+  unitCode?: string;
 }
 
 export interface ApiResponse<T> {

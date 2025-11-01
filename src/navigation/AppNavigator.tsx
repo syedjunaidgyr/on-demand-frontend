@@ -323,10 +323,7 @@ const MainNavigator = ({ user }: { user: User }) => {
         name="CreateJob" 
         component={CreateJobScreen}
         options={{
-          headerShown: true,
-          title: 'Create Job',
-          headerStyle: { backgroundColor: Colors.primary },
-          headerTintColor: Colors.white,
+          headerShown: false,
         }}
       />
       <Stack.Screen 

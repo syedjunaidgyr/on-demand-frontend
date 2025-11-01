@@ -176,6 +176,19 @@ const ReportsScreen: React.FC = () => {
   const [showAssignmentsStartPicker, setShowAssignmentsStartPicker] = useState(false);
   const [showAssignmentsEndPicker, setShowAssignmentsEndPicker] = useState(false);
   
+  // Check-In/Out filter states
+  const [checkinFilterTitle, setCheckinFilterTitle] = useState('');
+  const [checkinFilterStatus, setCheckinFilterStatus] = useState('');
+  const [checkinFilterStartDate, setCheckinFilterStartDate] = useState('');
+  const [checkinFilterEndDate, setCheckinFilterEndDate] = useState('');
+  const [checkinFilterDepartment, setCheckinFilterDepartment] = useState('');
+  const [checkinDeptDropdownOpen, setCheckinDeptDropdownOpen] = useState(false);
+  const [showCheckinExportMenu, setShowCheckinExportMenu] = useState(false);
+  const [showCheckinExportMenuForId, setShowCheckinExportMenuForId] = useState<string | null>(null);
+  const [showCheckinFilterModal, setShowCheckinFilterModal] = useState(false);
+  const [showCheckinStartPicker, setShowCheckinStartPicker] = useState(false);
+  const [showCheckinEndPicker, setShowCheckinEndPicker] = useState(false);
+  
 
   // Helper: current filtered jobs (Title + Department)
   const getFilteredJobs = () => {
@@ -213,6 +226,41 @@ const ReportsScreen: React.FC = () => {
       const byStart = startFilter.length === 0 || (jobStart && jobStart >= startFilter);
       const byEnd = endFilter.length === 0 || (jobEnd && jobEnd <= endFilter);
       const byDept = deptFilter.length === 0 || jobDept === deptFilter;
+      return byTitle && byStatus && byStart && byEnd && byDept;
+    });
+  };
+
+  // Helper: current filtered check-ins
+  const getFilteredCheckIns = () => {
+    const allCheckIns = [
+      ...(realtimeData?.activeStaffDetails || []).map((item: any) => ({ ...item, isActive: true })),
+      ...attendanceData
+    ];
+    
+    const titleQuery = checkinFilterTitle.trim().toLowerCase();
+    const statusFilter = checkinFilterStatus.trim();
+    const startFilter = checkinFilterStartDate.trim();
+    const endFilter = checkinFilterEndDate.trim();
+    const deptFilter = checkinFilterDepartment.trim();
+    
+    return allCheckIns.filter((item) => {
+      const userName = item.isActive 
+        ? (item.userName || '').toLowerCase()
+        : (item.user ? `${item.user.firstName} ${item.user.lastName}` : '').toLowerCase();
+      const byTitle = titleQuery.length === 0 || userName.includes(titleQuery);
+      
+      const itemStatus = item.status || 'CHECKED_IN';
+      const byStatus = statusFilter.length === 0 || itemStatus === statusFilter;
+      
+      const checkInDate = new Date(item.checkInTime).toISOString().split('T')[0];
+      const byStart = startFilter.length === 0 || checkInDate >= startFilter;
+      const byEnd = endFilter.length === 0 || checkInDate <= endFilter;
+      
+      const dept = item.isActive 
+        ? (item.department || item.jobDepartment || '')
+        : (item.job?.department || '');
+      const byDept = deptFilter.length === 0 || dept === deptFilter;
+      
       return byTitle && byStatus && byStart && byEnd && byDept;
     });
   };
@@ -1193,8 +1241,16 @@ const ReportsScreen: React.FC = () => {
             <TextInput
               style={styles.textInput}
               placeholder="Search by title"
-              value={selectedReportType === 'assigned' ? assignmentsFilterTitle : jobsFilterTitle}
-              onChangeText={(t) => selectedReportType === 'assigned' ? setAssignmentsFilterTitle(t) : setJobsFilterTitle(t)}
+              value={
+                selectedReportType === 'assigned' ? assignmentsFilterTitle :
+                selectedReportType === 'checkin-out' ? checkinFilterTitle :
+                jobsFilterTitle
+              }
+              onChangeText={(t) => 
+                selectedReportType === 'assigned' ? setAssignmentsFilterTitle(t) :
+                selectedReportType === 'checkin-out' ? setCheckinFilterTitle(t) :
+                setJobsFilterTitle(t)
+              }
             />
           </View>
         )}
@@ -1203,7 +1259,7 @@ const ReportsScreen: React.FC = () => {
         {selectedReportType === 'job-lists' ? (
           <View style={styles.jobListsContainer}>
             <View style={styles.exportHeaderContainer}>
-              <Text style={[styles.sectionTitle, styles.sectionTitleSm]}>All Jobs</Text>
+              <Text style={styles.sectionTitle}>All Jobs</Text>
               <View style={styles.headerActionsRow}>
                 <TouchableOpacity
                   style={styles.exportDropdownButton}
@@ -1529,29 +1585,43 @@ const ReportsScreen: React.FC = () => {
         ) : selectedReportType === 'checkin-out' ? (
           <View style={styles.jobListsContainer}>
             <View style={styles.exportHeaderContainer}>
-              <Text style={styles.sectionTitle}>Check-In/Out Lists</Text>
-              <View style={styles.globalExportButtons}>
+              <Text style={styles.sectionTitle}>Check-In/Out</Text>
+              <View style={styles.headerActionsRow}>
                 <TouchableOpacity
-                  style={[styles.exportButtonSmall, styles.pdfButton]}
-                  onPress={() => handleExportAllCheckIns('pdf')}
-                  disabled={isGenerating || (attendanceData.length === 0 && (realtimeData?.activeStaffDetails?.length || 0) === 0)}
+                  style={styles.exportDropdownButton}
+                  onPress={() => setShowCheckinExportMenu(v => !v)}
+                  disabled={isGenerating || getFilteredCheckIns().length === 0}
                 >
-                  {isGenerating ? (
-                    <ActivityIndicator size="small" color={Colors.white} />
-                  ) : (
-                    <FontAwesomeIcon icon="file-pdf" size={Responsive.iconSize(18)} color={Colors.white} />
-                  )}
+                  <FontAwesomeIcon icon="file-export" size={Responsive.iconSize(16)} color={Colors.white} />
+                  <Text style={styles.exportDropdownText}>Export All</Text>
+                  <FontAwesomeIcon icon={showCheckinExportMenu ? 'chevron-up' : 'chevron-down'} size={12} color={Colors.white} />
                 </TouchableOpacity>
+
+                {showCheckinExportMenu && (
+                  <View style={styles.exportDropdownMenu}>
+                    <TouchableOpacity
+                      style={styles.exportDropdownItem}
+                      onPress={() => { setShowCheckinExportMenu(false); handleExportAllCheckIns('pdf'); }}
+                    >
+                      <FontAwesomeIcon icon="file-pdf" size={14} color={Colors.error} />
+                      <Text style={styles.exportDropdownItemText}>PDF</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.exportDropdownItem}
+                      onPress={() => { setShowCheckinExportMenu(false); handleExportAllCheckIns('excel'); }}
+                    >
+                      <FontAwesomeIcon icon="file-excel" size={14} color={Colors.success} />
+                      <Text style={styles.exportDropdownItemText}>Excel</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
                 <TouchableOpacity
-                  style={[styles.exportButtonSmall, styles.excelButton]}
-                  onPress={() => handleExportAllCheckIns('excel')}
-                  disabled={isGenerating || (attendanceData.length === 0 && (realtimeData?.activeStaffDetails?.length || 0) === 0)}
+                  style={styles.filterOutlineButton}
+                  onPress={() => setShowCheckinFilterModal(true)}
                 >
-                  {isGenerating ? (
-                    <ActivityIndicator size="small" color={Colors.white} />
-                  ) : (
-                    <FontAwesomeIcon icon="file-excel" size={Responsive.iconSize(18)} color={Colors.white} />
-                  )}
+                  <FontAwesomeIcon icon="filter" size={14} color={Colors.textPrimary} />
+                  <Text style={styles.filterOutlineText}>Filter</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -1559,65 +1629,108 @@ const ReportsScreen: React.FC = () => {
               <ActivityIndicator size="small" color={Colors.primary} />
             ) : (attendanceData.length > 0 || (realtimeData?.activeStaffDetails?.length || 0) > 0) ? (
               <FlatList
-                data={[
-                  ...(realtimeData?.activeStaffDetails || []).map((item: any) => ({ ...item, isActive: true })),
-                  ...attendanceData
-                ]}
-                renderItem={({ item }) => (
-                  <View style={styles.jobCardContainer}>
-                    <View style={styles.jobCard}>
-                      <TouchableOpacity onPress={() => item.isActive ? openRealtimeCheckInModalFromActive(item) : openRealtimeCheckInModal(item)}>
-                        <View style={styles.jobCardHeader}>
-                          <View style={styles.jobCardTitleSection}>
-                            <Text style={styles.jobCardTitle} numberOfLines={2}>
-                              {item.isActive ? item.userName : (item.user ? `${item.user.firstName} ${item.user.lastName}` : 'Unknown')}
-                            </Text>
-                            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status || 'CHECKED_IN') }]}>
-                              <Text style={styles.statusText}>{item.status || 'CHECKED_IN'}</Text>
-                            </View>
+                data={getFilteredCheckIns()}
+                renderItem={({ item }) => {
+                  const uniqueId = item.isActive ? `active-${item.userId}-${item.checkInTime}` : String(item.id);
+                  return (
+                    <View style={styles.jobCardContainer}>
+                      <View style={[styles.jobCard, showCheckinExportMenuForId === uniqueId && { zIndex: 2000, elevation: 16 }]}> 
+                        <View style={styles.cardTopRow}>
+                          <Text style={styles.cardTimeText}>
+                            {item.isActive 
+                              ? `Checked in: ${formatDateShort(item.checkInTime)} • Elapsed ${formatElapsedMinutes(item.workTimeMinutes)}`
+                              : `${formatDateShort(item.checkInTime)} - ${item.checkOutTime ? formatDateShort(item.checkOutTime) : 'In Progress'}`
+                            }
+                          </Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <TouchableOpacity
+                              style={styles.inlineIconButton}
+                              onPress={() => setShowCheckinExportMenuForId(prev => prev === uniqueId ? null : uniqueId)}
+                            >
+                              <FontAwesomeIcon icon="file-export" size={22} color={Colors.primary} />
+                            </TouchableOpacity>
                           </View>
                         </View>
-                        <Text style={styles.jobCardDepartment}>
-                          {item.isActive ? (item.jobTitle || 'N/A') : (item.job?.title || 'N/A')}
-                        </Text>
-                        <Text style={styles.jobCardLocation}>
-                          {item.isActive 
-                            ? `${(item.department || item.jobDepartment) || 'N/A'} • ${item.facilityName || 'N/A'}`
-                            : `${item.job?.department || 'N/A'} • ${item.job?.location || 'N/A'}`
-                          }
-                        </Text>
-                        <Text style={styles.jobCardDates}>
-                          {item.isActive 
-                            ? `Checked in: ${new Date(item.checkInTime).toLocaleString()} • Elapsed ${formatElapsedMinutes(item.workTimeMinutes)}`
-                            : `${new Date(item.checkInTime).toLocaleString()} ${item.checkOutTime ? `→ ${new Date(item.checkOutTime).toLocaleString()}` : ''}`
-                          }
-                        </Text>
-                        {!item.isActive && (
-                          <Text style={styles.jobCardLocation}>
-                            Work: {item.totalWorkTime ?? 'N/A'}m • Break: {item.totalBreakTime ?? 0}m
-                          </Text>
-                        )}
-                        {!item.isActive && item.notes && (
-                          <Text style={styles.jobCardLocation}>Notes: {item.notes}</Text>
-                        )}
-                      </TouchableOpacity>
-                      <View style={styles.jobCardExportButtonsInside}>
-                        <TouchableOpacity
-                          style={[styles.cardExportBtn, { backgroundColor: Colors.error }]}
-                          onPress={() => handleExportTimesheet(item.isActive ? mapActiveToTimesheet(item) : mapCheckInToTimesheet(item), 'pdf')}
-                        >
-                          <FontAwesomeIcon icon="file-pdf" size={16} color={Colors.white} />
+                        <View style={styles.cardDivider} />
+
+                        <TouchableOpacity onPress={() => item.isActive ? openRealtimeCheckInModalFromActive(item) : openRealtimeCheckInModal(item)} activeOpacity={0.8}>
+                          <View style={styles.profileRow}>
+                            <View style={styles.profileContent}>
+                              <Text style={styles.cardTitle} numberOfLines={1}>
+                                {item.isActive ? item.userName : (item.user ? `${item.user.firstName} ${item.user.lastName}` : 'Unknown')}
+                              </Text>
+                              <View style={styles.subtitleRow}>
+                                {!!(item.isActive ? item.jobTitle : item.job?.title) && (
+                                  <Text style={styles.subtitleText} numberOfLines={1}>
+                                    {item.isActive ? item.jobTitle : item.job?.title}
+                                  </Text>
+                                )}
+                                {!!(item.isActive ? item.jobTitle : item.job?.title) && !!(item.isActive ? (item.department || item.jobDepartment) : item.job?.department) && (
+                                  <Text style={styles.subtitleDot}> • </Text>
+                                )}
+                                {!!(item.isActive ? (item.department || item.jobDepartment) : item.job?.department) && (
+                                  <Text style={styles.subtitleText} numberOfLines={1}>
+                                    {item.isActive ? (item.department || item.jobDepartment) : item.job?.department}
+                                  </Text>
+                                )}
+                              </View>
+
+                              <View style={styles.assignmentRow}>
+                                <View style={styles.infoCol}>
+                                  <Text style={styles.infoLabel}>Status</Text>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor(item.status) }]}> 
+                                      <Text style={[styles.inlineStatusText, { color: Colors.white }]}>
+                                        {formatStatusLabel(item.status)}
+                                      </Text>
+                                    </View>
+                                  </View>
+                                </View>
+                                {!item.isActive && (
+                                  <>
+                                    <View style={styles.infoCol}>
+                                      <Text style={styles.infoLabel}>Work Time</Text>
+                                      <Text style={styles.infoValue}>{item.totalWorkTime ? `${item.totalWorkTime}m` : '—'}</Text>
+                                    </View>
+                                    <View style={styles.infoCol}>
+                                      <Text style={styles.infoLabel}>Break Time</Text>
+                                      <Text style={styles.infoValue}>{item.totalBreakTime ? `${item.totalBreakTime}m` : '—'}</Text>
+                                    </View>
+                                  </>
+                                )}
+                              </View>
+
+                              {!item.isActive && item.notes && (
+                                <Text style={styles.descriptionText} numberOfLines={2}>
+                                  {item.notes}
+                                </Text>
+                              )}
+                            </View>
+                          </View>
                         </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.cardExportBtn, { backgroundColor: Colors.success }]}
-                          onPress={() => handleExportTimesheet(item.isActive ? mapActiveToTimesheet(item) : mapCheckInToTimesheet(item), 'excel')}
-                        >
-                          <FontAwesomeIcon icon="file-excel" size={16} color={Colors.white} />
-                        </TouchableOpacity>
+
+                        {showCheckinExportMenuForId === uniqueId && (
+                          <View style={[styles.exportDropdownMenu, { right: 8, top: 36, position: 'absolute' }]}>
+                            <TouchableOpacity
+                              style={styles.exportDropdownItem}
+                              onPress={() => { setShowCheckinExportMenuForId(null); handleExportTimesheet(item.isActive ? mapActiveToTimesheet(item) : mapCheckInToTimesheet(item), 'pdf'); }}
+                            >
+                              <FontAwesomeIcon icon="file-pdf" size={14} color={Colors.error} />
+                              <Text style={styles.exportDropdownItemText}>PDF</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.exportDropdownItem}
+                              onPress={() => { setShowCheckinExportMenuForId(null); handleExportTimesheet(item.isActive ? mapActiveToTimesheet(item) : mapCheckInToTimesheet(item), 'excel'); }}
+                            >
+                              <FontAwesomeIcon icon="file-excel" size={14} color={Colors.success} />
+                              <Text style={styles.exportDropdownItemText}>Excel</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
                       </View>
                     </View>
-                  </View>
-                )}
+                  );
+                }}
                 keyExtractor={(item, index) => item.isActive ? `active-${index}` : String(item.id)}
                 scrollEnabled={false}
               />
@@ -2179,6 +2292,124 @@ const ReportsScreen: React.FC = () => {
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               onChange={(e, d) => { if (Platform.OS === 'android') setShowAssignmentsEndPicker(false); if (d) setAssignmentsFilterEndDate(formatDate(d)); }}
               minimumDate={assignmentsFilterStartDate ? parseDateString(assignmentsFilterStartDate) : undefined}
+            />
+          )}
+        </View>
+      )}
+
+      {/* All Check-In/Out Filter Bottom Sheet */}
+      {showCheckinFilterModal && (
+        <View style={styles.sheetBackdrop}>
+          <TouchableOpacity style={styles.sheetBackdropTouchable} onPress={() => setShowCheckinFilterModal(false)} />
+          <View style={styles.sheetContainer}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Filter Check-Ins</Text>
+            <View style={styles.sheetDivider} />
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Status</Text>
+              <View style={styles.statusChipsRow}>
+                <TouchableOpacity
+                  style={[styles.statusChip, checkinFilterStatus === '' && styles.statusChipActive]}
+                  onPress={() => setCheckinFilterStatus('')}
+                >
+                  <Text style={[styles.statusChipText, checkinFilterStatus === '' && styles.statusChipTextActive]}>All Status</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.statusChip, checkinFilterStatus === 'CHECKED_IN' && styles.statusChipActive]}
+                  onPress={() => setCheckinFilterStatus('CHECKED_IN')}
+                >
+                  <Text style={[styles.statusChipText, checkinFilterStatus === 'CHECKED_IN' && styles.statusChipTextActive]}>Checked In</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.statusChip, checkinFilterStatus === 'CHECKED_OUT' && styles.statusChipActive]}
+                  onPress={() => setCheckinFilterStatus('CHECKED_OUT')}
+                >
+                  <Text style={[styles.statusChipText, checkinFilterStatus === 'CHECKED_OUT' && styles.statusChipTextActive]}>Checked Out</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Start Date</Text>
+              <TouchableOpacity style={styles.dateButton} onPress={() => setShowCheckinStartPicker(true)}>
+                <Text style={styles.dateButtonText} numberOfLines={1}>{checkinFilterStartDate || 'Select start date'}</Text>
+                <FontAwesomeIcon icon="calendar" size={14} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>End Date</Text>
+              <TouchableOpacity style={styles.dateButton} onPress={() => setShowCheckinEndPicker(true)}>
+                <Text style={styles.dateButtonText} numberOfLines={1}>{checkinFilterEndDate || 'Select end date'}</Text>
+                <FontAwesomeIcon icon="calendar" size={14} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Department</Text>
+              <TouchableOpacity
+                style={styles.dropdownButton}
+                onPress={() => setCheckinDeptDropdownOpen(v => !v)}
+              >
+                <Text style={styles.dropdownButtonText} numberOfLines={1}>
+                  {checkinFilterDepartment || 'Select department'}
+                </Text>
+                <FontAwesomeIcon icon={checkinDeptDropdownOpen ? 'chevron-up' : 'chevron-down'} size={14} color={Colors.textSecondary} />
+              </TouchableOpacity>
+              {checkinDeptDropdownOpen && (
+                <ScrollView style={styles.dropdownMenu} nestedScrollEnabled={true} keyboardShouldPersistTaps="handled">
+                  <TouchableOpacity
+                    style={styles.dropdownItem}
+                    onPress={() => { setCheckinFilterDepartment(''); setCheckinDeptDropdownOpen(false); }}
+                  >
+                    <Text style={styles.dropdownItemText}>All Departments</Text>
+                  </TouchableOpacity>
+                  {(((departments as string[]) || []).length > 0 ? (departments as string[]) : hardcodedDepartments).map((dept) => (
+                    <TouchableOpacity
+                      key={`checkin-dept-${dept}`}
+                      style={styles.dropdownItem}
+                      onPress={() => { setCheckinFilterDepartment(dept); setCheckinDeptDropdownOpen(false); }}
+                    >
+                      <Text style={styles.dropdownItemText}>{dept}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+
+            <View style={styles.filterActionsRow}>
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={() => { setCheckinFilterStatus(''); setCheckinFilterStartDate(''); setCheckinFilterEndDate(''); setCheckinFilterDepartment(''); }}
+              >
+                <Text style={styles.clearButtonText}>Clear</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.applyButton}
+                onPress={() => setShowCheckinFilterModal(false)}
+              >
+                <Text style={styles.applyButtonText}>Apply</Text>
+              </TouchableOpacity>
+            </View>
+
+          </View>
+          {showCheckinStartPicker && (
+            <DateTimePicker
+              value={checkinFilterStartDate ? parseDateString(checkinFilterStartDate) : new Date()}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(e, d) => { if (Platform.OS === 'android') setShowCheckinStartPicker(false); if (d) setCheckinFilterStartDate(formatDate(d)); }}
+              maximumDate={checkinFilterEndDate ? parseDateString(checkinFilterEndDate) : undefined}
+            />
+          )}
+          {showCheckinEndPicker && (
+            <DateTimePicker
+              value={checkinFilterEndDate ? parseDateString(checkinFilterEndDate) : new Date()}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(e, d) => { if (Platform.OS === 'android') setShowCheckinEndPicker(false); if (d) setCheckinFilterEndDate(formatDate(d)); }}
+              minimumDate={checkinFilterStartDate ? parseDateString(checkinFilterStartDate) : undefined}
             />
           )}
         </View>
@@ -3072,27 +3303,6 @@ const ReportsScreen: React.FC = () => {
                     <Text style={styles.jobDetailValue}>{selectedTimesheet.earlyCheckoutMinutes || '0'}</Text>
                   </View>
                 </View>
-
-                {/* Export Actions */}
-                <View style={styles.jobDetailSection}>
-                  <Text style={styles.jobDetailSectionTitle}>Export Timesheet</Text>
-                  <View style={styles.exportActionsContainer}>
-                    <TouchableOpacity
-                      style={[styles.exportActionButton, { backgroundColor: Colors.error }]}
-                      onPress={() => handleExportTimesheet(selectedTimesheet, 'pdf')}
-                    >
-                      <FontAwesomeIcon icon="file-pdf" size={16} color={Colors.white} />
-                      <Text style={styles.exportActionText}>Export PDF</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.exportActionButton, { backgroundColor: Colors.success }]}
-                      onPress={() => handleExportTimesheet(selectedTimesheet, 'excel')}
-                    >
-                      <FontAwesomeIcon icon="file-excel" size={16} color={Colors.white} />
-                      <Text style={styles.exportActionText}>Export Excel</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
               </ScrollView>
             ) : (
               <Text style={styles.emptyStateText}>No timesheet data available</Text>
@@ -3299,9 +3509,6 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     marginBottom: 0,
     flex: 1,
-  },
-  sectionTitleSm: {
-    fontSize: Typography.fontSize.lg,
   },
   reportCard: {
     backgroundColor: Colors.white,
