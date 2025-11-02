@@ -936,9 +936,11 @@ const RegisterScreen: React.FC = () => {
     errors.location = validateLocation(formData.location);
     errors.phone = validatePhone(formData.phone);
     
+    // License number is required for both DOCTOR and NURSE
+    errors.licenseNumber = validateLicenseNumber(formData.licenseNumber);
+    
     if (formData.role === 'DOCTOR') {
       errors.specialization = validateSpecialization(formData.specialization, formData.role);
-      errors.licenseNumber = validateLicenseNumber(formData.licenseNumber);
     }
     
     // Emergency Contact and Address fields are now optional
@@ -1276,40 +1278,39 @@ const RegisterScreen: React.FC = () => {
           />
 
           {formData.role === 'DOCTOR' && (
-            <>
-              <SpecializationDropdown 
-                open={specializationDropdownOpen}
-                setOpen={(open) => {
-                  setSpecializationDropdownOpen(open);
-                  if (open) {
-                    setHospitalDropdownOpen(false);
-                    setUnitDropdownOpen(false);
-                    setDepartmentDropdownOpen(false);
-                  }
-                }}
-                value={formData.specialization}
-                setValue={(callback) => {
-                  const newValue = callback(formData.specialization);
-                  handleInputChange('specialization', newValue);
-                }}
-                items={(departmentSpecializations[formData.department] || []).map(specialization => ({
-                  label: specialization,
-                  value: specialization,
-                }))}
-                placeholder="Select your specialization"
-                styles={styles}
-                error={validationErrors.specialization}
-              />
-              <InputField
-                label="License Number"
-                value={formData.licenseNumber}
-                onChangeText={handleLicenseNumberChange}
-                placeholder="Medical license number"
-                icon="file-medical"
-                error={validationErrors.licenseNumber}
-              />
-            </>
+            <SpecializationDropdown 
+              open={specializationDropdownOpen}
+              setOpen={(open) => {
+                setSpecializationDropdownOpen(open);
+                if (open) {
+                  setHospitalDropdownOpen(false);
+                  setUnitDropdownOpen(false);
+                  setDepartmentDropdownOpen(false);
+                }
+              }}
+              value={formData.specialization}
+              setValue={(callback) => {
+                const newValue = callback(formData.specialization);
+                handleInputChange('specialization', newValue);
+              }}
+              items={(departmentSpecializations[formData.department] || []).map(specialization => ({
+                label: specialization,
+                value: specialization,
+              }))}
+              placeholder="Select your specialization"
+              styles={styles}
+              error={validationErrors.specialization}
+            />
           )}
+
+          <InputField
+            label="License Number"
+            value={formData.licenseNumber}
+            onChangeText={handleLicenseNumberChange}
+            placeholder={formData.role === 'DOCTOR' ? 'Medical license number' : 'Nursing license number'}
+            icon="file-medical"
+            error={validationErrors.licenseNumber}
+          />
 
           <InputField
             label="Phone Number"

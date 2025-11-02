@@ -3,16 +3,20 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  StatusBar,
+  Platform,
+  Animated,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import LinearGradient from 'react-native-linear-gradient';
 import GlobalHeader from '../../components/GlobalHeader';
+import HRFooterNavigation from '../../components/HRFooterNavigation';
 
 import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
@@ -21,6 +25,11 @@ import { Job, JobAssignment, User } from '../../types';
 import ApiService from '../../services/api';
 import { useNotifications } from '../../contexts/NotificationContext';
 import Responsive from '../../utils/responsive';
+import {
+  SkeletonJobCard,
+  SkeletonQuickAction,
+  SkeletonHeader,
+} from '../../components/SkeletonComponents';
 
 const HealthcareProviderDashboardScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -32,6 +41,8 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  
+  const scrollY = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     loadDashboardData();
@@ -65,8 +76,12 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
           ? await ApiService.getUpcomingJobs()
           : await ApiService.getNurseUpcomingJobs();
         console.log('✅ Upcoming jobs loaded successfully');
-      } catch (error) {
-        console.error('❌ Failed to load upcoming jobs:', error);
+      } catch (error: any) {
+        // Silently fail if endpoint doesn't exist (404) since upcoming jobs aren't displayed
+        if (error?.response?.status !== 404) {
+          console.warn('⚠️ Failed to load upcoming jobs:', error?.response?.status || error?.message);
+        }
+        upcomingData = null;
       }
 
       try {
@@ -97,13 +112,15 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
       console.log('✅ Assignments loaded successfully:', assignmentsData);
       console.log('📊 Assignments count:', assignmentsData?.data?.length || 0);
       setWorkStatus(statusData);
+      // Set loading to false after all data is set
+      setIsLoading(false);
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
       setAvailableJobs([]);
       setUpcomingJobs([]);
       setMyAssignments([]);
       setWorkStatus(null);
-    } finally {
+      // Set loading to false even on error
       setIsLoading(false);
     }
   };
@@ -422,77 +439,76 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
 
   const roleConfig = getRoleConfig();
 
-  if (isLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>Loading dashboard...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      {/* Sticky Header */}
-      <View style={styles.stickyHeader}>
-        <View style={styles.combinedCard}>
-          {/* Profile Section */}
-          <TouchableOpacity 
-            style={styles.profileSection}
-            onPress={() => navigation.navigate('Profile' as never)}
-            activeOpacity={0.7}>
-            <View style={styles.profileInfo}>
-              <View style={styles.profileImageContainer}>
-                <LinearGradient
-                  colors={['#8B5CF6', '#7C3AED']}
-                  style={styles.profileImage}>
-                  <Text style={styles.profileInitials}>
-                    {user ? 
-                      (user.firstName || user.lastName || 'U').charAt(0).toUpperCase()
-                      : 'U'
-                    }
-                  </Text>
-                </LinearGradient>
+      <SafeAreaView style={styles.safeAreaTop} edges={['top']}>
+        {/* STATUS BAR */}
+        <StatusBar
+          backgroundColor="#FFFFFF"
+          barStyle="dark-content"
+          translucent={false}
+        />
+
+        <View style={styles.innerContainer}>
+        {/* Simple Header */}
+        {isLoading || !user ? (
+          <SkeletonHeader />
+        ) : (
+          <View style={styles.simpleHeader}>
+            <View style={styles.headerContent}>
+              <View style={styles.headerLeft}>
+                <Text style={styles.headerGreeting}>
+                  Hello <Text style={styles.headerRole}>{user?.role || 'Provider'}</Text>
+                </Text>
+                <Text style={styles.headerName}>
+                  {user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Loading...'}!
+                </Text>
               </View>
-              <View style={styles.profileText}>
-                <Text style={styles.profileName}>
-                  {user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Loading...'}
-                </Text>
-                <Text style={styles.profileRole}>
-                  {user?.role || 'Healthcare Provider'}
-                </Text>
+              <View style={styles.headerRight}>
+                <View style={styles.headerRightContainer}>
+                  <TouchableOpacity
+                    style={styles.simpleNotificationButton}
+                    onPress={() => (navigation as any).navigate('Notifications')}>
+                    <FontAwesomeIcon icon="bell" size={Responsive.iconSize(18)} color="#F59E0B" />
+                    {unreadCount > 0 && (
+                      <View style={styles.simpleNotificationBadge}>
+                        <Text style={styles.simpleNotificationBadgeText}>
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.headerProfileImage}
+                    onPress={() => (navigation as any).navigate('Profile')}>
+                    <LinearGradient colors={['#8B5CF6', '#7C3AED']} style={styles.headerProfileGradient}>
+                      <Text style={styles.headerProfileInitials}>
+                        {user
+                          ? (user.firstName || user.lastName || 'U').charAt(0).toUpperCase()
+                          : 'U'}
+                      </Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-            <TouchableOpacity 
-              style={styles.notificationButton}
-              onPress={() => navigation.navigate('Notifications' as never)}>
-              <FontAwesomeIcon icon="bell" size={Responsive.iconSize(18)} color="#FFFFFF" />
-              {unreadCount > 0 && (
-                <View style={styles.notificationBadge}>
-                  <Text style={styles.notificationBadgeText}>
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          </TouchableOpacity>
-
-          {/* Main Title */}
-          <View style={styles.titleSection}>
-            <Text style={styles.mainTitle}>{roleConfig.title}</Text>
-            <Text style={styles.mainSubtitle}>
-              {user?.role === 'DOCTOR' ? 'Manage your medical assignments and patient care' : 'Manage your nursing assignments and patient care'}
-            </Text>
+            {/* Dashboard Title inside Header */}
+            {/* <View style={styles.dashboardTitleSection}>
+              <Text style={styles.dashboardTitle}>{roleConfig.title}</Text>
+            </View> */}
           </View>
-        </View>
-      </View>
+        )}
 
-      {/* Scrollable Content */}
-      <ScrollView
-        style={styles.scrollableContent}
-        showsVerticalScrollIndicator={false}
+        {/* Scrollable Content */}
+        <ScrollView
+          style={styles.scrollableContent}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContentContainer}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: false }
+          )}
+          scrollEventThrottle={16}
         refreshControl={
           <RefreshControl 
             refreshing={refreshing} 
@@ -507,55 +523,69 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Quick Actions</Text>
           </View>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.quickActionsScroll}
-            decelerationRate="fast"
-            snapToInterval={182}
-            snapToAlignment="start">
-            <QuickActionHorizontal
-              icon="calendar-check"
-              title="Job Assignments"
-              subtitle={`${myAssignments.length} Active`}
-              onPress={() => (navigation as any).navigate('Assignments')}
-              gradient={['#6366F1', '#4F46E5']}
-              iconColor="#4F46E5"
-            />
-            {/* <QuickActionHorizontal
-              icon="briefcase"
-              title="Job Assignments"
-              subtitle={`${availableJobs.length} Available`}
-              onPress={() => navigation.navigate('MyAssignments' as never)}
-              gradient={['#10B981', '#059669']}
-            /> */}
-            {myAssignments && myAssignments.length > 0 && (
+          {isLoading ? (
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.quickActionsScroll}
+              decelerationRate="fast"
+              snapToInterval={182}
+              snapToAlignment="start">
+              {[...Array(4)].map((_, i) => (
+                <SkeletonQuickAction key={i} />
+              ))}
+            </ScrollView>
+          ) : (
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.quickActionsScroll}
+              decelerationRate="fast"
+              snapToInterval={182}
+              snapToAlignment="start">
               <QuickActionHorizontal
-                icon="clock"
-                title="Check In/Out"
-                subtitle={`${myAssignments.filter(a => a.status === 'ASSIGNED' || a.status === 'IN_PROGRESS').length} Active`}
-                onPress={() => (navigation as any).navigate('CheckInOut')}
-                gradient={['#F59E0B', '#D97706']}
-                iconColor="#D97706"
+                icon="calendar-check"
+                title="Job Assignments"
+                subtitle={`${myAssignments.length} Active`}
+                onPress={() => (navigation as any).navigate('Assignments')}
+                gradient={['#6366F1', '#4F46E5']}
+                iconColor="#4F46E5"
               />
-            )}
-            <QuickActionHorizontal
-              icon="chart-line"
-              title="Reports"
-              subtitle="View Stats"
-              onPress={() => navigation.navigate('Reports' as never)}
-              gradient={['#8B5CF6', '#7C3AED']}
-              iconColor="#7C3AED"
-            />
-            <QuickActionHorizontal
-              icon="user-md"
-              title="Profile"
-              subtitle="Settings"
-              onPress={() => navigation.navigate('Profile' as never)}
-              gradient={['#EC4899', '#DB2777']}
-              iconColor="#DB2777"
-            />
-          </ScrollView>
+              {/* <QuickActionHorizontal
+                icon="briefcase"
+                title="Job Assignments"
+                subtitle={`${availableJobs.length} Available`}
+                onPress={() => navigation.navigate('MyAssignments' as never)}
+                gradient={['#10B981', '#059669']}
+              /> */}
+              {myAssignments && myAssignments.length > 0 && (
+                <QuickActionHorizontal
+                  icon="clock"
+                  title="Check In/Out"
+                  subtitle={`${myAssignments.filter(a => a.status === 'ASSIGNED' || a.status === 'IN_PROGRESS').length} Active`}
+                  onPress={() => (navigation as any).navigate('CheckInOut')}
+                  gradient={['#F59E0B', '#D97706']}
+                  iconColor="#D97706"
+                />
+              )}
+              <QuickActionHorizontal
+                icon="chart-line"
+                title="Reports"
+                subtitle="View Stats"
+                onPress={() => navigation.navigate('Reports' as never)}
+                gradient={['#8B5CF6', '#7C3AED']}
+                iconColor="#7C3AED"
+              />
+              <QuickActionHorizontal
+                icon="user-md"
+                title="Profile"
+                subtitle="Settings"
+                onPress={() => navigation.navigate('Profile' as never)}
+                gradient={['#EC4899', '#DB2777']}
+                iconColor="#DB2777"
+              />
+            </ScrollView>
+          )}
         </View>
 
         {/* Available Jobs */}
@@ -589,22 +619,38 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Job Assignments</Text>
-            <TouchableOpacity onPress={() => (navigation as any).navigate('Assignments')}>
-              <Text style={styles.seeAllText}>See All</Text>
-            </TouchableOpacity>
+            {!isLoading && (
+              <TouchableOpacity onPress={() => (navigation as any).navigate('Assignments')}>
+                <Text style={styles.seeAllText}>See All</Text>
+              </TouchableOpacity>
+            )}
           </View>
-          {myAssignments && myAssignments.length > 0 ? (
-            myAssignments.slice(0, 3).map((assignment) => (
-              <AssignmentCard key={assignment.id} assignment={assignment} />
-            ))
+          {isLoading ? (
+            <>
+              {[...Array(3)].map((_, i) => (
+                <SkeletonJobCard key={i} />
+              ))}
+            </>
           ) : (
-            <View style={styles.emptyState}>
-              <FontAwesomeIcon icon="calendar" size={Responsive.iconSize(48)} color={Colors.textTertiary} />
-              <Text style={styles.emptyStateText}>No current assignments</Text>
-            </View>
+            <>
+              {myAssignments && myAssignments.length > 0 ? (
+                myAssignments.slice(0, 3).map((assignment) => (
+                  <AssignmentCard key={assignment.id} assignment={assignment} />
+                ))
+              ) : (
+                <View style={styles.emptyState}>
+                  <FontAwesomeIcon icon="calendar" size={Responsive.iconSize(48)} color={Colors.textTertiary} />
+                  <Text style={styles.emptyStateText}>No current assignments</Text>
+                </View>
+              )}
+            </>
           )}
         </View>
       </ScrollView>
+
+      <HRFooterNavigation activeRoute="Dashboard" scrollY={scrollY} />
+        </View>
+      </SafeAreaView>
     </View>
   );
 };
@@ -612,19 +658,129 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#F3F9FF',
   },
-  stickyHeader: {
+  safeAreaTop: {
+    flex: 1,
+    backgroundColor: '#F3F9FF',
+  },
+  innerContainer: {
+    flex: 1,
+    backgroundColor: '#F3F9FF',
+  },
+  simpleHeader: {
+    backgroundColor: '#FFFFFF',
+    paddingTop: Platform.OS === 'android' ? 10 : 0,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerRole: {
+    fontSize: 16,
+    fontFamily: Typography.fontFamily.medium,
+    color: '#6366F1',
+  },
+  headerGreeting: {
+    fontSize: 16,
+    fontFamily: Typography.fontFamily.regular,
+    color: '#6B7280',
+    marginBottom: 2,
+  },
+  headerName: {
+    fontSize: 24,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#111827',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerRightContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    borderRadius: 0,
+    borderWidth: 0,
+    borderColor: 'transparent',
+  },
+  simpleNotificationButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 22,
+    backgroundColor: '#FEF3C7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  simpleNotificationBadge: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
+    top: -4,
+    right: -4,
+    backgroundColor: '#EF4444',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  simpleNotificationBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontFamily: Typography.fontFamily.bold,
+  },
+  headerProfileImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 22,
+    overflow: 'hidden',
+    borderWidth: 0,
+    borderColor: 'transparent',
+  },
+  headerProfileGradient: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerProfileInitials: {
+    fontSize: 20,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#FFFFFF',
   },
   scrollableContent: {
     flex: 1,
-    marginTop: 200,
-    paddingBottom: 20,
+  },
+  scrollContentContainer: {
+    paddingBottom: 8,
+  },
+  dashboardTitleSection: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 0,
+  },
+  dashboardTitle: {
+    fontSize: 16,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#111827',
+    letterSpacing: -0.3,
   },
   loadingContainer: {
     flex: 1,
@@ -646,137 +802,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  combinedCard: {
-    backgroundColor: '#1C2A3A',
-    paddingTop: 35,
-    paddingBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  profileSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 15,
-    paddingBottom: 12,
-  },
-  profileInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  profileImageContainer: {
-    marginRight: 16,
-  },
-  profileImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  profileInitials: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  profileText: {
-    flex: 1,
-  },
-  profileName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 2,
-  },
-  profileRole: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontWeight: '500',
-  },
-  notificationButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    backgroundColor: '#FF4757',
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-    borderWidth: 2,
-    borderColor: '#6366F1',
-  },
-  notificationBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 9,
-    fontFamily: Typography.fontFamily.bold,
-  },
-  titleSection: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  mainTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: -0.5,
-  },
-  mainSubtitle: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontWeight: '500',
-    marginTop: 4,
-  },
   firstSection: {
-    marginTop: -10,
-  },
-  header: {
-    paddingVertical: Spacing.xl,
-    paddingHorizontal: Spacing.lg,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: Typography.fontSize['2xl'],
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.white,
-    marginBottom: Spacing.xs,
-  },
-  headerSubtitle: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.white,
-    opacity: 0.9,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: Spacing.sm,
-  },
-  statusText: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.textSecondary,
-    textAlignVertical: 'center',
-    lineHeight: 18,
+    marginTop: 8,
   },
   section: {
     paddingHorizontal: 16,

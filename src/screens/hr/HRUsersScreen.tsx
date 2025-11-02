@@ -10,6 +10,7 @@ import {
   Alert,
   TextInput,
   Animated,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -24,6 +25,7 @@ import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import { User } from '../../types';
 import ApiService from '../../services/api';
 import Responsive from '../../utils/responsive';
+import { SkeletonUserCard, SkeletonSearchBar } from '../../components/SkeletonComponents';
 
 const HRUsersScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -294,18 +296,6 @@ const HRUsersScreen: React.FC = () => {
     );
   };
 
-  if (isLoading && users.length === 0) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <Animated.View style={{ opacity: animatedValue }}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>Loading users...</Text>
-          </Animated.View>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <View style={styles.container}>
@@ -335,61 +325,75 @@ const HRUsersScreen: React.FC = () => {
       </View> */}
 
       {/* Enhanced Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <FontAwesomeIcon icon="search" size={Responsive.iconSize(18)} color={Colors.primary} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by name or department"
-            placeholderTextColor={Colors.textTertiary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity 
-              onPress={() => setSearchQuery('')}
-              activeOpacity={0.6}>
-              <FontAwesomeIcon icon="times" size={Responsive.iconSize(18)} color={Colors.textTertiary} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-
-      {/* Users List */}
-      <FlatList
-        data={filteredUsers}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <UserCard user={item} />}
-        contentContainerStyle={styles.listContainer}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        // Disabled infinite scroll since we load all users at once
-        // onEndReached={loadMore}
-        // onEndReachedThreshold={0.5}
-        ListFooterComponent={renderFooter}
-        showsVerticalScrollIndicator={false}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
-        )}
-        scrollEventThrottle={16}
-        ListEmptyComponent={() => (
-          <View style={styles.emptyState}>
-            <FontAwesomeIcon icon="users" size={Responsive.iconSize(48)} color={Colors.textTertiary} />
-            <Text style={styles.emptyTitle}>No Users Found</Text>
-            <Text style={styles.emptySubtitle}>
-              {searchQuery ? 'Try adjusting your search terms' : 'No users available at the moment'}
-            </Text>
-            {!searchQuery && (
-              <TouchableOpacity style={styles.retryButton} onPress={() => loadUsers(1, true)}>
-                <Text style={styles.retryButtonText}>Refresh</Text>
+      {isLoading && users.length === 0 ? (
+        <SkeletonSearchBar />
+      ) : (
+        <View style={styles.searchContainer}>
+          <View style={styles.searchBar}>
+            <FontAwesomeIcon icon="search" size={Responsive.iconSize(18)} color={Colors.primary} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by name or department"
+              placeholderTextColor={Colors.textTertiary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity 
+                onPress={() => setSearchQuery('')}
+                activeOpacity={0.6}>
+                <FontAwesomeIcon icon="times" size={Responsive.iconSize(18)} color={Colors.textTertiary} />
               </TouchableOpacity>
             )}
           </View>
-        )}
-      />
+        </View>
+      )}
+
+
+      {/* Users List */}
+      {isLoading && users.length === 0 ? (
+        <ScrollView
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}>
+          {[...Array(5)].map((_, i) => (
+            <SkeletonUserCard key={i} />
+          ))}
+        </ScrollView>
+      ) : (
+        <FlatList
+          data={filteredUsers}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <UserCard user={item} />}
+          contentContainerStyle={styles.listContainer}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          // Disabled infinite scroll since we load all users at once
+          // onEndReached={loadMore}
+          // onEndReachedThreshold={0.5}
+          ListFooterComponent={renderFooter}
+          showsVerticalScrollIndicator={false}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: false }
+          )}
+          scrollEventThrottle={16}
+          ListEmptyComponent={() => (
+            <View style={styles.emptyState}>
+              <FontAwesomeIcon icon="users" size={Responsive.iconSize(48)} color={Colors.textTertiary} />
+              <Text style={styles.emptyTitle}>No Users Found</Text>
+              <Text style={styles.emptySubtitle}>
+                {searchQuery ? 'Try adjusting your search terms' : 'No users available at the moment'}
+              </Text>
+              {!searchQuery && (
+                <TouchableOpacity style={styles.retryButton} onPress={() => loadUsers(1, true)}>
+                  <Text style={styles.retryButtonText}>Refresh</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+        />
+      )}
 
       {/* Filter Modal */}
       {showFilterModal && (
@@ -558,7 +562,7 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
   },
   listContainer: {
-    paddingHorizontal: Responsive.scale(Spacing.sm),
+    paddingHorizontal: Responsive.scale(Spacing.md),
     paddingTop: Responsive.verticalScale(Spacing.xs),
     paddingBottom: Responsive.verticalScale(80),
   },

@@ -23,6 +23,12 @@ import ApiService from '../../services/api';
 import { Typography } from '../../constants/typography';
 import { useNotifications } from '../../contexts/NotificationContext';
 import Responsive from '../../utils/responsive';
+import {
+  SkeletonHeader,
+  SkeletonStatCard,
+  SkeletonListCard,
+  SkeletonQuickAction,
+} from '../../components/SkeletonComponents';
 
 interface DashboardStats {
   jobs: {
@@ -110,9 +116,12 @@ const HRDashboardScreen: React.FC = () => {
       statsData.jobs.active = activeJobs;
       statsData.jobs.assigned = assignedJobs;
 
+      // Set stats first, then set loading to false
       setStats(statsData);
+      setIsLoading(false);
     } catch (error: any) {
       console.error('Failed to load dashboard data:', error);
+      // Set default stats first, then set loading to false
       setStats({
         jobs: { total: 0, active: 0, assigned: 0, inProgress: 0, completed: 0, cancelled: 0 },
         assignments: { total: 0, pending: 0, accepted: 0, inProgress: 0, completed: 0 },
@@ -120,7 +129,6 @@ const HRDashboardScreen: React.FC = () => {
         monthly: { jobs: 0, assignments: 0 },
         recent: { jobs: [], assignments: [] }
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -261,19 +269,8 @@ const HRDashboardScreen: React.FC = () => {
   );
 
   /* --------------------------------------------------------------
-     LOADING SCREEN
+     SKELETON LOADING SCREEN
   -------------------------------------------------------------- */
-  if (isLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6366F1" />
-          <Text style={styles.loadingText}>Loading dashboard...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   /* --------------------------------------------------------------
      MAIN RENDER
@@ -289,45 +286,49 @@ const HRDashboardScreen: React.FC = () => {
 
       <View style={styles.innerContainer}>
         {/* Simple Header */}
-        <View style={styles.simpleHeader}>
-          <View style={styles.headerContent}>
-            <View style={styles.headerLeft}>
-              <Text style={styles.headerGreeting}>
-                Hello <Text style={styles.headerRole}>Admin</Text>
-              </Text>
-              <Text style={styles.headerName}>
-                {userProfile ? `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() : 'Loading...'}!
-              </Text>
-            </View>
-            <View style={styles.headerRight}>
-              <View style={styles.headerRightContainer}>
-                <TouchableOpacity
-                  style={styles.simpleNotificationButton}
-                  onPress={() => (navigation as any).navigate('Notifications')}>
-                  <FontAwesomeIcon icon="bell" size={Responsive.iconSize(18)} color="#F59E0B" />
-                  {unreadCount > 0 && (
-                    <View style={styles.simpleNotificationBadge}>
-                      <Text style={styles.simpleNotificationBadgeText}>
-                        {unreadCount > 9 ? '9+' : unreadCount}
+        {isLoading || !userProfile ? (
+          <SkeletonHeader />
+        ) : (
+          <View style={styles.simpleHeader}>
+            <View style={styles.headerContent}>
+              <View style={styles.headerLeft}>
+                <Text style={styles.headerGreeting}>
+                  Hello <Text style={styles.headerRole}>Admin</Text>
+                </Text>
+                <Text style={styles.headerName}>
+                  {userProfile ? `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() : 'Loading...'}!
+                </Text>
+              </View>
+              <View style={styles.headerRight}>
+                <View style={styles.headerRightContainer}>
+                  <TouchableOpacity
+                    style={styles.simpleNotificationButton}
+                    onPress={() => (navigation as any).navigate('Notifications')}>
+                    <FontAwesomeIcon icon="bell" size={Responsive.iconSize(18)} color="#F59E0B" />
+                    {unreadCount > 0 && (
+                      <View style={styles.simpleNotificationBadge}>
+                        <Text style={styles.simpleNotificationBadgeText}>
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.headerProfileImage}
+                    onPress={() => (navigation as any).navigate('Profile')}>
+                    <LinearGradient colors={['#8B5CF6', '#7C3AED']} style={styles.headerProfileGradient}>
+                      <Text style={styles.headerProfileInitials}>
+                        {userProfile
+                          ? (userProfile.firstName || userProfile.lastName || 'U').charAt(0).toUpperCase()
+                          : 'U'}
                       </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.headerProfileImage}
-                  onPress={() => (navigation as any).navigate('Profile')}>
-                  <LinearGradient colors={['#8B5CF6', '#7C3AED']} style={styles.headerProfileGradient}>
-                    <Text style={styles.headerProfileInitials}>
-                      {userProfile
-                        ? (userProfile.firstName || userProfile.lastName || 'U').charAt(0).toUpperCase()
-                        : 'U'}
-                    </Text>
-                  </LinearGradient>
-                </TouchableOpacity>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </View>
-        </View>
+        )}
 
         {/* Scrollable Content */}
         <ScrollView
@@ -349,29 +350,43 @@ const HRDashboardScreen: React.FC = () => {
           </View>
 
           {/* MAIN STATS */}
-          <View style={styles.mainStatsGrid}>
-            <StatCard
-              title="Total Staff"
-              value={stats?.staff?.total || 0}
-              icon="users"
-              onPress={() => (navigation as any).navigate('HRUsers')}
-            />
-            <StatCard
-              title="Total Jobs"
-              value={stats?.jobs?.total || 0}
-              icon="briefcase"
-              onPress={() => (navigation as any).navigate('HRJobs')}
-            />
-          </View>
+          {isLoading ? (
+            <View style={styles.mainStatsGrid}>
+              <SkeletonStatCard />
+              <SkeletonStatCard />
+            </View>
+          ) : stats ? (
+            <View style={styles.mainStatsGrid}>
+              <StatCard
+                title="Total Staff"
+                value={stats?.staff?.total || 0}
+                icon="users"
+                onPress={() => (navigation as any).navigate('HRUsers')}
+              />
+              <StatCard
+                title="Total Jobs"
+                value={stats?.jobs?.total || 0}
+                icon="briefcase"
+                onPress={() => (navigation as any).navigate('HRJobs')}
+              />
+            </View>
+          ) : (
+            <View style={styles.mainStatsGrid}>
+              <SkeletonStatCard />
+              <SkeletonStatCard />
+            </View>
+          )}
 
           {/* Overview Stats */}
           <View style={styles.overviewSection}>
             <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionTitle}>Overview</Text>
-              <TouchableOpacity onPress={scrollToEnd} style={styles.scrollToEndButton}>
-                <Text style={styles.viewAllText}>See All</Text>
-                <FontAwesomeIcon icon="arrow-right" size={Responsive.iconSize(14)} color="#6366F1" />
-              </TouchableOpacity>
+              {!isLoading && (
+                <TouchableOpacity onPress={scrollToEnd} style={styles.scrollToEndButton}>
+                  <Text style={styles.viewAllText}>See All</Text>
+                  <FontAwesomeIcon icon="arrow-right" size={Responsive.iconSize(14)} color="#6366F1" />
+                </TouchableOpacity>
+              )}
             </View>
 
             <ScrollView
@@ -381,146 +396,184 @@ const HRDashboardScreen: React.FC = () => {
               scrollEventThrottle={16}
               style={styles.overviewScroll}
               contentContainerStyle={styles.overviewScrollContent}>
-              <View style={styles.iconStatsRow}>
-                <IconStatItem title="Total Jobs" value={stats?.jobs?.total || 0} icon="briefcase" iconColor="#3B82F6" onPress={() => (navigation as any).navigate('HRJobs')} />
-                <IconStatItem title="Active Jobs" value={stats?.jobs?.active || 0} icon="play" iconColor="#10B981" />
-                <IconStatItem title="Assigned" value={stats?.jobs?.assigned || 0} icon="user-check" iconColor="#8B5CF6" />
-                <IconStatItem title="In Progress" value={stats?.jobs?.inProgress || 0} icon="sync" iconColor="#F59E0B" />
-                <IconStatItem title="Completed" value={stats?.jobs?.completed || 0} icon="check-circle" iconColor="#059669" />
-                <IconStatItem title="Cancelled" value={stats?.jobs?.cancelled || 0} icon="times-circle" iconColor="#EF4444" />
-                <IconStatItem title="Total Staff" value={stats?.staff?.total || 0} icon="users" iconColor="#6366F1" onPress={() => (navigation as any).navigate('HRUsers')} />
-                <IconStatItem title="Assignments" value={stats?.assignments?.total || 0} icon="list" iconColor="#7C3AED" />
-                <IconStatItem title="Pending" value={stats?.assignments?.pending || 0} icon="clock" iconColor="#F59E0B" />
-                <IconStatItem title="Accepted" value={stats?.assignments?.accepted || 0} icon="check" iconColor="#10B981" />
-                <IconStatItem title="Progress" value={stats?.assignments?.inProgress || 0} icon="sync" iconColor="#3B82F6" />
-                <IconStatItem title="Done" value={stats?.assignments?.completed || 0} icon="check-circle" iconColor="#059669" />
-              </View>
+              {isLoading || !stats ? (
+                <View style={styles.iconStatsRow}>
+                  {[...Array(6)].map((_, i) => (
+                    <View key={i} style={{ marginRight: 16 }}>
+                      <SkeletonStatCard />
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.iconStatsRow}>
+                  <IconStatItem title="Total Jobs" value={stats?.jobs?.total || 0} icon="briefcase" iconColor="#3B82F6" onPress={() => (navigation as any).navigate('HRJobs')} />
+                  <IconStatItem title="Active Jobs" value={stats?.jobs?.active || 0} icon="play" iconColor="#10B981" />
+                  <IconStatItem title="Assigned" value={stats?.jobs?.assigned || 0} icon="user-check" iconColor="#8B5CF6" />
+                  <IconStatItem title="In Progress" value={stats?.jobs?.inProgress || 0} icon="sync" iconColor="#F59E0B" />
+                  <IconStatItem title="Completed" value={stats?.jobs?.completed || 0} icon="check-circle" iconColor="#059669" />
+                  <IconStatItem title="Cancelled" value={stats?.jobs?.cancelled || 0} icon="times-circle" iconColor="#EF4444" />
+                  <IconStatItem title="Total Staff" value={stats?.staff?.total || 0} icon="users" iconColor="#6366F1" onPress={() => (navigation as any).navigate('HRUsers')} />
+                  <IconStatItem title="Assignments" value={stats?.assignments?.total || 0} icon="list" iconColor="#7C3AED" />
+                  <IconStatItem title="Pending" value={stats?.assignments?.pending || 0} icon="clock" iconColor="#F59E0B" />
+                  <IconStatItem title="Accepted" value={stats?.assignments?.accepted || 0} icon="check" iconColor="#10B981" />
+                  <IconStatItem title="Progress" value={stats?.assignments?.inProgress || 0} icon="sync" iconColor="#3B82F6" />
+                  <IconStatItem title="Done" value={stats?.assignments?.completed || 0} icon="check-circle" iconColor="#059669" />
+                </View>
+              )}
             </ScrollView>
           </View>
 
           {/* Quick Actions */}
           <View style={styles.quickActionsSection}>
             <Text style={styles.sectionTitle}>Quick Actions</Text>
-            <View style={styles.quickActionsGrid}>
-              <QuickAction title="Create Job" subtitle="Post new opening" icon="plus" gradient={['#3B82F6', '#2563EB']} onPress={() => (navigation as any).navigate('CreateJob')} />
-              <QuickAction title="Assign Jobs" subtitle="View & edit" icon="briefcase" gradient={['#8B5CF6', '#7C3AED']} onPress={() => (navigation as any).navigate('HRJobs')} />
-              <QuickAction title="Staff" subtitle="Manage users" icon="users" gradient={['#10B981', '#059669']} onPress={() => (navigation as any).navigate('HRUsers')} />
-              <QuickAction title="Reports" subtitle="View insights" icon="chart-line" gradient={['#F59E0B', '#D97706']} onPress={() => (navigation as any).navigate('Reports')} />
-            </View>
+            {isLoading || !stats ? (
+              <View style={styles.quickActionsGrid}>
+                {[...Array(4)].map((_, i) => (
+                  <SkeletonQuickAction key={i} />
+                ))}
+              </View>
+            ) : (
+              <View style={styles.quickActionsGrid}>
+                <QuickAction title="Create Job" subtitle="Post new opening" icon="plus" gradient={['#3B82F6', '#2563EB']} onPress={() => (navigation as any).navigate('CreateJob')} />
+                <QuickAction title="Assign Jobs" subtitle="View & edit" icon="briefcase" gradient={['#8B5CF6', '#7C3AED']} onPress={() => (navigation as any).navigate('HRJobs')} />
+                <QuickAction title="Staff" subtitle="Manage users" icon="users" gradient={['#10B981', '#059669']} onPress={() => (navigation as any).navigate('HRUsers')} />
+                <QuickAction title="Reports" subtitle="View insights" icon="chart-line" gradient={['#F59E0B', '#D97706']} onPress={() => (navigation as any).navigate('Reports')} />
+              </View>
+            )}
           </View>
 
           {/* Recent Jobs */}
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionTitle}>Recent Jobs</Text>
-              <TouchableOpacity onPress={() => (navigation as any).navigate('HRJobs')}>
-                <Text style={styles.viewAllText}>View All</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.listCard}>
-              {stats?.recent?.jobs && stats.recent.jobs.length > 0 ? (
-                stats.recent.jobs.slice(0, 3).map((job, index) => (
-                  <TouchableOpacity
-                    key={job.id}
-                    style={[styles.listItem, index === Math.min(2, stats.recent.jobs.length - 1) && styles.listItemLast]}
-                    onPress={() => (navigation as any).navigate('JobDetails', { jobId: job.id })}
-                    activeOpacity={0.7}>
-                    <View style={styles.listIconWrapper}>
-                      <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.listIcon}>
-                        <FontAwesomeIcon icon="briefcase" size={Responsive.iconSize(18)} color="#FFFFFF" />
-                      </LinearGradient>
-                    </View>
-                    <View style={styles.listContent}>
-                      <Text style={styles.listTitle} numberOfLines={1}>{job.title}</Text>
-                      <Text style={styles.listSubtitle} numberOfLines={1}>{job.department} to {job.location}</Text>
-                      <View style={styles.listFooter}>
-                        <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(job.priority) + '20' }]}>
-                          <Text style={[styles.priorityText, { color: getPriorityColor(job.priority) }]}>{job.priority}</Text>
-                        </View>
-                        <Text style={styles.listRate}>₹{job.hourlyRate}/hr</Text>
-                      </View>
-                    </View>
-                    <Text style={styles.listTime}>{formatDate(job.createdAt)}</Text>
-                  </TouchableOpacity>
-                ))
-              ) : (
-                <View style={styles.emptyState}>
-                  <View style={styles.emptyIcon}>
-                    <FontAwesomeIcon icon="briefcase" size={Responsive.iconSize(32)} color="#D1D5DB" />
-                  </View>
-                  <Text style={styles.emptyTitle}>No Recent Jobs</Text>
-                  <Text style={styles.emptySubtitle}>Job postings will appear here</Text>
-                </View>
+              {!isLoading && stats && (
+                <TouchableOpacity onPress={() => (navigation as any).navigate('HRJobs')}>
+                  <Text style={styles.viewAllText}>View All</Text>
+                </TouchableOpacity>
               )}
             </View>
+            {isLoading || !stats ? (
+              <>
+                {[...Array(3)].map((_, i) => (
+                  <SkeletonListCard key={i} />
+                ))}
+              </>
+            ) : (
+              <View style={styles.listCard}>
+                {stats?.recent?.jobs && stats.recent.jobs.length > 0 ? (
+                  stats.recent.jobs.slice(0, 3).map((job, index) => (
+                    <TouchableOpacity
+                      key={job.id}
+                      style={[styles.listItem, index === Math.min(2, stats.recent.jobs.length - 1) && styles.listItemLast]}
+                      onPress={() => (navigation as any).navigate('JobDetails', { jobId: job.id })}
+                      activeOpacity={0.7}>
+                      <View style={styles.listIconWrapper}>
+                        <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.listIcon}>
+                          <FontAwesomeIcon icon="briefcase" size={Responsive.iconSize(18)} color="#FFFFFF" />
+                        </LinearGradient>
+                      </View>
+                      <View style={styles.listContent}>
+                        <Text style={styles.listTitle} numberOfLines={1}>{job.title}</Text>
+                        <Text style={styles.listSubtitle} numberOfLines={1}>{job.department} to {job.location}</Text>
+                        <View style={styles.listFooter}>
+                          <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(job.priority) + '20' }]}>
+                            <Text style={[styles.priorityText, { color: getPriorityColor(job.priority) }]}>{job.priority}</Text>
+                          </View>
+                          <Text style={styles.listRate}>₹{job.hourlyRate}/hr</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.listTime}>{formatDate(job.createdAt)}</Text>
+                    </TouchableOpacity>
+                  ))
+                ) : (
+                  <View style={styles.emptyState}>
+                    <View style={styles.emptyIcon}>
+                      <FontAwesomeIcon icon="briefcase" size={Responsive.iconSize(32)} color="#D1D5DB" />
+                    </View>
+                    <Text style={styles.emptyTitle}>No Recent Jobs</Text>
+                    <Text style={styles.emptySubtitle}>Job postings will appear here</Text>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
 
           {/* Recent Assignments */}
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionTitle}>Recent Assignments</Text>
-              <TouchableOpacity>
-                <Text style={styles.viewAllText}>View All</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.listCard}>
-              {stats?.recent?.assignments && stats.recent.assignments.length > 0 ? (
-                stats.recent.assignments.slice(0, 3).map((assignment, index) => {
-                  const getStatusColor = (status: string) => {
-                    switch (status) {
-                      case 'ACCEPTED': return '#10B981';
-                      case 'PENDING': return '#F59E0B';
-                      case 'COMPLETED': return '#059669';
-                      case 'REJECTED': return '#EF4444';
-                      default: return '#6B7280';
-                    }
-                  };
-                  const getStatusIcon = (status: string) => {
-                    switch (status) {
-                      case 'ACCEPTED': return 'check';
-                      case 'PENDING': return 'clock';
-                      case 'COMPLETED': return 'check-circle';
-                      case 'REJECTED': return 'times-circle';
-                      default: return 'info-circle';
-                    }
-                  };
-                  const statusColor = getStatusColor(assignment.status);
-
-                  return (
-                    <View
-                      key={assignment.id}
-                      style={[styles.listItem, index === Math.min(2, stats.recent.assignments.length - 1) && styles.listItemLast]}>
-                      <View style={styles.listIconWrapper}>
-                        <LinearGradient colors={[statusColor, statusColor]} style={styles.listIcon}>
-                          <FontAwesomeIcon icon={getStatusIcon(assignment.status)} size={Responsive.iconSize(18)} color="#FFFFFF" />
-                        </LinearGradient>
-                      </View>
-                      <View style={styles.listContent}>
-                        <Text style={styles.listTitle} numberOfLines={1}>
-                          {assignment.user?.firstName} {assignment.user?.lastName}
-                        </Text>
-                        <Text style={styles.listSubtitle} numberOfLines={1}>{assignment.job?.title}</Text>
-                        <View style={styles.listFooter}>
-                          <View style={[styles.statusBadge, { backgroundColor: statusColor + '20' }]}>
-                            <Text style={[styles.statusText, { color: statusColor }]}>{assignment.status}</Text>
-                          </View>
-                          <Text style={styles.listRate}>₹{assignment.hourlyRate}/hr</Text>
-                        </View>
-                      </View>
-                      <Text style={styles.listTime}>{formatDate(assignment.updatedAt)}</Text>
-                    </View>
-                  );
-                })
-              ) : (
-                <View style={styles.emptyState}>
-                  <View style={styles.emptyIcon}>
-                    <FontAwesomeIcon icon="list" size={Responsive.iconSize(32)} color="#D1D5DB" />
-                  </View>
-                  <Text style={styles.emptyTitle}>No Recent Assignments</Text>
-                  <Text style={styles.emptySubtitle}>Assignment updates will appear here</Text>
-                </View>
+              {!isLoading && stats && (
+                <TouchableOpacity>
+                  <Text style={styles.viewAllText}>View All</Text>
+                </TouchableOpacity>
               )}
             </View>
+            {isLoading || !stats ? (
+              <>
+                {[...Array(3)].map((_, i) => (
+                  <SkeletonListCard key={i} />
+                ))}
+              </>
+            ) : (
+              <View style={styles.listCard}>
+                {stats?.recent?.assignments && stats.recent.assignments.length > 0 ? (
+                  stats.recent.assignments.slice(0, 3).map((assignment, index) => {
+                    const getStatusColor = (status: string) => {
+                      switch (status) {
+                        case 'ACCEPTED': return '#10B981';
+                        case 'PENDING': return '#F59E0B';
+                        case 'COMPLETED': return '#059669';
+                        case 'REJECTED': return '#EF4444';
+                        default: return '#6B7280';
+                      }
+                    };
+                    const getStatusIcon = (status: string) => {
+                      switch (status) {
+                        case 'ACCEPTED': return 'check';
+                        case 'PENDING': return 'clock';
+                        case 'COMPLETED': return 'check-circle';
+                        case 'REJECTED': return 'times-circle';
+                        default: return 'info-circle';
+                      }
+                    };
+                    const statusColor = getStatusColor(assignment.status);
+
+                    return (
+                      <View
+                        key={assignment.id}
+                        style={[styles.listItem, index === Math.min(2, stats.recent.assignments.length - 1) && styles.listItemLast]}>
+                        <View style={styles.listIconWrapper}>
+                          <LinearGradient colors={[statusColor, statusColor]} style={styles.listIcon}>
+                            <FontAwesomeIcon icon={getStatusIcon(assignment.status)} size={Responsive.iconSize(18)} color="#FFFFFF" />
+                          </LinearGradient>
+                        </View>
+                        <View style={styles.listContent}>
+                          <Text style={styles.listTitle} numberOfLines={1}>
+                            {assignment.user?.firstName} {assignment.user?.lastName}
+                          </Text>
+                          <Text style={styles.listSubtitle} numberOfLines={1}>{assignment.job?.title}</Text>
+                          <View style={styles.listFooter}>
+                            <View style={[styles.statusBadge, { backgroundColor: statusColor + '20' }]}>
+                              <Text style={[styles.statusText, { color: statusColor }]}>{assignment.status}</Text>
+                            </View>
+                            <Text style={styles.listRate}>₹{assignment.hourlyRate}/hr</Text>
+                          </View>
+                        </View>
+                        <Text style={styles.listTime}>{formatDate(assignment.updatedAt)}</Text>
+                      </View>
+                    );
+                  })
+                ) : (
+                  <View style={styles.emptyState}>
+                    <View style={styles.emptyIcon}>
+                      <FontAwesomeIcon icon="list" size={Responsive.iconSize(32)} color="#D1D5DB" />
+                    </View>
+                    <Text style={styles.emptyTitle}>No Recent Assignments</Text>
+                    <Text style={styles.emptySubtitle}>Assignment updates will appear here</Text>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
 
       </ScrollView>

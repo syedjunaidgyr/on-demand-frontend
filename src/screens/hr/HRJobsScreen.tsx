@@ -28,6 +28,7 @@ import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import { Job } from '../../types';
 import ApiService from '../../services/api';
 import Responsive from '../../utils/responsive';
+import { SkeletonJobCard, SkeletonSearchBar } from '../../components/SkeletonComponents';
 
 const HRJobsScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -307,16 +308,6 @@ const HRJobsScreen: React.FC = () => {
     );
   };
 
-  if (isLoading && jobs.length === 0) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>Loading jobs...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   // Compute filtered jobs for display
   const displayJobs = jobs.filter((j) => {
@@ -370,43 +361,57 @@ const HRJobsScreen: React.FC = () => {
       />
 
       {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <FontAwesomeIcon icon="search" size={16} color={Colors.textSecondary} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by title"
-            placeholderTextColor={Colors.textTertiary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <FontAwesomeIcon icon="times" size={16} color={Colors.textTertiary} />
-            </TouchableOpacity>
-          )}
+      {isLoading && jobs.length === 0 ? (
+        <SkeletonSearchBar />
+      ) : (
+        <View style={styles.searchContainer}>
+          <View style={styles.searchBar}>
+            <FontAwesomeIcon icon="search" size={16} color={Colors.textSecondary} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by title"
+              placeholderTextColor={Colors.textTertiary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <FontAwesomeIcon icon="times" size={16} color={Colors.textTertiary} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
-      </View>
+      )}
 
       {/* Jobs List */}
-      <FlatList
-        data={displayJobs}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <JobCard job={item} />}
-        contentContainerStyle={styles.listContainer}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
-        ListFooterComponent={renderFooter}
-        showsVerticalScrollIndicator={false}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
-        )}
-        scrollEventThrottle={16}
-      />
+      {isLoading && jobs.length === 0 ? (
+        <ScrollView
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}>
+          {[...Array(5)].map((_, i) => (
+            <SkeletonJobCard key={i} />
+          ))}
+        </ScrollView>
+      ) : (
+        <FlatList
+          data={displayJobs}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <JobCard job={item} />}
+          contentContainerStyle={styles.listContainer}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={renderFooter}
+          showsVerticalScrollIndicator={false}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: false }
+          )}
+          scrollEventThrottle={16}
+        />
+      )}
 
       {/* Floating Action Button */}
       <TouchableOpacity style={styles.fab} onPress={handleCreateJob}>

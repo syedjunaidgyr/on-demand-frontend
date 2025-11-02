@@ -23,6 +23,7 @@ import { User } from '../../types';
 import ApiService from '../../services/api';
 import Responsive from '../../utils/responsive';
 import * as ExportUtils from '../../utils/exportUtils';
+import { SkeletonJobCard } from '../../components/SkeletonComponents';
 
 const AssignmentScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -56,12 +57,15 @@ const AssignmentScreen: React.FC = () => {
       console.log('📦 Assignments response:', assignmentsResponse);
       console.log('📋 Assignments data:', assignmentsResponse.data);
       setAssignments(assignmentsResponse.data || []);
-    } catch (error) {
-      console.error('❌ Failed to load assignments:', error);
-      console.error('❌ Error details:', error.message);
-      Alert.alert('Error', `Failed to load job assignments: ${error.message}`);
-    } finally {
+      // Set loading to false after data is set
       setIsLoading(false);
+    } catch (error: any) {
+      console.error('❌ Failed to load assignments:', error);
+      console.error('❌ Error details:', error?.message);
+      setAssignments([]);
+      // Set loading to false even on error
+      setIsLoading(false);
+      Alert.alert('Error', `Failed to load job assignments: ${error?.message || 'Unknown error'}`);
     }
   };
 
@@ -413,17 +417,6 @@ const AssignmentScreen: React.FC = () => {
     );
   };
 
-  if (isLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>Loading job assignments...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   const roleConfig = getRoleConfig();
 
   return (
@@ -446,63 +439,75 @@ const AssignmentScreen: React.FC = () => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }>
         {/* Export and Filter Row */}
-        <View style={styles.toolsRow}>
-          <View style={{ flexDirection: 'row' }}>
+        {!isLoading && (
+          <View style={styles.toolsRow}>
+            <View style={{ flexDirection: 'row' }}>
+              <TouchableOpacity
+                style={styles.exportDropdownButton}
+                onPress={() => setShowExportAllMenu(v => !v)}
+                disabled={filteredAssignments.length === 0}
+              >
+                <Text style={styles.exportDropdownText}>Export All</Text>
+                <FontAwesomeIcon icon={showExportAllMenu ? 'chevron-up' : 'chevron-down'} size={12} color={Colors.white} />
+              </TouchableOpacity>
+              {showExportAllMenu && (
+                <View style={styles.exportDropdownMenu}>
+                  <TouchableOpacity
+                    style={styles.exportDropdownItem}
+                    onPress={() => { setShowExportAllMenu(false); handleExportAllAssignments('pdf'); }}
+                  >
+                    <FontAwesomeIcon icon="file-pdf" size={14} color={Colors.textPrimary} />
+                    <Text style={styles.exportDropdownItemText}>PDF</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.exportDropdownItem}
+                    onPress={() => { setShowExportAllMenu(false); handleExportAllAssignments('excel'); }}
+                  >
+                    <FontAwesomeIcon icon="file-excel" size={14} color={Colors.textPrimary} />
+                    <Text style={styles.exportDropdownItemText}>Excel</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+
             <TouchableOpacity
-              style={styles.exportDropdownButton}
-              onPress={() => setShowExportAllMenu(v => !v)}
-              disabled={filteredAssignments.length === 0}
+              style={styles.filterOutlineButton}
+              onPress={() => setShowFilterModal(true)}
             >
-              <Text style={styles.exportDropdownText}>Export All</Text>
-              <FontAwesomeIcon icon={showExportAllMenu ? 'chevron-up' : 'chevron-down'} size={12} color={Colors.white} />
+              <FontAwesomeIcon icon="filter" size={14} color={Colors.textPrimary} />
+              <Text style={styles.filterOutlineText}>Filter</Text>
             </TouchableOpacity>
-            {showExportAllMenu && (
-              <View style={styles.exportDropdownMenu}>
-                <TouchableOpacity
-                  style={styles.exportDropdownItem}
-                  onPress={() => { setShowExportAllMenu(false); handleExportAllAssignments('pdf'); }}
-                >
-                  <FontAwesomeIcon icon="file-pdf" size={14} color={Colors.textPrimary} />
-                  <Text style={styles.exportDropdownItemText}>PDF</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.exportDropdownItem}
-                  onPress={() => { setShowExportAllMenu(false); handleExportAllAssignments('excel'); }}
-                >
-                  <FontAwesomeIcon icon="file-excel" size={14} color={Colors.textPrimary} />
-                  <Text style={styles.exportDropdownItemText}>Excel</Text>
+          </View>
+        )}
+
+        {isLoading ? (
+          <>
+            {[...Array(5)].map((_, i) => (
+              <SkeletonJobCard key={i} />
+            ))}
+          </>
+        ) : (
+          <>
+            {filteredAssignments.length > 0 ? (
+              filteredAssignments.map((assignment) => (
+                <AssignmentCard key={assignment.id} assignment={assignment} />
+              ))
+            ) : (
+              <View style={styles.emptyState}>
+                <FontAwesomeIcon icon="clipboard-list" size={Responsive.iconSize(64)} color={Colors.textTertiary} />
+                <Text style={styles.emptyStateTitle}>No Job Assignments</Text>
+                <Text style={styles.emptyStateText}>
+                  You don't have any job assignments at the moment. HR will assign compatible jobs to you based on your profile.
+                </Text>
+                <TouchableOpacity 
+                  style={[styles.primaryButton, { backgroundColor: roleConfig.color }]}
+                  onPress={onRefresh}>
+                  <FontAwesomeIcon icon="sync" size={Responsive.iconSize(16)} color={Colors.white} />
+                  <Text style={styles.primaryButtonText}>Refresh</Text>
                 </TouchableOpacity>
               </View>
             )}
-          </View>
-
-          <TouchableOpacity
-            style={styles.filterOutlineButton}
-            onPress={() => setShowFilterModal(true)}
-          >
-            <FontAwesomeIcon icon="filter" size={14} color={Colors.textPrimary} />
-            <Text style={styles.filterOutlineText}>Filter</Text>
-          </TouchableOpacity>
-        </View>
-
-        {filteredAssignments.length > 0 ? (
-          filteredAssignments.map((assignment) => (
-            <AssignmentCard key={assignment.id} assignment={assignment} />
-          ))
-        ) : (
-          <View style={styles.emptyState}>
-            <FontAwesomeIcon icon="clipboard-list" size={Responsive.iconSize(64)} color={Colors.textTertiary} />
-            <Text style={styles.emptyStateTitle}>No Job Assignments</Text>
-            <Text style={styles.emptyStateText}>
-              You don't have any job assignments at the moment. HR will assign compatible jobs to you based on your profile.
-            </Text>
-            <TouchableOpacity 
-              style={[styles.primaryButton, { backgroundColor: roleConfig.color }]}
-              onPress={onRefresh}>
-              <FontAwesomeIcon icon="sync" size={Responsive.iconSize(16)} color={Colors.white} />
-              <Text style={styles.primaryButtonText}>Refresh</Text>
-            </TouchableOpacity>
-          </View>
+          </>
         )}
       </ScrollView>
 

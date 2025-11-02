@@ -743,7 +743,18 @@ const AccordionSection = ({
 
 const CreateJobScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { height } = Dimensions.get('window');
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Success modal state
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const modalSlideAnim = useRef(new Animated.Value(height)).current;
+  const sparkleScale1 = useRef(new Animated.Value(0)).current;
+  const sparkleScale2 = useRef(new Animated.Value(0)).current;
+  const sparkleScale3 = useRef(new Animated.Value(0)).current;
+  const sparkleScale4 = useRef(new Animated.Value(0)).current;
+  const checkmarkScale = useRef(new Animated.Value(0)).current;
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -979,6 +990,79 @@ const CreateJobScreen: React.FC = () => {
     loadHospitals();
   }, [loadHospitals]);
 
+  // Animate success modal when it appears
+  useEffect(() => {
+    if (showSuccessModal) {
+      // Slide modal up from bottom
+      Animated.spring(modalSlideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 8,
+      }).start();
+
+      // Animate checkmark with bounce
+      setTimeout(() => {
+        Animated.sequence([
+          Animated.spring(checkmarkScale, {
+            toValue: 1.3,
+            useNativeDriver: true,
+            tension: 100,
+            friction: 3,
+          }),
+          Animated.spring(checkmarkScale, {
+            toValue: 1,
+            useNativeDriver: true,
+            tension: 50,
+            friction: 3,
+          }),
+        ]).start();
+      }, 100);
+
+      // Animate sparkles
+      setTimeout(() => {
+        Animated.parallel([
+          Animated.spring(sparkleScale1, {
+            toValue: 1,
+            useNativeDriver: true,
+            tension: 100,
+            friction: 5,
+            delay: 0,
+          }),
+          Animated.spring(sparkleScale2, {
+            toValue: 1,
+            useNativeDriver: true,
+            tension: 100,
+            friction: 5,
+            delay: 100,
+          }),
+          Animated.spring(sparkleScale3, {
+            toValue: 1,
+            useNativeDriver: true,
+            tension: 100,
+            friction: 5,
+            delay: 200,
+          }),
+          Animated.spring(sparkleScale4, {
+            toValue: 1,
+            useNativeDriver: true,
+            tension: 100,
+            friction: 5,
+            delay: 300,
+          }),
+        ]).start();
+      }, 200);
+    } else {
+      // Reset animations when modal closes
+      modalSlideAnim.setValue(height);
+      checkmarkScale.setValue(0);
+      sparkleScale1.setValue(0);
+      sparkleScale2.setValue(0);
+      sparkleScale3.setValue(0);
+      sparkleScale4.setValue(0);
+    }
+  }, [showSuccessModal]);
+
   // Check section completion
   const isSectionComplete = (section: string) => {
     switch (section) {
@@ -1058,6 +1142,14 @@ const CreateJobScreen: React.FC = () => {
     }
 
     return true;
+  };
+
+  const handleSuccessDone = () => {
+    setShowSuccessModal(false);
+    // Navigate back after a short delay
+    setTimeout(() => {
+      navigation.goBack();
+    }, 100);
   };
 
   const handleCreateJob = async () => {
@@ -1148,10 +1240,8 @@ const CreateJobScreen: React.FC = () => {
         ? `job created successfully! found ${compatibleStaffCount} compatible staff members.`
         : 'job created successfully! no compatible staff found yet, but the job is posted.';
 
-      setToast({ visible: true, message, type: 'success' });
-      setTimeout(() => {
-        navigation.goBack();
-      }, 1500);
+      // Show success modal instead of toast
+      setShowSuccessModal(true);
     } catch (error: any) {
       console.log('❌ Create job error response:', error.response?.data);
       setToast({ visible: true, message: error.response?.data?.message || 'failed to create job', type: 'error' });
@@ -1680,6 +1770,93 @@ const CreateJobScreen: React.FC = () => {
         type={toast.type} 
         onClose={() => setToast({ ...toast, visible: false })} 
       />
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <Modal transparent visible={showSuccessModal} animationType="none" statusBarTranslucent>
+          <View style={styles.modalOverlay}>
+            <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={handleSuccessDone} />
+            <Animated.View 
+              style={[
+                styles.modalContainer,
+                {
+                  transform: [{ translateY: modalSlideAnim }]
+                }
+              ]}
+            >
+            <View style={styles.modalIconContainer}>
+              {/* Sparkles around checkmark */}
+              <Animated.View 
+                style={[
+                  styles.sparkle,
+                  styles.sparkle1,
+                  {
+                    transform: [{ scale: sparkleScale1 }]
+                  }
+                ]}
+              >
+                <FontAwesomeIcon icon="star" size={20} color="#FFD700" />
+              </Animated.View>
+              
+              <Animated.View 
+                style={[
+                  styles.sparkle,
+                  styles.sparkle2,
+                  {
+                    transform: [{ scale: sparkleScale2 }]
+                  }
+                ]}
+              >
+                <FontAwesomeIcon icon="star" size={18} color="#C0C0C0" />
+              </Animated.View>
+              
+              <Animated.View 
+                style={[
+                  styles.sparkle,
+                  styles.sparkle3,
+                  {
+                    transform: [{ scale: sparkleScale3 }]
+                  }
+                ]}
+              >
+                <FontAwesomeIcon icon="star" size={18} color="#FFB6C1" />
+              </Animated.View>
+              
+              <Animated.View 
+                style={[
+                  styles.sparkle,
+                  styles.sparkle4,
+                  {
+                    transform: [{ scale: sparkleScale4 }]
+                  }
+                ]}
+              >
+                <FontAwesomeIcon icon="star" size={16} color="#87CEEB" />
+              </Animated.View>
+              
+              {/* Checkmark */}
+              <Animated.View
+                style={{
+                  transform: [{ scale: checkmarkScale }]
+                }}
+              >
+                <FontAwesomeIcon icon="check-circle" size={Responsive.iconSize(64)} color="#4CAF50" />
+              </Animated.View>
+            </View>
+            
+            <Text style={styles.modalTitle}>Job Created Successfully!</Text>
+            
+            <Text style={styles.modalMessage}>
+              Your job posting has been created and is now live. Compatible healthcare professionals will be notified and can apply.
+            </Text>
+            
+            <TouchableOpacity style={styles.modalDoneButton} onPress={handleSuccessDone}>
+              <Text style={styles.modalDoneButtonText}>Done</Text>
+            </TouchableOpacity>
+          </Animated.View>
+          </View>
+        </Modal>
+      )}
     </View>
   );
 };
@@ -1991,6 +2168,94 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.regular,
     color: Colors.error,
     marginTop: Spacing.xs,
+  },
+  // Success Modal styles
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContainer: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: BorderRadius.xl || 24,
+    borderTopRightRadius: BorderRadius.xl || 24,
+    padding: Spacing.xl,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xl,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 8,
+    width: '100%',
+  },
+  modalTitle: {
+    fontSize: Typography.fontSize['2xl'] || 24,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#333333',
+    marginBottom: Spacing.md,
+    textAlign: 'center',
+  },
+  modalIconContainer: {
+    marginBottom: Spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 100,
+    height: 100,
+    position: 'relative',
+  },
+  sparkle: {
+    position: 'absolute',
+  },
+  sparkle1: {
+    top: 10,
+    left: 10,
+  },
+  sparkle2: {
+    bottom: 15,
+    left: 8,
+  },
+  sparkle3: {
+    top: 15,
+    right: 8,
+  },
+  sparkle4: {
+    bottom: 10,
+    right: 10,
+  },
+  modalMessage: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular,
+    color: '#666666',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: Spacing.lg,
+    paddingHorizontal: Spacing.xs,
+  },
+  modalDoneButton: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: BorderRadius.md || 8,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl * 2,
+    alignItems: 'center',
+    minWidth: 140,
+    marginBottom: 0,
+  },
+  modalDoneButtonText: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.white,
   },
 });
 
