@@ -108,9 +108,12 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
       setUpcomingJobs(upcomingData || []);
       console.log('✅ Upcoming jobs loaded successfully:', upcomingData);
       console.log('📊 Upcoming jobs count:', upcomingData?.length || 0);
-      setMyAssignments(assignmentsData?.data || []);
+      // Handle API response structure: { assignments: [...], total: ... } or { data: [...] }
+      const assignmentsList = assignmentsData?.data || (assignmentsData as any)?.assignments || [];
+      setMyAssignments(assignmentsList);
       console.log('✅ Assignments loaded successfully:', assignmentsData);
-      console.log('📊 Assignments count:', assignmentsData?.data?.length || 0);
+      console.log('📊 Assignments count:', assignmentsList.length);
+      console.log('📊 First assignment:', assignmentsList[0] ? JSON.stringify(assignmentsList[0], null, 2) : 'No assignments');
       setWorkStatus(statusData);
       // Set loading to false after all data is set
       setIsLoading(false);
@@ -147,6 +150,25 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
       hour12: true,
     });
   };
+
+  const getTimeAgo = (dateString: string) => {
+    const now = new Date();
+    const past = new Date(dateString);
+    const diffInMs = now.getTime() - past.getTime();
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInHours / 24);
+    
+    if (diffInHours < 1) {
+      return 'just now';
+    } else if (diffInHours < 24) {
+      return `${diffInHours} ${diffInHours === 1 ? 'hour' : 'hours'} ago`;
+    } else if (diffInDays < 7) {
+      return `${diffInDays} ${diffInDays === 1 ? 'day' : 'days'} ago`;
+    } else {
+      return formatDate(dateString);
+    }
+  };
+
 
   const getRoleConfig = () => {
     if (!user) return { color: Colors.primary, title: 'Dashboard', subtitle: 'Manage your assignments' };
@@ -257,8 +279,8 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
             <Text style={styles.jobTitle}>{job.title}</Text>
             <View style={styles.jobHeaderRight}>
               {job.priority === 'URGENT' && (
-                <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(job.priority) }]}>
-                  <Text style={styles.priorityText}>{job.priority}</Text>
+                <View style={[styles.priorityBadgeInline, { backgroundColor: getPriorityColor(job.priority) + '20', borderColor: getPriorityColor(job.priority) }]}>
+                  <Text style={[styles.priorityBadgeTextInline, { color: getPriorityColor(job.priority) }]}>{job.priority}</Text>
                 </View>
               )}
               <View style={[styles.jobStatus, { backgroundColor: getStatusColor(job.status) }]}>
@@ -347,88 +369,143 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
   };
 
   const AssignmentCard = ({ assignment }: { assignment: JobAssignment }) => {
-    const getAssignmentStatusColor = (status: string) => {
-      switch (status) {
-        case 'ACCEPTED':
-          return Colors.primary;
-        case 'PENDING':
-          return Colors.warning;
-        case 'COMPLETED':
-          return Colors.info;
-        case 'CANCELLED':
-          return Colors.error;
-        case 'REJECTED':
-          return Colors.textTertiary;
-        default:
-          return Colors.info;
-      }
-    };
-
-    const getAssignmentStatusText = (status: string) => {
-      switch (status) {
-        case 'ACCEPTED':
-          return 'Active';
-        case 'PENDING':
-          return 'Pending';
-        case 'COMPLETED':
-          return 'Completed';
-        case 'CANCELLED':
-          return 'Cancelled';
-        case 'REJECTED':
-          return 'Rejected';
-        default:
-          return 'Active';
-      }
-    };
-
     const handleAssignmentPress = () => {
       (navigation as any).navigate('Assignments');
     };
 
+    const job = assignment.job;
+    if (!job) return null;
+
+    // Extract data from API response structure - display exactly as received
+    const facilityName = (job.facilityName || '').trim() || 'Healthcare Facility';
+    const location = (job.location || '').trim() || 'Location not specified';
+    
+    // Display hourlyRate exactly as it comes from API
+    const hourlyRate = assignment.hourlyRate || job.hourlyRate || '0';
+    const hourlyRateDisplay = typeof hourlyRate === 'string' ? hourlyRate : hourlyRate.toString();
+    
+    // Use assignment createdAt first, then job createdAt, then current date
+    const createdAt = assignment.createdAt || job.createdAt;
+    const postedTime = createdAt ? getTimeAgo(createdAt) : 'just now';
+    
+    // Generate company initials from facility name
+    const companyInitials = facilityName
+      .split(' ')
+      .filter(word => word.length > 0)
+      .map(word => word[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase() || 'HC';
+
+    // Get job details from API
+    const jobStatus = job.status || 'ACTIVE';
+    const priority = job.priority || '';
+    const requiredRole = job.requiredRole || '';
+    const department = job.department || '';
+
+    // Priority color mapping
+    const getPriorityColor = (priority: string) => {
+      switch (priority) {
+        case 'URGENT':
+          return '#EF4444';
+        case 'HIGH':
+          return '#F59E0B';
+        case 'MEDIUM':
+          return '#3B82F6';
+        case 'LOW':
+          return '#10B981';
+        default:
+          return '#6B7280';
+      }
+    };
+
+    // Status color mapping
+    const getStatusColor = (status: string) => {
+      switch (status) {
+        case 'ACTIVE':
+          return '#10B981';
+        case 'CANCELLED':
+          return '#EF4444';
+        case 'COMPLETED':
+          return '#3B82F6';
+        case 'FILLED':
+          return '#6B7280';
+        default:
+          return '#6B7280';
+      }
+    };
+
     return (
-      <TouchableOpacity style={styles.assignmentCard} activeOpacity={0.9} onPress={handleAssignmentPress}>
-        <View style={styles.assignmentCardInner}>
-          <View style={styles.assignmentHeader}>
-            <Text style={styles.assignmentTitle}>{assignment.job?.title || 'Unknown Job'}</Text>
-            <View style={[styles.assignmentStatus, { backgroundColor: getAssignmentStatusColor(assignment.status) }]}>
-              <Text style={styles.assignmentStatusText}>{getAssignmentStatusText(assignment.status)}</Text>
-            </View>
+      <TouchableOpacity 
+        style={styles.jobCard}
+        onPress={handleAssignmentPress}
+        activeOpacity={0.8}>
+        {/* Top row: Posted time */}
+        <View style={styles.cardTopRow}>
+          <Text style={styles.cardTimeText}>Posted {postedTime}</Text>
+        </View>
+        <View style={styles.cardDivider} />
+
+        {/* Main row: Avatar + Job details */}
+        <View style={styles.profileRow}>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarInitials}>{companyInitials}</Text>
           </View>
-          <View style={styles.assignmentDetails}>
-            <View style={styles.assignmentDetail}>
-              <View style={styles.assignmentDetailIcon}>
-                <FontAwesomeIcon icon="map-marker-alt" size={Responsive.iconSize(14)} color={Colors.primary} />
-              </View>
-              <Text style={styles.assignmentDetailText}>{assignment.job?.location || 'Unknown Location'}</Text>
+          <View style={styles.profileContent}>
+            <Text style={styles.cardTitle} numberOfLines={2}>
+              {job.title}
+            </Text>
+            {/* Subtitle row: Facility • Location • Status */}
+            <View style={styles.subtitleRow}>
+              {facilityName && (
+                <Text style={styles.subtitleText} numberOfLines={1}>{facilityName}</Text>
+              )}
+              {facilityName && location && (
+                <Text style={styles.subtitleDot}> • </Text>
+              )}
+              {location && (
+                <Text style={styles.subtitleText} numberOfLines={1}>{location}</Text>
+              )}
+              {(facilityName || location) && jobStatus && (
+                <Text style={styles.subtitleDot}> • </Text>
+              )}
+              {jobStatus && (
+                <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor(jobStatus) + '1A' }]}>
+                  <Text style={[styles.inlineStatusText, { color: getStatusColor(jobStatus) }]} numberOfLines={1}>
+                    {jobStatus}
+                  </Text>
+                </View>
+              )}
             </View>
-            <View style={styles.assignmentDetail}>
-              <View style={styles.assignmentDetailIcon}>
-                <FontAwesomeIcon icon="clock" size={Responsive.iconSize(14)} color={Colors.primary} />
+
+            {/* Compact info row: Department, Role, Rate */}
+            <View style={styles.assignmentRow}>
+              {department && (
+                <View style={styles.infoCol}>
+                  <Text style={styles.infoLabel}>Department</Text>
+                  <Text style={styles.infoValue} numberOfLines={1}>{department}</Text>
+                </View>
+              )}
+              {requiredRole && (
+                <View style={styles.infoCol}>
+                  <Text style={styles.infoLabel}>Role</Text>
+                  <Text style={styles.infoValue} numberOfLines={1}>{requiredRole}</Text>
+                </View>
+              )}
+              <View style={styles.infoCol}>
+                <Text style={styles.infoLabel}>Rate</Text>
+                <Text style={styles.infoValue} numberOfLines={1}>₹{hourlyRateDisplay}/hr</Text>
               </View>
-              <Text style={styles.assignmentDetailText}>
-                {assignment.job ? `${formatDate(assignment.job.startDate)} at ${formatTime(assignment.job.startTime)}` : 'Date not available'}
-              </Text>
             </View>
-            <View style={styles.assignmentDetail}>
-              <View style={styles.assignmentDetailIcon}>
-                <FontAwesomeIcon icon="rupee-sign" size={14} color={Colors.success} />
-              </View>
-              <Text style={styles.assignmentDetailText}>{assignment.hourlyRate || assignment.job?.hourlyRate || 0}/hour</Text>
-            </View>
-          </View>
-          <View style={styles.assignmentCardFooter}>
-            <View style={styles.assignmentProgress}>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: assignment.status === 'COMPLETED' ? '100%' : '75%' }]} />
-              </View>
-              <Text style={styles.progressText}>
-                {assignment.status === 'COMPLETED' ? '100% Complete' : '75% Complete'}
-              </Text>
-            </View>
-            {(assignment.status === 'ASSIGNED' || assignment.status === 'IN_PROGRESS') && (
-              <View style={styles.assignmentAction}>
-                <FontAwesomeIcon icon="check-circle" size={Responsive.iconSize(16)} color={Colors.primary} />
-                <Text style={styles.assignmentActionText}>Check In/Out</Text>
+
+            {/* Priority badge if exists */}
+            {priority && (
+              <View style={styles.priorityRow}>
+                <View style={[styles.priorityBadgeInline, { backgroundColor: getPriorityColor(priority) + '20', borderColor: getPriorityColor(priority) }]}>
+                  <Text style={[styles.priorityBadgeTextInline, { color: getPriorityColor(priority) }]}>
+                    {priority} Priority
+                  </Text>
+                </View>
               </View>
             )}
           </View>
@@ -618,7 +695,7 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
         {/* My Assignments */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Job Assignments</Text>
+            <Text style={styles.sectionTitle}>My Jobs</Text>
             {!isLoading && (
               <TouchableOpacity onPress={() => (navigation as any).navigate('Assignments')}>
                 <Text style={styles.seeAllText}>See All</Text>
@@ -902,18 +979,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  jobCard: {
-    backgroundColor: Colors.white,
-    borderRadius: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 12,
-    marginHorizontal: 0,
-    marginVertical: 4,
-  },
   jobCardInner: {
     backgroundColor: Colors.white,
     borderRadius: 16,
@@ -953,16 +1018,6 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.bold,
     color: Colors.white,
-  },
-  priorityBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
   },
   priorityText: {
     fontSize: Typography.fontSize.xs,
@@ -1042,6 +1097,131 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     color: Colors.textSecondary,
     fontWeight: Typography.fontWeight.medium,
+  },
+  // Job Card Styles (matching HRUsersScreen style)
+  jobCard: {
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    marginHorizontal: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  cardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cardTimeText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textTertiary,
+    marginBottom: Spacing.xs,
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: Colors.borderLight,
+    marginBottom: Spacing.sm,
+    marginTop: Spacing.xs,
+  },
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: Spacing.sm,
+  },
+  avatarCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#EDE9FE',
+    borderWidth: 1,
+    borderColor: '#DDD6FE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+    marginTop: -2,
+  },
+  avatarInitials: {
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#4C1D95',
+  },
+  profileContent: {
+    flex: 1,
+    paddingTop: 2,
+  },
+  cardTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+    marginBottom: 2,
+    flexShrink: 1,
+  },
+  subtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    flexWrap: 'nowrap',
+  },
+  subtitleText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.textSecondary,
+    flexShrink: 1,
+    maxWidth: '45%',
+  },
+  subtitleDot: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+    marginHorizontal: 6,
+  },
+  inlineStatusPill: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  inlineStatusText: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.medium,
+    textTransform: 'capitalize',
+  },
+  assignmentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 6,
+  },
+  infoCol: {
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textTertiary,
+  },
+  infoValue: {
+    marginTop: 2,
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+  },
+  priorityRow: {
+    marginTop: 8,
+  },
+  priorityBadgeInline: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+  },
+  priorityBadgeTextInline: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.bold,
   },
   assignmentCard: {
     backgroundColor: Colors.white,

@@ -22,7 +22,6 @@ import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import { User } from '../../types';
 import ApiService from '../../services/api';
 import Responsive from '../../utils/responsive';
-import * as ExportUtils from '../../utils/exportUtils';
 import { SkeletonJobCard } from '../../components/SkeletonComponents';
 
 const AssignmentScreen: React.FC = () => {
@@ -31,12 +30,7 @@ const AssignmentScreen: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [exportingAssignmentId, setExportingAssignmentId] = useState<number | null>(null);
-  const [showExportAllMenu, setShowExportAllMenu] = useState(false);
-  const [showFilterModal, setShowFilterModal] = useState(false);
-  const [filterTitle, setFilterTitle] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string | null>(null);
-  const [showAssignmentExportMenuForId, setShowAssignmentExportMenuForId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadAssignments();
@@ -76,97 +70,23 @@ const AssignmentScreen: React.FC = () => {
   };
 
   const filteredAssignments = useMemo(() => {
-    const titleQuery = filterTitle.trim().toLowerCase();
-    const statusFilter = filterStatus?.toUpperCase() || '';
+    const query = searchQuery.trim().toLowerCase();
+    if (query.length === 0) {
+      return assignments;
+    }
     return assignments.filter((a) => {
       const title = a.job?.title?.toLowerCase() || '';
-      const status = (a.status || '').toUpperCase();
-      const byTitle = titleQuery.length === 0 || title.includes(titleQuery);
-      const byStatus = statusFilter.length === 0 || status === statusFilter;
-      return byTitle && byStatus;
+      const description = a.job?.description?.toLowerCase() || '';
+      const facilityName = a.job?.facilityName?.toLowerCase() || '';
+      const location = a.job?.location?.toLowerCase() || '';
+      const department = a.job?.department?.toLowerCase() || '';
+      return title.includes(query) || 
+             description.includes(query) || 
+             facilityName.includes(query) || 
+             location.includes(query) || 
+             department.includes(query);
     });
-  }, [assignments, filterTitle, filterStatus]);
-
-  const handleExportAssignment = async (assignmentId: number, format: 'pdf' | 'excel') => {
-    try {
-      setExportingAssignmentId(assignmentId);
-      const assignment = assignments.find((a) => a.id === assignmentId);
-      if (!assignment) {
-        Alert.alert('Export', 'Assignment not found');
-        return;
-      }
-
-      const data = {
-        id: assignment.id,
-        jobTitle: assignment.job?.title || '',
-        facilityName: assignment.job?.facilityName || assignment.job?.location || '',
-        department: assignment.job?.department || '',
-        status: assignment.status || '',
-        hourlyRate: assignment.job?.hourlyRate ?? '',
-        startDate: assignment.job?.startDate || '',
-        endDate: assignment.job?.endDate || '',
-      };
-      const fileName = `Assignment_${assignment.id}`;
-
-      if (format === 'pdf') {
-        await ExportUtils.generateAndSavePDF(
-          [data],
-          fileName,
-          ['id', 'jobTitle', 'facilityName', 'department', 'status', 'hourlyRate', 'startDate', 'endDate'],
-          `Assignment #${assignment.id}`
-        );
-      } else {
-        await ExportUtils.exportToXLSXFile(
-          [data],
-          fileName,
-          ['id', 'jobTitle', 'facilityName', 'department', 'status', 'hourlyRate', 'startDate', 'endDate']
-        );
-      }
-    } catch (error) {
-      console.error('Export assignment failed:', error);
-      Alert.alert('Export Failed', 'Could not export assignment');
-    } finally {
-      setExportingAssignmentId(null);
-    }
-  };
-
-  const handleExportAllAssignments = async (format: 'pdf' | 'excel') => {
-    try {
-      const list = filteredAssignments;
-      if (!list || list.length === 0) {
-        Alert.alert('Nothing to export', 'No assignments match the current filters');
-        return;
-      }
-      const rows = list.map((a) => ({
-        id: a.id,
-        jobTitle: a.job?.title || '',
-        facilityName: a.job?.facilityName || a.job?.location || '',
-        department: a.job?.department || '',
-        status: a.status || '',
-        hourlyRate: a.job?.hourlyRate ?? '',
-        startDate: a.job?.startDate || '',
-        endDate: a.job?.endDate || '',
-      }));
-      const fileName = 'All_Assignments';
-      if (format === 'pdf') {
-        await ExportUtils.generateAndSavePDF(
-          rows,
-          fileName,
-          ['id', 'jobTitle', 'facilityName', 'department', 'status', 'hourlyRate', 'startDate', 'endDate'],
-          'All Assignments'
-        );
-      } else {
-        await ExportUtils.exportToXLSXFile(
-          rows,
-          fileName,
-          ['id', 'jobTitle', 'facilityName', 'department', 'status', 'hourlyRate', 'startDate', 'endDate']
-        );
-      }
-    } catch (error) {
-      console.error('Export all assignments failed:', error);
-      Alert.alert('Export Failed', 'Could not export assignments');
-    }
-  };
+  }, [assignments, searchQuery]);
 
   const handleAcceptAssignment = async (assignment: any) => {
     Alert.alert(
@@ -261,26 +181,29 @@ const AssignmentScreen: React.FC = () => {
     });
   };
 
-  const getRoleConfig = () => {
-    if (!user) return { color: Colors.primary, title: 'Job Assignments' };
+  const getTimeAgo = (dateString: string) => {
+    const now = new Date();
+    const past = new Date(dateString);
+    const diffInMs = now.getTime() - past.getTime();
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInHours / 24);
     
-    switch (user.role) {
-      case 'DOCTOR':
-        return {
-          color: Colors.doctor,
-          title: 'Medical Job Assignments'
-        };
-      case 'NURSE':
-        return {
-          color: Colors.nurse,
-          title: 'Nursing Job Assignments'
-        };
-      default:
-        return {
-          color: Colors.primary,
-          title: 'Job Assignments'
-        };
+    if (diffInHours < 1) {
+      return 'just now';
+    } else if (diffInHours < 24) {
+      return `${diffInHours} ${diffInHours === 1 ? 'hour' : 'hours'} ago`;
+    } else if (diffInDays < 7) {
+      return `${diffInDays} ${diffInDays === 1 ? 'day' : 'days'} ago`;
+    } else {
+      return formatDate(dateString);
     }
+  };
+
+  const getRoleConfig = () => {
+    return {
+      color: Colors.primary,
+      title: 'My Jobs'
+    };
   };
 
   const getAssignmentStatusConfig = (status: string) => {
@@ -303,9 +226,68 @@ const AssignmentScreen: React.FC = () => {
     const statusConfig = getAssignmentStatusConfig(assignment.status);
     const isPending = assignment.status?.toUpperCase() === 'PENDING';
     
+    // Extract data from API response structure - display exactly as received
+    const facilityName = (job.facilityName || '').trim() || 'Healthcare Facility';
+    const location = (job.location || '').trim() || 'Location not specified';
+    
+    // Display hourlyRate exactly as it comes from API
+    const hourlyRate = assignment.hourlyRate || job.hourlyRate || '0';
+    const hourlyRateDisplay = typeof hourlyRate === 'string' ? hourlyRate : hourlyRate.toString();
+    
+    // Use assignment createdAt first, then job createdAt, then current date
+    const createdAt = assignment.createdAt || job.createdAt;
+    const postedTime = createdAt ? getTimeAgo(createdAt) : 'just now';
+    
+    // Generate company initials from facility name
+    const companyInitials = facilityName
+      .split(' ')
+      .filter((word: string) => word.length > 0)
+      .map((word: string) => word[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase() || 'HC';
+
+    // Get job details from API
+    const jobStatus = job.status || 'ACTIVE';
+    const priority = job.priority || '';
+    const requiredRole = job.requiredRole || '';
+    const department = job.department || '';
+
+    // Priority color mapping
+    const getPriorityColor = (priority: string) => {
+      switch (priority) {
+        case 'URGENT':
+          return '#EF4444';
+        case 'HIGH':
+          return '#F59E0B';
+        case 'MEDIUM':
+          return '#3B82F6';
+        case 'LOW':
+          return '#10B981';
+        default:
+          return '#6B7280';
+      }
+    };
+
+    // Status color mapping
+    const getStatusColor = (status: string) => {
+      switch (status) {
+        case 'ACTIVE':
+          return '#10B981';
+        case 'CANCELLED':
+          return '#EF4444';
+        case 'COMPLETED':
+          return '#3B82F6';
+        case 'FILLED':
+          return '#6B7280';
+        default:
+          return '#6B7280';
+      }
+    };
+    
     return (
       <TouchableOpacity 
-        style={styles.assignmentCard}
+        style={styles.jobCard}
         onPress={() => {
           console.log('🔍 Assignment object:', assignment);
           console.log('🔍 Assignment.job:', assignment.job);
@@ -313,106 +295,106 @@ const AssignmentScreen: React.FC = () => {
             jobId: assignment.job?.id, 
             job: assignment.job 
           });
-        }}>
-        <View style={styles.assignmentHeader}>
-          <Text style={styles.assignmentTitle}>{job.title || 'Unknown Job'}</Text>
-          <View style={[styles.assignmentStatus, { backgroundColor: statusConfig.color }]}>
-            <Text style={styles.assignmentStatusText}>{statusConfig.text}</Text>
+        }}
+        activeOpacity={0.8}>
+        {/* Top row: Posted time and Status */}
+        <View style={styles.cardTopRow}>
+          <Text style={styles.cardTimeText}>Posted {postedTime}</Text>
+          <View style={[styles.inlineStatusPill, { backgroundColor: statusConfig.color + '1A' }]}>
+            <Text style={[styles.inlineStatusText, { color: statusConfig.color }]} numberOfLines={1}>
+              {statusConfig.text}
+            </Text>
           </View>
-          <View style={styles.cardExportMenuRow}>
-            <TouchableOpacity
-              style={styles.exportDropdownButton}
-              onPress={() => setShowAssignmentExportMenuForId(prev => prev === assignment.id ? null : assignment.id)}
-              disabled={exportingAssignmentId === assignment.id}
-            >
-              {exportingAssignmentId === assignment.id ? (
-                <ActivityIndicator size="small" color={Colors.white} />
-              ) : (
-                <>
-                  <Text style={styles.exportDropdownText}>Export</Text>
-                  <FontAwesomeIcon icon={showAssignmentExportMenuForId === assignment.id ? 'chevron-up' : 'chevron-down'} size={12} color={Colors.white} />
-                </>
+        </View>
+        <View style={styles.cardDivider} />
+
+        {/* Main row: Avatar + Job details */}
+        <View style={styles.profileRow}>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarInitials}>{companyInitials}</Text>
+          </View>
+          <View style={styles.profileContent}>
+            <Text style={styles.cardTitle} numberOfLines={2}>
+              {job.title || 'Unknown Job'}
+            </Text>
+            {/* Subtitle row: Facility • Location */}
+            <View style={styles.subtitleRow}>
+              {facilityName && (
+                <Text style={styles.subtitleText} numberOfLines={1}>{facilityName}</Text>
               )}
-            </TouchableOpacity>
-            {showAssignmentExportMenuForId === assignment.id && (
-              <View style={[styles.exportDropdownMenu, { right: 0 }]}> 
-                <TouchableOpacity
-                  style={styles.exportDropdownItem}
-                  onPress={() => { setShowAssignmentExportMenuForId(null); handleExportAssignment(assignment.id, 'pdf'); }}
-                >
-                  <FontAwesomeIcon icon="file-pdf" size={14} color={Colors.textPrimary} />
-                  <Text style={styles.exportDropdownItemText}>PDF</Text>
+              {facilityName && location && (
+                <Text style={styles.subtitleDot}> • </Text>
+              )}
+              {location && (
+                <Text style={styles.subtitleText} numberOfLines={1}>{location}</Text>
+              )}
+            </View>
+
+            {/* Compact info row: Department, Role, Rate */}
+            <View style={styles.assignmentRow}>
+              {department && (
+                <View style={styles.infoCol}>
+                  <Text style={styles.infoLabel}>Department</Text>
+                  <Text style={styles.infoValue} numberOfLines={1}>{department}</Text>
+                </View>
+              )}
+              {requiredRole && (
+                <View style={styles.infoCol}>
+                  <Text style={styles.infoLabel}>Role</Text>
+                  <Text style={styles.infoValue} numberOfLines={1}>{requiredRole}</Text>
+                </View>
+              )}
+              <View style={styles.infoCol}>
+                <Text style={styles.infoLabel}>Rate</Text>
+                <Text style={styles.infoValue} numberOfLines={1}>₹{hourlyRateDisplay}/hr</Text>
+              </View>
+            </View>
+
+            {/* Priority badge if exists */}
+            {priority && (
+              <View style={styles.priorityRow}>
+                <View style={[styles.priorityBadgeInline, { backgroundColor: getPriorityColor(priority) + '20', borderColor: getPriorityColor(priority) }]}>
+                  <Text style={[styles.priorityBadgeTextInline, { color: getPriorityColor(priority) }]}>
+                    {priority} Priority
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Accept/Reject buttons for pending assignments */}
+            {isPending && (
+              <View style={styles.actionButtons}>
+                <TouchableOpacity 
+                  style={[styles.rejectButton, { flex: 1, marginRight: Spacing.sm }]}
+                  onPress={() => handleRejectAssignment(assignment)}>
+                  <FontAwesomeIcon icon="times" size={Responsive.iconSize(16)} color={Colors.white} />
+                  <Text style={styles.rejectButtonText}>Reject</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.exportDropdownItem}
-                  onPress={() => { setShowAssignmentExportMenuForId(null); handleExportAssignment(assignment.id, 'excel'); }}
-                >
-                  <FontAwesomeIcon icon="file-excel" size={14} color={Colors.textPrimary} />
-                  <Text style={styles.exportDropdownItemText}>Excel</Text>
+                
+                <TouchableOpacity 
+                  style={[styles.acceptButton, { flex: 1, marginLeft: Spacing.sm }]}
+                  onPress={() => handleAcceptAssignment(assignment)}>
+                  <FontAwesomeIcon icon="check" size={Responsive.iconSize(16)} color={Colors.white} />
+                  <Text style={styles.acceptButtonText}>Accept</Text>
                 </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Status info for non-pending assignments */}
+            {!isPending && (
+              <View style={styles.assignmentInfo}>
+                <Text style={styles.assignmentInfoText}>
+                  {assignment.status === 'ACCEPTED' 
+                    ? 'Congratulations! You have been selected for this job. HR will contact you with further details.'
+                    : assignment.status === 'REJECTED' 
+                    ? `Rejected: ${assignment.rejectionReason || 'No reason provided'}`
+                    : 'Assignment status: ' + statusConfig.text
+                  }
+                </Text>
               </View>
             )}
           </View>
         </View>
-        
-        <Text style={styles.assignmentDescription}>{job.description || 'No description available'}</Text>
-        
-        <View style={styles.assignmentDetails}>
-          <View style={styles.assignmentDetail}>
-            <FontAwesomeIcon icon="map-marker-alt" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
-            <Text style={styles.assignmentDetailText}>{job.location || 'Unknown Location'}</Text>
-          </View>
-          
-          <View style={styles.assignmentDetail}>
-            <FontAwesomeIcon icon="calendar" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
-            <Text style={styles.assignmentDetailText}>
-              {job.startDate ? formatDate(job.startDate) : 'TBD'}
-            </Text>
-          </View>
-          
-          <View style={styles.assignmentDetail}>
-            <FontAwesomeIcon icon="clock" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
-            <Text style={styles.assignmentDetailText}>
-              {job.startTime && job.endTime ? `${formatTime(job.startTime)} - ${formatTime(job.endTime)}` : 'TBD'}
-            </Text>
-          </View>
-          
-          <View style={styles.assignmentDetail}>
-            <FontAwesomeIcon icon="dollar-sign" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
-            <Text style={styles.assignmentDetailText}>${job.hourlyRate || 0}/hour</Text>
-          </View>
-        </View>
-
-        {isPending && (
-          <View style={styles.actionButtons}>
-            <TouchableOpacity 
-              style={[styles.rejectButton, { flex: 1, marginRight: Spacing.sm }]}
-              onPress={() => handleRejectAssignment(assignment)}>
-              <FontAwesomeIcon icon="times" size={Responsive.iconSize(16)} color={Colors.white} />
-              <Text style={styles.rejectButtonText}>Reject</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.acceptButton, { flex: 1, marginLeft: Spacing.sm }]}
-              onPress={() => handleAcceptAssignment(assignment)}>
-              <FontAwesomeIcon icon="check" size={Responsive.iconSize(16)} color={Colors.white} />
-              <Text style={styles.acceptButtonText}>Accept</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {!isPending && (
-          <View style={styles.assignmentInfo}>
-            <Text style={styles.assignmentInfoText}>
-              {assignment.status === 'ACCEPTED' 
-                ? 'Congratulations! You have been selected for this job. HR will contact you with further details.'
-                : assignment.status === 'REJECTED' 
-                ? `Rejected: ${assignment.rejectionReason || 'No reason provided'}`
-                : 'Assignment status: ' + statusConfig.text
-              }
-            </Text>
-          </View>
-        )}
       </TouchableOpacity>
     );
   };
@@ -421,62 +403,44 @@ const AssignmentScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={[styles.header, { backgroundColor: roleConfig.color }]}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}>
-            <FontAwesomeIcon icon="arrow-left" size={Responsive.iconSize(24)} color={Colors.white} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{roleConfig.title}</Text>
-          <View style={styles.headerSpacer} />
-        </View>
-      </View>
+      {/* Global Header */}
+      <GlobalHeader
+        title="My Jobs"
+        showBackButton={true}
+        backgroundColor="#FFFFFF"
+        titleColor="#111827"
+        headerStyle={{ paddingTop: 10, paddingHorizontal: 20, paddingBottom: 16 }}
+        onBackPress={() => navigation.goBack()}
+      />
 
       <ScrollView
         style={styles.content}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }>
-        {/* Export and Filter Row */}
+        
+        {/* Search Bar */}
         {!isLoading && (
-          <View style={styles.toolsRow}>
-            <View style={{ flexDirection: 'row' }}>
-              <TouchableOpacity
-                style={styles.exportDropdownButton}
-                onPress={() => setShowExportAllMenu(v => !v)}
-                disabled={filteredAssignments.length === 0}
-              >
-                <Text style={styles.exportDropdownText}>Export All</Text>
-                <FontAwesomeIcon icon={showExportAllMenu ? 'chevron-up' : 'chevron-down'} size={12} color={Colors.white} />
-              </TouchableOpacity>
-              {showExportAllMenu && (
-                <View style={styles.exportDropdownMenu}>
-                  <TouchableOpacity
-                    style={styles.exportDropdownItem}
-                    onPress={() => { setShowExportAllMenu(false); handleExportAllAssignments('pdf'); }}
-                  >
-                    <FontAwesomeIcon icon="file-pdf" size={14} color={Colors.textPrimary} />
-                    <Text style={styles.exportDropdownItemText}>PDF</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.exportDropdownItem}
-                    onPress={() => { setShowExportAllMenu(false); handleExportAllAssignments('excel'); }}
-                  >
-                    <FontAwesomeIcon icon="file-excel" size={14} color={Colors.textPrimary} />
-                    <Text style={styles.exportDropdownItemText}>Excel</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchBar}>
+              <FontAwesomeIcon icon="search" size={Responsive.iconSize(18)} color={Colors.textTertiary} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search your job.."
+                placeholderTextColor={Colors.textTertiary}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
             </View>
+          </View>
+        )}
 
-            <TouchableOpacity
-              style={styles.filterOutlineButton}
-              onPress={() => setShowFilterModal(true)}
-            >
-              <FontAwesomeIcon icon="filter" size={14} color={Colors.textPrimary} />
-              <Text style={styles.filterOutlineText}>Filter</Text>
-            </TouchableOpacity>
+        {/* Job Count */}
+        {!isLoading && (
+          <View style={styles.jobCountContainer}>
+            <Text style={styles.jobCountText}>
+              {filteredAssignments.length} {filteredAssignments.length === 1 ? 'Job' : 'Jobs'} Found
+            </Text>
           </View>
         )}
 
@@ -511,66 +475,6 @@ const AssignmentScreen: React.FC = () => {
         )}
       </ScrollView>
 
-      {/* Filter Modal */}
-      <Modal
-        visible={showFilterModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowFilterModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.filterModal}>
-            <Text style={styles.filterTitle}>Filter Assignments</Text>
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Job Title</Text>
-              <TextInput
-                placeholder="Search by title"
-                placeholderTextColor={Colors.textTertiary}
-                style={styles.textInput}
-                value={filterTitle}
-                onChangeText={setFilterTitle}
-              />
-            </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Status</Text>
-              <View style={styles.statusChipsRow}>
-                {['', 'PENDING', 'ACCEPTED', 'REJECTED', 'COMPLETED'].map((s) => (
-                  <TouchableOpacity
-                    key={s || 'ALL'}
-                    style={[
-                      styles.statusChip,
-                      (filterStatus || '') === s && styles.statusChipActive,
-                    ]}
-                    onPress={() => setFilterStatus(s || null)}
-                  >
-                    <Text style={[
-                      styles.statusChipText,
-                      (filterStatus || '') === s && styles.statusChipTextActive,
-                    ]}>
-                      {s || 'All'}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: Colors.background }]}
-                onPress={() => { setFilterTitle(''); setFilterStatus(null); }}
-              >
-                <Text style={[styles.modalButtonText, { color: Colors.textPrimary }]}>Reset</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: Colors.primary }]}
-                onPress={() => setShowFilterModal(false)}
-              >
-                <Text style={[styles.modalButtonText, { color: Colors.white }]}>Apply</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 };
@@ -590,37 +494,40 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.base,
     color: Colors.textSecondary,
   },
-  header: {
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing['2xl'],
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: BorderRadius.lg,
-  },
-  headerTitle: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.white,
-    flex: 1,
-    textAlign: 'center',
-    marginHorizontal: Spacing.md,
-  },
-  headerSpacer: {
-    width: 40,
-  },
   content: {
     flex: 1,
     padding: Spacing.lg,
+  },
+  searchContainer: {
+    marginBottom: Spacing.md,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.xl || 24,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    minHeight: 48,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.medium,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    marginLeft: Spacing.sm,
+    paddingVertical: 0,
+  },
+  jobCountContainer: {
+    marginBottom: Spacing.md,
+  },
+  jobCountText: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textPrimary,
   },
   toolsRow: {
     flexDirection: 'row',
@@ -680,62 +587,130 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.sm,
     fontWeight: Typography.fontWeight.medium,
   },
-  assignmentCard: {
+  // Job Card Styles (matching HRUsersScreen style)
+  jobCard: {
     backgroundColor: Colors.white,
     borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    marginBottom: Spacing.lg,
-    ...Shadow.md,
-  },
-  assignmentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    padding: Spacing.md,
     marginBottom: Spacing.md,
+    marginHorizontal: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  assignmentTitle: {
-    fontSize: Typography.fontSize.lg,
-    fontWeight: Typography.fontWeight.bold,
-    color: Colors.textPrimary,
-    flex: 1,
-    marginRight: Spacing.md,
-  },
-  assignmentStatus: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.sm,
-  },
-  assignmentStatusText: {
-    fontSize: Typography.fontSize.sm,
-    fontWeight: Typography.fontWeight.medium,
-    color: Colors.white,
-  },
-  cardExportMenuRow: {
+  cardTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  assignmentDescription: {
-    fontSize: Typography.fontSize.base,
-    color: Colors.textSecondary,
-    lineHeight: 22,
-    marginBottom: Spacing.lg,
-  },
-  assignmentDetails: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: Spacing.lg,
-  },
-  assignmentDetail: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: Spacing.lg,
-    marginBottom: Spacing.sm,
-    minWidth: '45%',
-  },
-  assignmentDetailText: {
+  cardTimeText: {
     fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
     color: Colors.textTertiary,
-    marginLeft: Spacing.xs,
+    marginBottom: Spacing.xs,
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: Colors.borderLight,
+    marginBottom: Spacing.sm,
+    marginTop: Spacing.xs,
+  },
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: Spacing.sm,
+  },
+  avatarCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#EDE9FE',
+    borderWidth: 1,
+    borderColor: '#DDD6FE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+    marginTop: -2,
+  },
+  avatarInitials: {
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#4C1D95',
+  },
+  profileContent: {
+    flex: 1,
+    paddingTop: 2,
+  },
+  cardTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+    marginBottom: 2,
+    flexShrink: 1,
+  },
+  subtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    flexWrap: 'nowrap',
+  },
+  subtitleText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.textSecondary,
+    flexShrink: 1,
+    maxWidth: '45%',
+  },
+  subtitleDot: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+    marginHorizontal: 6,
+  },
+  inlineStatusPill: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  inlineStatusText: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.medium,
+    textTransform: 'capitalize',
+  },
+  assignmentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 6,
+  },
+  infoCol: {
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textTertiary,
+  },
+  infoValue: {
+    marginTop: 2,
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+  },
+  priorityRow: {
+    marginTop: 8,
+  },
+  priorityBadgeInline: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+  },
+  priorityBadgeTextInline: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.bold,
   },
   actionButtons: {
     flexDirection: 'row',
