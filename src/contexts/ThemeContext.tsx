@@ -74,6 +74,17 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [setTheme]);
 
+  // Attempt to fetch and apply server default theme on startup (non-blocking, safe fallback)
+  useEffect(() => {
+    (async () => {
+      try {
+        await loadAndApplyDefaultTheme();
+      } catch (e) {
+        // Silent fallback to cached/default theme
+      }
+    })();
+  }, [loadAndApplyDefaultTheme]);
+
   const value = useMemo(() => ({ theme, setTheme, loadAndApplyDefaultTheme }), [theme, setTheme, loadAndApplyDefaultTheme]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

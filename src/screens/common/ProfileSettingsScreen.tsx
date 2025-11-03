@@ -21,9 +21,11 @@ import { useTheme } from '../../contexts/ThemeContext';
 
 import { Typography } from '../../constants/typography';
 import Responsive from '../../utils/responsive';
+import { useGlobalStyles } from '../../theme/globalStyles';
 
 const ProfileSettingsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  const g = useGlobalStyles();
   const { user } = useAuth();
   const { loadAndApplyDefaultTheme } = useTheme();
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -65,7 +67,7 @@ const ProfileSettingsScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={g.appBackground}>
       {/* Header with Back Button */}
       <GlobalHeader
         title="Settings"

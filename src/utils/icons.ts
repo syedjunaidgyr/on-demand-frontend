@@ -36,6 +36,9 @@ import { faFilter } from '@fortawesome/free-solid-svg-icons/faFilter';
 import { faSort } from '@fortawesome/free-solid-svg-icons/faSort';
 import { faDownload } from '@fortawesome/free-solid-svg-icons/faDownload';
 import { faUpload } from '@fortawesome/free-solid-svg-icons/faUpload';
+import { faImage } from '@fortawesome/free-solid-svg-icons/faImage';
+import { faPalette } from '@fortawesome/free-solid-svg-icons/faPalette';
+import { faBan } from '@fortawesome/free-solid-svg-icons/faBan';
 import { faShare } from '@fortawesome/free-solid-svg-icons/faShare';
 import { faBookmark } from '@fortawesome/free-solid-svg-icons/faBookmark';
 import { faComment } from '@fortawesome/free-solid-svg-icons/faComment';
@@ -139,6 +142,9 @@ library.add(
   faSort as any,
   faDownload as any,
   faUpload as any,
+  faImage as any,
+  faPalette as any,
+  faBan as any,
   faShare as any,
   faBookmark as any,
   faComment as any,

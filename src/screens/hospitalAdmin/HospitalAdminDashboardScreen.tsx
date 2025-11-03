@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from '../../utils/icons';
 import { Typography } from '../../constants/typography';
 import Responsive from '../../utils/responsive';
 import HRFooterNavigation from '../../components/HRFooterNavigation';
+import { useGlobalStyles } from '../../theme/globalStyles';
 import { Colors } from '../../constants/colors';
 import { useAppColors } from '../../hooks/useAppColors';
 import { useNotifications } from '../../contexts/NotificationContext';
@@ -16,6 +17,7 @@ import { getFinalApiUrl } from '../../config/api';
 
 const HospitalAdminDashboardScreen: React.FC = () => {
   const navigation = useNavigation();
+  const g = useGlobalStyles();
   const appColors = useAppColors();
   const { unreadCount } = useNotifications();
   const [isLoading, setIsLoading] = useState(true);
@@ -208,7 +210,7 @@ const HospitalAdminDashboardScreen: React.FC = () => {
   -------------------------------------------------------------- */
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={g.appBackground}>
         <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#6366F1" />
@@ -222,7 +224,7 @@ const HospitalAdminDashboardScreen: React.FC = () => {
      MAIN RENDER
   -------------------------------------------------------------- */
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={g.appBackground}>
       <StatusBar
         backgroundColor="#FFFFFF"
         barStyle="dark-content"
