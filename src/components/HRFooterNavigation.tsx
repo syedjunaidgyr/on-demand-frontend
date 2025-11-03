@@ -139,9 +139,14 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, sc
                 color="#FFFFFF"
               />
               <Text style={styles.label}>
-                {(user?.role === 'DOCTOR' || user?.role === 'NURSE') ? 'My Jobs' : (user?.role === 'AGENCY' ? 'Nurses' : 'Users')}
+                {(user?.role === 'DOCTOR' || user?.role === 'NURSE')
+                  ? 'My Jobs'
+                  : (user?.role === 'AGENCY')
+                    ? 'Nurses'
+                    : (user?.role === 'HOSPITAL_ADMIN')
+                      ? 'Staff'
+                      : 'Users'}
               </Text>
-              <Text style={styles.label}>{user?.role === 'AGENCY' ? 'Nurses' : user?.role === 'HOSPITAL_ADMIN' ? 'Staff' : 'Users'}</Text>
             </View>
           </TouchableOpacity>
         </View>
