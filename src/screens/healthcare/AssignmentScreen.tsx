@@ -347,8 +347,8 @@ const AssignmentScreen: React.FC = () => {
                 <View style={styles.infoCol}>
                   <Text style={styles.infoLabel}>Priority</Text>
                   <Text style={[styles.infoValue, { color: getPriorityColor(priority) }]}>{priority}</Text>
-                </View>
-              )}
+              </View>
+            )}
               {requiredRole && (
                 <View style={styles.infoCol}>
                   <Text style={styles.infoLabel}>Role</Text>
@@ -360,7 +360,7 @@ const AssignmentScreen: React.FC = () => {
                 <Text style={styles.infoValue} numberOfLines={1}>₹{hourlyRateDisplay}/hr</Text>
         </View>
           </View>
-
+          
             {/* Department inline badge with label */}
             {department ? (
               <View style={[styles.priorityRow, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}> 
@@ -368,9 +368,9 @@ const AssignmentScreen: React.FC = () => {
                 <View style={[styles.priorityBadgeInline, { backgroundColor: Colors.backgroundSecondary, borderColor: Colors.border }]}> 
                   <Text style={[styles.priorityBadgeTextInline, { color: Colors.textPrimary }]} numberOfLines={1}>
                     {department}
-                  </Text>
-                </View>
-              </View>
+            </Text>
+          </View>
+          </View>
             ) : null}
 
             {/* Card-level action buttons removed per request (actions stay in modal) */}
@@ -501,7 +501,7 @@ const AssignmentScreen: React.FC = () => {
                       <View style={styles.modalHeaderTop}>
                         <TouchableOpacity onPress={() => setDetailsVisible(false)} style={styles.modalBackButton}>
                           <FontAwesomeIcon icon="arrow-left" size={18} color={Colors.textPrimary} />
-                        </TouchableOpacity>
+                  </TouchableOpacity>
                         <Text style={styles.modalHeaderTitle}>Job Details</Text>
                         <View style={{ width: 24 }} />
                       </View>
@@ -579,9 +579,9 @@ const AssignmentScreen: React.FC = () => {
                                  <View style={styles.bulletDot} />
                                  <Text style={styles.descText}>{s}</Text>
                                </View>
-                             ))}
-                           </View>
-                         </View>
+                ))}
+              </View>
+            </View>
                        )}
 
                       

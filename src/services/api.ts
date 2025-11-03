@@ -497,7 +497,7 @@ class ApiService {
     return this.checkOut(checkOutData.jobAssignmentId, checkOutData.location, checkOutData.notes);
   }
 
-  async getCheckInStatus(jobAssignmentId: string): Promise<{ isCheckedIn: boolean; checkInId: string | null; checkInTime: string | null }> {
+  async getCheckInStatus(jobAssignmentId: string): Promise<{ isCheckedIn: boolean; checkInId: string | null; checkInTime: string | null; approvalStatus?: 'pending' | 'approved' | 'rejected'; approvedBy?: any; approvedAt?: string | null; rejectionReason?: string }> {
     try {
       const response = await this.api.get(`/staff/check-in-status/${jobAssignmentId}`);
       return response.data;
@@ -507,7 +507,11 @@ class ApiService {
       return {
         isCheckedIn: false,
         checkInId: null,
-        checkInTime: null
+        checkInTime: null,
+        approvalStatus: undefined,
+        approvedBy: undefined,
+        approvedAt: null,
+        rejectionReason: undefined,
       };
     }
   }

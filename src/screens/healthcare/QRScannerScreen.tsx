@@ -130,7 +130,13 @@ const QRScannerScreen: React.FC = () => {
         response = await ApiService.checkIn(assignmentId, locationData, 'Checked in via QR code');
         const facilityName = response.jobContext?.facilityName || 'the facility';
         const userName = response.userInfo ? `${response.userInfo.firstName} ${response.userInfo.lastName}` : 'User';
-        Alert.alert('Success', `${userName} successfully checked in at ${facilityName} via QR code!`);
+        if (response.approvalStatus === 'pending') {
+          Alert.alert('Submitted for Approval', 'Check-in submitted. Awaiting HR/Admin approval.');
+        } else if (response.approvalStatus === 'rejected') {
+          Alert.alert('Check-In Rejected', response.rejectionReason || 'Your check-in was rejected.');
+        } else {
+          Alert.alert('Success', `${userName} successfully checked in at ${facilityName} via QR code!`);
+        }
       } else {
         response = await ApiService.checkOut(assignmentId, locationData, 'Checked out via QR code');
         const facilityName = response.jobContext?.facilityName || 'the facility';

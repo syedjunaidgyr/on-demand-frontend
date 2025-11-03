@@ -28,6 +28,7 @@ import Responsive from '../../utils/responsive';
 import {
   SkeletonJobCard,
   SkeletonQuickAction,
+  SkeletonStatCard,
   SkeletonHeader,
 } from '../../components/SkeletonComponents';
 
@@ -199,10 +200,15 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
   };
 
   // ✨ NEW: Horizontal Quick Action Component
-  const QuickActionHorizontal = ({ icon, title, subtitle, onPress, gradient, iconColor }: any) => (
+  const QuickActionHorizontal = ({ icon, title, subtitle, onPress, gradient, iconColor, count }: any) => (
     <View style={styles.quickActionShadowContainer}>
       <TouchableOpacity onPress={onPress} activeOpacity={1}>
         <View style={styles.quickActionHorizontal}>
+          {typeof count === 'number' && count > 0 && (
+            <View style={styles.quickActionBadge}>
+              <Text style={styles.quickActionBadgeText}>{count > 99 ? '99+' : count}</Text>
+            </View>
+          )}
           <View style={styles.quickActionContent}>
             <View style={[styles.quickActionHorizontalIcon, { borderColor: iconColor || '#E5E7EB', borderWidth: 1, backgroundColor: '#FFFFFF' }]}>
               <FontAwesomeIcon icon={icon} size={Responsive.iconSize(24)} color={iconColor || Colors.primary} />
@@ -218,6 +224,37 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
         </View>
       </TouchableOpacity>
     </View>
+  );
+
+  // IconStatItem – matches HR overview style
+  const IconStatItem = ({
+    title,
+    value,
+    icon,
+    onPress,
+    iconColor = '#3B82F6'
+  }: {
+    title: string;
+    value: number;
+    icon: string;
+    onPress?: () => void;
+    iconColor?: string;
+  }) => (
+    <TouchableOpacity
+      style={styles.iconStatItem}
+      onPress={onPress}
+      disabled={!onPress}
+      activeOpacity={0.7}>
+      <View style={styles.iconStatContainer}>
+        <View style={[styles.iconStatIconWrapper, { backgroundColor: iconColor + '15' }]}>
+          <FontAwesomeIcon icon={icon} size={Responsive.iconSize(22)} color={iconColor} />
+        </View>
+        <View style={styles.iconStatBadge}>
+          <Text style={styles.iconStatValue}>{(value ?? 0).toLocaleString()}</Text>
+        </View>
+      </View>
+      <Text style={styles.iconStatTitle} numberOfLines={1}>{title}</Text>
+    </TouchableOpacity>
   );
 
   const JobCard = ({ job }: { job: Job }) => {
@@ -595,74 +632,60 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
           />
         }>
 
-        {/* ✨ NEW: Horizontal Quick Actions */}
+        {/* ✨ Quick Actions – icon stats like HR overview */}
         <View style={[styles.section, styles.firstSection]}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Quick Actions</Text>
           </View>
-          {isLoading ? (
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.quickActionsScroll}
-              decelerationRate="fast"
-              snapToInterval={182}
-              snapToAlignment="start">
-              {[...Array(4)].map((_, i) => (
-                <SkeletonQuickAction key={i} />
-              ))}
-            </ScrollView>
-          ) : (
-          <ScrollView 
-            horizontal 
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.quickActionsScroll}
-            decelerationRate="fast"
-            snapToInterval={182}
-            snapToAlignment="start">
-            <QuickActionHorizontal
-              icon="calendar-check"
-              title="Job Assignments"
-              subtitle={`${myAssignments.length} Active`}
-              onPress={() => (navigation as any).navigate('Assignments')}
-              gradient={['#6366F1', '#4F46E5']}
-              iconColor="#4F46E5"
-            />
-            {/* <QuickActionHorizontal
-              icon="briefcase"
-              title="Job Assignments"
-              subtitle={`${availableJobs.length} Available`}
-              onPress={() => navigation.navigate('MyAssignments' as never)}
-              gradient={['#10B981', '#059669']}
-            /> */}
-            {myAssignments && myAssignments.length > 0 && (
-              <QuickActionHorizontal
-                icon="clock"
-                title="Check In/Out"
-                subtitle={`${myAssignments.filter(a => a.status === 'ASSIGNED' || a.status === 'IN_PROGRESS').length} Active`}
-                onPress={() => (navigation as any).navigate('CheckInOut')}
-                gradient={['#F59E0B', '#D97706']}
-                iconColor="#D97706"
-              />
+            contentContainerStyle={styles.overviewScrollContent}
+            style={styles.overviewScroll}
+            scrollEventThrottle={16}>
+            {isLoading ? (
+              <View style={styles.iconStatsRow}>
+                {[...Array(4)].map((_, i) => (
+                  <View key={i} style={{ marginRight: 16 }}>
+                    <SkeletonStatCard />
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.iconStatsRow}>
+                <IconStatItem
+                  title="Assignments"
+                  value={myAssignments.length}
+                  icon="calendar-check"
+                  iconColor="#4F46E5"
+                  onPress={() => (navigation as any).navigate('Assignments')}
+                />
+                {myAssignments && myAssignments.length > 0 && (
+                  <IconStatItem
+                    title="Check In/Out"
+                    value={myAssignments.filter(a => a.status === 'ASSIGNED' || a.status === 'IN_PROGRESS').length}
+                    icon="clock"
+                    iconColor="#D97706"
+                    onPress={() => (navigation as any).navigate('CheckInOut')}
+                  />
+                )}
+                <IconStatItem
+                  title="Reports"
+                  value={0}
+                  icon="chart-line"
+                  iconColor="#7C3AED"
+                  onPress={() => (navigation as any).navigate('Reports')}
+                />
+                <IconStatItem
+                  title="Profile"
+                  value={0}
+                  icon="user-md"
+                  iconColor="#DB2777"
+                  onPress={() => (navigation as any).navigate('Profile')}
+                />
+              </View>
             )}
-            <QuickActionHorizontal
-              icon="chart-line"
-              title="Reports"
-              subtitle="View Stats"
-              onPress={() => navigation.navigate('Reports' as never)}
-              gradient={['#8B5CF6', '#7C3AED']}
-              iconColor="#7C3AED"
-            />
-            <QuickActionHorizontal
-              icon="user-md"
-              title="Profile"
-              subtitle="Settings"
-              onPress={() => navigation.navigate('Profile' as never)}
-              gradient={['#EC4899', '#DB2777']}
-              iconColor="#DB2777"
-            />
           </ScrollView>
-          )}
         </View>
 
         {/* Available Jobs */}
@@ -893,8 +916,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   sectionTitle: {
-    fontSize: Typography.fontSize.xl,
-    fontWeight: Typography.fontWeight.bold,
+    fontSize: 16,
+    fontFamily: Typography.fontFamily.bold,
     color: Colors.textPrimary,
     marginTop: Spacing.md,
     marginBottom: Spacing.md,
@@ -977,6 +1000,91 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  quickActionBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: '#1C2A3A',
+    borderRadius: 12,
+    minWidth: 24,
+    height: 22,
+    paddingHorizontal: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  quickActionBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontFamily: Typography.fontFamily.bold,
+  },
+  // Overview-like icon stats (match HR style)
+  overviewScroll: {
+    marginHorizontal: -20,
+  },
+  overviewScrollContent: {
+    paddingHorizontal: 6,
+    paddingBottom: 4,
+  },
+  iconStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconStatItem: {
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    minWidth: 85,
+  },
+  iconStatContainer: {
+    position: 'relative',
+    marginBottom: 6,
+  },
+  iconStatIconWrapper: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconStatBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: '#1C2A3A',
+    borderRadius: 12,
+    minWidth: 28,
+    height: 24,
+    paddingHorizontal: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  iconStatValue: {
+    fontSize: 13,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#FFFFFF',
+  },
+  iconStatTitle: {
+    fontSize: 12,
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 15,
+    maxWidth: 80,
   },
 
   jobCardInner: {
