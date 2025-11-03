@@ -51,6 +51,11 @@ interface DashboardStats {
     doctors: number;
     nurses: number;
   };
+  agencies?: {
+    total: number;
+    jobs: number;
+    assignments: number;
+  };
   monthly: {
     jobs: number;
     assignments: number;
@@ -108,6 +113,7 @@ const HRDashboardScreen: React.FC = () => {
         jobs: { total: 0, active: 0, assigned: 0, inProgress: 0, completed: 0, cancelled: 0 },
         assignments: { total: 0, pending: 0, accepted: 0, inProgress: 0, completed: 0 },
         staff: { total: 0, doctors: 0, nurses: 0 },
+        agencies: { total: 0, jobs: 0, assignments: 0 },
         monthly: { jobs: 0, assignments: 0 },
         recent: { jobs: [], assignments: [] }
       };
@@ -115,6 +121,11 @@ const HRDashboardScreen: React.FC = () => {
       statsData.jobs.total = totalJobs;
       statsData.jobs.active = activeJobs;
       statsData.jobs.assigned = assignedJobs;
+
+      // Ensure agencies block exists
+      if (!statsData.agencies) {
+        statsData.agencies = { total: 0, jobs: 0, assignments: 0 } as any;
+      }
 
       // Set stats first, then set loading to false
       setStats(statsData);
@@ -418,6 +429,10 @@ const HRDashboardScreen: React.FC = () => {
                   <IconStatItem title="Accepted" value={stats?.assignments?.accepted || 0} icon="check" iconColor="#10B981" />
                   <IconStatItem title="Progress" value={stats?.assignments?.inProgress || 0} icon="sync" iconColor="#3B82F6" />
                   <IconStatItem title="Done" value={stats?.assignments?.completed || 0} icon="check-circle" iconColor="#059669" />
+                  {/* Agencies block */}
+                  <IconStatItem title="Agencies" value={stats?.agencies?.total || 0} icon="building" iconColor="#0EA5E9" />
+                  <IconStatItem title="Agency Jobs" value={stats?.agencies?.jobs || 0} icon="briefcase" iconColor="#9333EA" />
+                  <IconStatItem title="Agency Assignments" value={stats?.agencies?.assignments || 0} icon="user-check" iconColor="#14B8A6" />
                 </View>
               )}
             </ScrollView>

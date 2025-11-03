@@ -24,6 +24,7 @@ import { Typography } from '../../constants/typography';
 import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import ApiService from '../../services/api';
 import Responsive from '../../utils/responsive';
+import { useAuth } from '../../navigation/AppNavigator';
 
 const { width } = Dimensions.get('window');
 
@@ -755,12 +756,13 @@ const CreateJobScreen: React.FC = () => {
   const sparkleScale4 = useRef(new Animated.Value(0)).current;
   const checkmarkScale = useRef(new Animated.Value(0)).current;
   
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     department: '',
     location: '',
-    requiredRole: 'DOCTOR' as 'DOCTOR' | 'NURSE',
+    requiredRole: (user?.role === 'AGENCY' ? 'AGENCY' : 'DOCTOR') as 'DOCTOR' | 'NURSE' | 'AGENCY',
     specialization: '',
     startDate: '',
     endDate: '',
@@ -1336,7 +1338,7 @@ const CreateJobScreen: React.FC = () => {
                     formData.requiredRole === 'DOCTOR' && styles.roleButtonActive,
                   ]}
                   onPress={() => handleInputChange('requiredRole', 'DOCTOR')}>
-                  <FontAwesomeIcon icon="stethoscope" size={Responsive.iconSize(20)} color={formData.requiredRole === 'DOCTOR' ? Colors.white : Colors.primary}  />
+                  <FontAwesomeIcon icon="stethoscope" size={Responsive.iconSize(16)} color={formData.requiredRole === 'DOCTOR' ? Colors.white : Colors.primary}  />
                   <Text style={[
                     styles.roleButtonText,
                     formData.requiredRole === 'DOCTOR' && styles.roleButtonTextActive,
@@ -1350,12 +1352,26 @@ const CreateJobScreen: React.FC = () => {
                     formData.requiredRole === 'NURSE' && styles.roleButtonActive,
                   ]}
                   onPress={() => handleInputChange('requiredRole', 'NURSE')}>
-                  <FontAwesomeIcon icon="user-nurse" size={Responsive.iconSize(20)} color={formData.requiredRole === 'NURSE' ? Colors.white : Colors.primary}  />
+                  <FontAwesomeIcon icon="user-nurse" size={Responsive.iconSize(16)} color={formData.requiredRole === 'NURSE' ? Colors.white : Colors.primary}  />
                   <Text style={[
                     styles.roleButtonText,
                     formData.requiredRole === 'NURSE' && styles.roleButtonTextActive,
                   ]}>
                     Nurse
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.roleButton,
+                    formData.requiredRole === 'AGENCY' && styles.roleButtonActive,
+                  ]}
+                  onPress={() => handleInputChange('requiredRole', 'AGENCY' as any)}>
+                  <FontAwesomeIcon icon="building" size={Responsive.iconSize(16)} color={formData.requiredRole === 'AGENCY' ? Colors.white : Colors.primary}  />
+                  <Text style={[
+                    styles.roleButtonText,
+                    formData.requiredRole === 'AGENCY' && styles.roleButtonTextActive,
+                  ]}>
+                    Agency
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -1973,16 +1989,16 @@ const styles = StyleSheet.create({
   },
   roleButtons: {
     flexDirection: 'row',
-    gap: Spacing.md,
+    gap: Spacing.sm,
   },
   roleButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.lg,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.md,
     borderWidth: 2,
     borderColor: Colors.primary,
     backgroundColor: Colors.white,
@@ -1991,9 +2007,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
   },
   roleButtonText: {
-    fontSize: Typography.fontSize.base,
+    fontSize: Typography.fontSize.sm,
     color: Colors.primary,
-    marginLeft: Spacing.sm,
+    marginLeft: Spacing.xs,
     fontFamily: Typography.fontFamily.medium,
   },
   roleButtonTextActive: {

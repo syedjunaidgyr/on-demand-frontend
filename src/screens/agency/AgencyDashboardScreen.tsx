@@ -37,6 +37,8 @@ const AgencyDashboardScreen: React.FC = () => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [recentJobs, setRecentJobs] = useState<any[]>([]);
+  const [recentNurses, setRecentNurses] = useState<any[]>([]);
 
   useEffect(() => {
     loadDashboard();
@@ -49,22 +51,25 @@ const AgencyDashboardScreen: React.FC = () => {
       try {
         const profile = await ApiService.getProfile();
         setUserProfile(profile);
-        // Debug: also fetch and log agency nurses list here so we can inspect data
+        // Fetch nurses (pool and list)
         try {
           const nursesRes = await ApiService.getAgencyNurses(profile?.id || '');
-          console.log('👀 [Dashboard] Profile:', JSON.stringify(profile, null, 2));
-          console.log('👀 [Dashboard] Agency nurses response:', JSON.stringify(nursesRes, null, 2));
-          console.log('👀 [Dashboard] Agency pool list:', JSON.stringify(nursesRes.pool || [], null, 2));
-          console.log('👀 [Dashboard] Agency nurses list:', JSON.stringify(nursesRes.nurses || [], null, 2));
-        } catch (err) {
-          console.log('⚠️ [Dashboard] Failed to fetch nurses list for debug:', (err as any)?.message || err);
-        }
+          const nurses = nursesRes?.nurses || [];
+          setRecentNurses(nurses.slice(0, 5));
+        } catch {}
       } catch (e) {
         setUserProfile(null);
       }
 
       const res = await ApiService.getAgencyDashboard();
       setData(res);
+
+      // Fetch recent jobs (agency-visible jobs)
+      try {
+        const jobsRes: any = await ApiService.getAllJobs({ page: 1, limit: 10, requiredRole: 'AGENCY' });
+        const jobs = jobsRes?.jobs || jobsRes?.data || [];
+        setRecentJobs(jobs.slice(0, 5));
+      } catch {}
     } catch (e) {
       setData({
         hospitals: { total: 0, items: [] },
@@ -190,6 +195,65 @@ const AgencyDashboardScreen: React.FC = () => {
                 <Text style={styles.quickTitle}>Jobs</Text>
                 <Text style={styles.quickSub}>Browse and assign</Text>
               </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Recent Jobs */}
+          <View style={styles.listSection}>
+            <Text style={styles.sectionTitle}>Recent Jobs</Text>
+            <View style={styles.listCard}>
+              {recentJobs.length === 0 ? (
+                <View style={styles.emptyRow}>
+                  <FontAwesomeIcon icon="briefcase" size={14} color="#9CA3AF" />
+                  <Text style={styles.emptyText}>No jobs found</Text>
+                </View>
+              ) : (
+                recentJobs.map((j: any) => {
+                  const date = j?.startDate ? new Date(j.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—';
+                  return (
+                    <TouchableOpacity key={`job-${j.id}`} style={styles.row} activeOpacity={0.8} onPress={() => (navigation as any).navigate('AgencyJobs')}>
+                      <View style={styles.rowLeft}>
+                        <View style={[styles.rowIcon, { backgroundColor: '#2563EB15' }]}>
+                          <FontAwesomeIcon icon="briefcase" size={14} color="#2563EB" />
+                        </View>
+                        <View style={styles.rowTextWrap}>
+                          <Text style={styles.rowTitle} numberOfLines={1}>{j.title || '—'}</Text>
+                          <Text style={styles.rowSub} numberOfLines={1}>{j.location || '—'} · {date}</Text>
+                        </View>
+                      </View>
+                      <Text style={[styles.badge, { backgroundColor: '#111827', color: '#FFFFFF' }]}>{(j.status || '').toString().replace('_',' ')}</Text>
+                    </TouchableOpacity>
+                  );
+                })
+              )}
+            </View>
+          </View>
+
+          {/* Recent Nurses */}
+          <View style={styles.listSection}>
+            <Text style={styles.sectionTitle}>Recent Nurses</Text>
+            <View style={styles.listCard}>
+              {recentNurses.length === 0 ? (
+                <View style={styles.emptyRow}>
+                  <FontAwesomeIcon icon="users" size={14} color="#9CA3AF" />
+                  <Text style={styles.emptyText}>No nurses found</Text>
+                </View>
+              ) : (
+                recentNurses.map((n: any) => (
+                  <TouchableOpacity key={`n-${n.id}`} style={styles.row} activeOpacity={0.8} onPress={() => (navigation as any).navigate('AgencyNurses')}>
+                    <View style={styles.rowLeft}>
+                      <View style={[styles.rowIcon, { backgroundColor: '#10B98115' }]}>
+                        <FontAwesomeIcon icon="user-nurse" size={14} color="#10B981" />
+                      </View>
+                      <View style={styles.rowTextWrap}>
+                        <Text style={styles.rowTitle} numberOfLines={1}>{`${n.firstName || ''} ${n.lastName || ''}`.trim() || '—'}</Text>
+                        <Text style={styles.rowSub} numberOfLines={1}>{n.email || '—'}</Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.badge, { backgroundColor: '#F3F4F6', color: '#374151' }]}>{(n.role || 'NURSE')}</Text>
+                  </TouchableOpacity>
+                ))
+              )}
             </View>
           </View>
 
@@ -526,6 +590,73 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     marginTop: 6,
     paddingHorizontal: 14,
+  },
+  listSection: {
+    paddingHorizontal: 14,
+    marginTop: 12,
+  },
+  listCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingVertical: 4,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 10,
+  },
+  rowIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  rowTextWrap: {
+    flex: 1,
+  },
+  rowTitle: {
+    fontSize: 13,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#111827',
+  },
+  rowSub: {
+    fontSize: 11,
+    fontFamily: Typography.fontFamily.medium,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    fontSize: 10,
+    fontFamily: Typography.fontFamily.bold,
+    overflow: 'hidden',
+  },
+  emptyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+  },
+  emptyText: {
+    fontSize: 12,
+    fontFamily: Typography.fontFamily.medium,
+    color: '#9CA3AF',
   },
   poweredByText: {
     fontSize: 11,

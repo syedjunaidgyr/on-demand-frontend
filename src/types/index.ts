@@ -33,7 +33,7 @@ export interface Job {
   department: string;
   location: string;
   facilityName?: string;
-  requiredRole: 'DOCTOR' | 'NURSE';
+  requiredRole: 'DOCTOR' | 'NURSE' | 'AGENCY';
   specialization?: string;
   startDate: string;
   endDate: string;

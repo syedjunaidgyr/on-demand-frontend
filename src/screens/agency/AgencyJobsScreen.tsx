@@ -25,9 +25,11 @@ import Responsive from '../../utils/responsive';
 import GlobalHeader from '../../components/GlobalHeader';
 import HRFooterNavigation from '../../components/HRFooterNavigation';
 import { Job } from '../../types';
+import { useAuth } from '../../navigation/AppNavigator';
 
 const AgencyJobsScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { user } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -44,10 +46,18 @@ const AgencyJobsScreen: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterPriority, setFilterPriority] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [jobAssignmentsMap, setJobAssignmentsMap] = useState<Record<string, any[]>>({});
+  const [acceptingJobId, setAcceptingJobId] = useState<string | number | null>(null);
 
   useEffect(() => {
     loadJobs();
   }, []);
+
+  useEffect(() => {
+    if (jobs.length > 0 && user?.id) {
+      loadJobAssignments();
+    }
+  }, [jobs, user?.id]);
 
   const loadJobs = async (pageNum = 1, refresh = false) => {
     try {
@@ -73,6 +83,27 @@ const AgencyJobsScreen: React.FC = () => {
       if (refresh || pageNum === 1) setJobs([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadJobAssignments = async () => {
+    try {
+      const assignmentsMap: Record<string, any[]> = {};
+      // Fetch assignments for all jobs in parallel
+      const promises = jobs.map(async (job) => {
+        try {
+          const response = await ApiService.getAgencyJobAssignments(job.id.toString());
+          const assignments = (response as any).assignments || (response as any).data || (Array.isArray(response) ? response : []);
+          assignmentsMap[job.id.toString()] = Array.isArray(assignments) ? assignments : [];
+        } catch (error) {
+          console.error(`Failed to load assignments for job ${job.id}:`, error);
+          assignmentsMap[job.id.toString()] = [];
+        }
+      });
+      await Promise.all(promises);
+      setJobAssignmentsMap(assignmentsMap);
+    } catch (error) {
+      console.error('Failed to load job assignments:', error);
     }
   };
 
@@ -135,7 +166,7 @@ const AgencyJobsScreen: React.FC = () => {
       setSelectedJob(job);
       setAssignVisible(true);
       setLoadingAssignments(true);
-      const allAssignmentsResponse = await ApiService.getJobAssignments(job.id.toString());
+      const allAssignmentsResponse = await ApiService.getAgencyJobAssignments(job.id.toString());
       const allAssignments = (allAssignmentsResponse as any).assignments || (allAssignmentsResponse as any).data || (allAssignmentsResponse as any) || [];
       setAssignments(Array.isArray(allAssignments) ? allAssignments : []);
     } catch (error) {
@@ -145,7 +176,61 @@ const AgencyJobsScreen: React.FC = () => {
     }
   };
 
-  
+  const handleAcceptJob = async (jobId: string | number, assignmentId: string | number) => {
+    try {
+      setAcceptingJobId(assignmentId);
+      await ApiService.respondToAssignment(String(assignmentId), 'ACCEPT');
+      Alert.alert('Success', 'Job accepted successfully.');
+      // Refresh assignments for this job
+      try {
+        const response = await ApiService.getAgencyJobAssignments(String(jobId));
+        const assignments = (response as any).assignments || (response as any).data || (Array.isArray(response) ? response : []);
+        setJobAssignmentsMap(prev => ({
+          ...prev,
+          [String(jobId)]: Array.isArray(assignments) ? assignments : []
+        }));
+      } catch (error) {
+        console.error('Failed to refresh assignments:', error);
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error?.response?.data?.message || 'Failed to accept job. Please try again.');
+    } finally {
+      setAcceptingJobId(null);
+    }
+  };
+
+  const handleAcceptJobWithoutAssignment = async (jobId: string | number) => {
+    try {
+      setAcceptingJobId(jobId);
+      // First, fetch assignments for this job
+      const response = await ApiService.getAgencyJobAssignments(String(jobId));
+      const assignments = (response as any).assignments || (response as any).data || (Array.isArray(response) ? response : []);
+      const allAssignments = Array.isArray(assignments) ? assignments : [];
+      
+      // Update the map
+      setJobAssignmentsMap(prev => ({
+        ...prev,
+        [String(jobId)]: allAssignments
+      }));
+      
+      // Find assignment for current user
+      const currentUserAssignment = allAssignments.find((a: any) => {
+        const assignmentUserId = a.userId || a.user?.id || a.agencyId || a.agency?.id || a.assignedBy;
+        return String(assignmentUserId) === String(user?.id);
+      });
+      
+      if (currentUserAssignment && currentUserAssignment.id) {
+        // If found, accept it
+        await handleAcceptJob(jobId, currentUserAssignment.id);
+      } else {
+        Alert.alert('Info', 'No assignment found for this job. Please contact support.');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error?.response?.data?.message || 'Failed to load assignments. Please try again.');
+    } finally {
+      setAcceptingJobId(null);
+    }
+  };
 
   const JobCard = ({ job }: { job: Job }) => {
     const dateRange = `${formatDate(job.startDate)} - ${formatDate(job.endDate)}`;
@@ -154,6 +239,32 @@ const AgencyJobsScreen: React.FC = () => {
     const subtitleRight = timeRange;
     const acceptedAssignments = (((job as any).assignments || []) as any[]).filter((a: any) => a.status === 'ACCEPTED').length || 0;
     const isActive = String(job.status || '').toUpperCase() === 'ACTIVE';
+    
+    // Find assignment for this job for the current agency user
+    const jobAssignments = jobAssignmentsMap[job.id.toString()] || [];
+    const currentUserAssignment = jobAssignments.find((a: any) => {
+      const assignmentUserId = a.userId || a.user?.id || a.agencyId || a.agency?.id || a.assignedBy;
+      return String(assignmentUserId) === String(user?.id);
+    });
+    
+    // Debug logging
+    if (isActive) {
+      console.log(`Job ${job.id}: assignments=${jobAssignments.length}, currentUser=${user?.id}, foundAssignment=${!!currentUserAssignment}`);
+      if (currentUserAssignment) {
+        console.log(`  Assignment: id=${currentUserAssignment.id}, status=${currentUserAssignment.status}`);
+      }
+    }
+    
+    const assignmentStatus = currentUserAssignment ? String(currentUserAssignment.status || '').toUpperCase() : null;
+    const isAccepted = assignmentStatus === 'ACCEPTED';
+    const isPending = assignmentStatus === 'PENDING';
+    const hasNoAssignment = !currentUserAssignment;
+    const assignmentId = currentUserAssignment?.id;
+    
+    // Show Accept Job button if:
+    // 1. Job is active AND (has no assignment OR assignment is pending)
+    // 2. Show Assign Nurse button if assignment is accepted
+
     return (
       <TouchableOpacity style={styles.jobCard} onPress={() => handleJobPress(job)}>
         <View style={styles.cardTopRow}>
@@ -193,16 +304,41 @@ const AgencyJobsScreen: React.FC = () => {
             </View>
             {isActive && (
               <View style={{ marginTop: 10, flexDirection: 'row' }}>
-                <TouchableOpacity
-                  style={styles.assignBtn}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    (navigation as any).navigate('AgencyAssignNurse', { jobId: String(job.id), hourlyRate: Number(job.hourlyRate) || undefined, mode: 'FULL' });
-                  }}
-                >
-                  <FontAwesomeIcon icon="user-plus" size={16} color={Colors.white} />
-                  <Text style={styles.assignBtnTxt}>Assign Nurse</Text>
-                </TouchableOpacity>
+                {isAccepted ? (
+                  <TouchableOpacity
+                    style={styles.assignBtn}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      (navigation as any).navigate('AgencyAssignNurse', { jobId: String(job.id), hourlyRate: Number(job.hourlyRate) || undefined, mode: 'FULL' });
+                    }}
+                  >
+                    <FontAwesomeIcon icon="user-plus" size={16} color={Colors.white} />
+                    <Text style={styles.assignBtnTxt}>Assign Nurse</Text>
+                  </TouchableOpacity>
+                ) : (isPending && assignmentId) || hasNoAssignment ? (
+                  <TouchableOpacity
+                    style={styles.acceptBtn}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      if (assignmentId) {
+                        handleAcceptJob(job.id, assignmentId);
+                      } else {
+                        // If no assignment found, try to fetch it first
+                        handleAcceptJobWithoutAssignment(job.id);
+                      }
+                    }}
+                    disabled={acceptingJobId === assignmentId || acceptingJobId === job.id}
+                  >
+                    {(acceptingJobId === assignmentId || acceptingJobId === job.id) ? (
+                      <ActivityIndicator size="small" color={Colors.white} />
+                    ) : (
+                      <>
+                        <FontAwesomeIcon icon="check" size={16} color={Colors.white} />
+                        <Text style={styles.acceptBtnTxt}>Accept Job</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                ) : null}
               </View>
             )}
           </View>
@@ -361,6 +497,7 @@ const AssignBottomSheet = ({
   loading: boolean;
   onAssignedSuccess?: () => void;
 }) => {
+  const { user } = useAuth();
   const localFormatDate = (dateString: string) => {
     if (!dateString) return '—';
     const date = new Date(dateString);
@@ -379,7 +516,21 @@ const AssignBottomSheet = ({
     return `${displayHour}:${mins} ${ampm}`;
   };
 
-  const accepted = (assignments || []).filter(a => a?.status === 'ACCEPTED');
+  // Show only nurses assigned by this agency (exclude the agency self-assignment)
+  const agencyCandidates = (assignments || []).filter((a: any) => {
+    // Exclude agency users
+    const role = a?.user?.role || a?.user?.profession;
+    const isAgencyUser = String(role || '').toUpperCase() === 'AGENCY';
+    if (isAgencyUser) return false;
+    
+    // Only show candidates assigned by this agency
+    const agencyId = user?.id;
+    const assignedByThisAgency = String(a?.assignedBy || '') === String(agencyId);
+    const agencyIdMatch = String(a?.agencyId || '') === String(agencyId);
+    
+    // Return true only if assigned by this agency
+    return assignedByThisAgency || agencyIdMatch;
+  });
   const [isSelecting, setIsSelecting] = React.useState(false);
   const [confirmVisible, setConfirmVisible] = React.useState(false);
   const [confirmText, setConfirmText] = React.useState('');
@@ -479,12 +630,12 @@ const AssignBottomSheet = ({
                           {`${(job.startTime ? localFormatTime(job.startTime as any) : '—')} - ${(job.endTime ? localFormatTime(job.endTime as any) : '—')} • ${(job.status || '—')}`}
                         </Text>
                       </View>
-                      <View style={styles.jobDetailItemRow}>
-                        <Text style={styles.jobDetailLabel}>Progress</Text>
-                        <Text style={styles.jobDetailValue} numberOfLines={1}>
-                          {`Accepted: ${(accepted.length || 0)} • ${job.hourlyRate ? `₹${job.hourlyRate}/hr` : '—'}`}
-                        </Text>
-                      </View>
+                    <View style={styles.jobDetailItemRow}>
+                      <Text style={styles.jobDetailLabel}>Progress</Text>
+                      <Text style={styles.jobDetailValue} numberOfLines={1}>
+                        {`Candidates: ${(agencyCandidates.length || 0)} • ${job.hourlyRate ? `₹${job.hourlyRate}/hr` : '—'}`}
+                      </Text>
+                    </View>
                       <View style={styles.jobDetailItemRow}>
                         <Text style={styles.jobDetailLabel}>Priority</Text>
                         <Text style={styles.jobDetailValue}>{job.priority || '—'}</Text>
@@ -495,10 +646,10 @@ const AssignBottomSheet = ({
               )}
 
               <View style={{ marginBottom: 12 }}>
-                {accepted.length === 0 ? (
-                  <Text style={styles.sheetInfoText}>No accepted candidates yet.</Text>
+                {agencyCandidates.length === 0 ? (
+                  <Text style={styles.sheetInfoText}>No candidates assigned by agency yet.</Text>
                 ) : (
-                  accepted.map((a, idx) => {
+                  agencyCandidates.map((a, idx) => {
                     const firstName = a?.user?.firstName || 'Unknown';
                     const lastName = a?.user?.lastName || '';
                     const fullName = `${firstName} ${lastName}`.trim();
@@ -507,12 +658,13 @@ const AssignBottomSheet = ({
                     const role = a?.user?.role || a?.user?.profession || '—';
                     const specialization = a?.user?.specialization || '';
                     const displayRole = specialization ? `${role} • ${specialization}` : role;
-                    const acceptedAt = a?.updatedAt || a?.acceptedAt || a?.createdAt || undefined;
+                    const acceptedAt = a?.acceptedAt || a?.updatedAt || a?.createdAt || undefined;
+                    const status = (a?.status || '').toUpperCase();
                     return (
                       <View key={`acc-${idx}`} style={styles.candidateCard}>
                         <View style={styles.candidateHeader}>
                           <Text style={styles.candidateName} numberOfLines={1}>{fullName}</Text>
-                          <Text style={[styles.assignmentStatus, { color: Colors.success }]}>ACCEPTED</Text>
+                          <Text style={[styles.assignmentStatus, { color: status === 'ACCEPTED' ? Colors.success : status === 'ASSIGNED' ? Colors.warning : Colors.textSecondary }]}>{status}</Text>
                         </View>
                         <Text style={styles.candidateRole} numberOfLines={1}>{displayRole}</Text>
                         <View style={styles.candidateInfoRow}>
@@ -690,6 +842,8 @@ const styles = StyleSheet.create({
   priorityPillText: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.bold, textTransform: 'capitalize' },
   assignBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.primary, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10 },
   assignBtnTxt: { color: Colors.white, fontFamily: Typography.fontFamily.bold, marginLeft: 8 },
+  acceptBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.success, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10 },
+  acceptBtnTxt: { color: Colors.white, fontFamily: Typography.fontFamily.bold, marginLeft: 8 },
   fab: { position: 'absolute', bottom: Responsive.verticalScale(24 * 2), right: Responsive.scale(16), width: Responsive.scale(56), height: Responsive.verticalScale(56), borderRadius: Responsive.scale(28), backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
   footerLoader: { paddingVertical: 16, alignItems: 'center' },
   headerIconButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#d1d5db', justifyContent: 'center', alignItems: 'center' },

@@ -307,6 +307,18 @@ class ApiService {
     }
   }
 
+  // Agency get job assignments
+  async getAgencyJobAssignments(jobId: string | number): Promise<any> {
+    try {
+      const url = `/agency/jobs/${jobId}/assignments`;
+      const response = await this.api.get(url);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to get agency job assignments:', error?.response?.data || error?.message || error);
+      throw error;
+    }
+  }
+
   // Agency assign nurses to a job
   async assignNursesToAgencyJob(jobId: string | number, body: { mode: 'FULL' | 'PARTIAL'; hourlyRate: number; assignments: Array<{ userId: string | number }> }): Promise<any> {
     try {
@@ -448,6 +460,26 @@ class ApiService {
       console.error('❌ Assignment response failed:', error);
       console.error('❌ Error response:', error.response?.data);
       throw error;
+    }
+  }
+
+  async getActiveAssignments(): Promise<any[]> {
+    try {
+      console.log('🔧 Getting active assignments');
+      const response = await this.api.get('/staff/assignments/active');
+      console.log('✅ Active assignments response:', response.data);
+      // Handle different response formats
+      if (Array.isArray(response.data)) {
+        return response.data;
+      } else if (response.data.assignments) {
+        return response.data.assignments;
+      } else if (response.data.data) {
+        return response.data.data;
+      }
+      return [];
+    } catch (error: any) {
+      console.error('❌ Failed to get active assignments:', error?.response?.data || error?.message || error);
+      return [];
     }
   }
 
