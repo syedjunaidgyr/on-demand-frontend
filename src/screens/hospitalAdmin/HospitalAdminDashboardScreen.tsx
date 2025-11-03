@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, RefreshControl, ScrollView, Image, ActivityIndicator, TouchableOpacity, Share, Animated, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, RefreshControl, ScrollView, Image, ActivityIndicator, TouchableOpacity, Share, Animated, StatusBar, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -11,6 +11,8 @@ import { Colors } from '../../constants/colors';
 import { useAppColors } from '../../hooks/useAppColors';
 import { useNotifications } from '../../contexts/NotificationContext';
 import HospitalAdminApi from '../../services/hospitalAdminApi';
+import ApiService from '../../services/api';
+import { getFinalApiUrl } from '../../config/api';
 
 const HospitalAdminDashboardScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -21,11 +23,20 @@ const HospitalAdminDashboardScreen: React.FC = () => {
   const [dashboard, setDashboard] = useState<any>(null);
   const [hospital, setHospital] = useState<any>(null);
   const [themes, setThemes] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const scrollY = React.useRef(new Animated.Value(0)).current;
+  const overviewScrollRef = React.useRef<ScrollView>(null);
 
   const load = useCallback(async () => {
     try {
       setIsLoading(true);
+      try {
+        const profile = await ApiService.getProfile();
+        setUserProfile(profile);
+      } catch (profileError) {
+        setUserProfile(null);
+      }
+
       const [dashRes, hospRes, themesRes] = await Promise.all([
         HospitalAdminApi.getDashboard(),
         HospitalAdminApi.getHospitalDetails(),
@@ -42,6 +53,146 @@ const HospitalAdminDashboardScreen: React.FC = () => {
     }
   }, []);
 
+  // Refresh data when screen comes into focus
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      load();
+    });
+    return unsubscribe;
+  }, [navigation, load]);
+
+  const scrollToEnd = () => {
+    overviewScrollRef.current?.scrollToEnd({ animated: true });
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'Invalid Date';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Invalid Date';
+      const now = new Date();
+      const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+      if (diffInHours < 1) return 'Just now';
+      if (diffInHours < 24) return `${diffInHours}h ago`;
+      if (diffInHours < 48) return 'Yesterday';
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } catch {
+      return 'Invalid Date';
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'URGENT': return '#EF4444';
+      case 'HIGH': return '#F59E0B';
+      case 'MEDIUM': return '#3B82F6';
+      case 'LOW': return '#10B981';
+      default: return '#6B7280';
+    }
+  };
+
+  /* --------------------------------------------------------------
+     STAT CARD (exact match from HR dashboard)
+  -------------------------------------------------------------- */
+  const StatCard = ({
+    title,
+    value,
+    icon,
+    onPress,
+  }: {
+    title: string;
+    value: number;
+    icon: string;
+    onPress?: () => void;
+  }) => (
+    <TouchableOpacity
+      style={styles.statCard}
+      onPress={onPress}
+      disabled={!onPress}
+      activeOpacity={0.8}>
+      <View style={styles.statContainer}>
+        <View style={styles.statIconWrapper}>
+          <FontAwesomeIcon icon={icon} size={Responsive.iconSize(22)} color="#1C2A3A" />
+        </View>
+        <View style={styles.statContent}>
+          <Text style={styles.statValue}>{value.toLocaleString()}</Text>
+          <Text style={styles.statTitle}>{title}</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  /* --------------------------------------------------------------
+     IconStatItem (exact match from HR dashboard)
+  -------------------------------------------------------------- */
+  const IconStatItem = ({
+    title,
+    value,
+    icon,
+    onPress,
+    iconColor = '#3B82F6'
+  }: {
+    title: string;
+    value: number;
+    icon: string;
+    onPress?: () => void;
+    iconColor?: string;
+  }) => (
+    <TouchableOpacity
+      style={styles.iconStatItem}
+      onPress={onPress}
+      disabled={!onPress}
+      activeOpacity={0.7}>
+      <View style={styles.iconStatContainer}>
+        <View style={[styles.iconStatIconWrapper, { backgroundColor: iconColor + '15' }]}>
+          <FontAwesomeIcon icon={icon} size={Responsive.iconSize(22)} color={iconColor} />
+        </View>
+        <View style={styles.iconStatBadge}>
+          <Text style={styles.iconStatValue}>{value.toLocaleString()}</Text>
+        </View>
+      </View>
+      <Text style={styles.iconStatTitle}>{title}</Text>
+    </TouchableOpacity>
+  );
+
+  /* --------------------------------------------------------------
+     QuickAction (exact match from HR dashboard)
+  -------------------------------------------------------------- */
+  const QuickAction = ({
+    title,
+    subtitle,
+    icon,
+    gradient,
+    onPress
+  }: {
+    title: string;
+    subtitle: string;
+    icon: string;
+    gradient: string[];
+    onPress: () => void;
+  }) => {
+    const scaleAnim = new Animated.Value(1);
+    const handlePressIn = () => Animated.spring(scaleAnim, { toValue: 0.95, useNativeDriver: true }).start();
+    const handlePressOut = () => Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start();
+
+    return (
+      <TouchableOpacity
+        style={styles.quickActionWrapper}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={1}>
+        <Animated.View style={[styles.quickActionCard, { transform: [{ scale: scaleAnim }] }]}>
+          <LinearGradient colors={gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.quickActionGradient}>
+            <FontAwesomeIcon icon={icon} size={Responsive.iconSize(22)} color="#FFFFFF" />
+          </LinearGradient>
+          <Text style={styles.quickActionTitle}>{title}</Text>
+          <Text style={styles.quickActionSubtitle}>{subtitle}</Text>
+        </Animated.View>
+      </TouchableOpacity>
+    );
+  };
+
   useEffect(() => {
     load();
   }, [load]);
@@ -52,312 +203,249 @@ const HospitalAdminDashboardScreen: React.FC = () => {
     setRefreshing(false);
   };
 
+  /* --------------------------------------------------------------
+     LOADING SCREEN
+  -------------------------------------------------------------- */
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#6366F1" />
+          <Text style={styles.loadingText}>Loading dashboard...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  /* --------------------------------------------------------------
+     MAIN RENDER
+  -------------------------------------------------------------- */
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: appColors.background }]}>
-      <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
-      <ScrollView
-        style={styles.scrollableContent}
-        contentContainerStyle={[styles.content, { backgroundColor: appColors.background }]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
-        scrollEventThrottle={16}
-      >
-      {/* Simple Header (HR-style) */}
-      <View style={styles.simpleHeader}>
-        <View style={styles.headerContent}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.headerGreeting}>Hello <Text style={styles.headerRole}>Hospital Admin</Text></Text>
-            <Text style={styles.headerName}>{hospital?.name || 'Hospital'}</Text>
-          </View>
-          <View style={styles.headerRight}>
-            <TouchableOpacity
-              style={styles.simpleNotificationButton}
-              onPress={() => (navigation as any).navigate('Notifications')}>
-              <FontAwesomeIcon icon="bell" size={Responsive.iconSize(18)} color="#F59E0B" />
-              {unreadCount > 0 && (
-                <View style={styles.simpleNotificationBadge}>
-                  <Text style={styles.simpleNotificationBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-      {/* Hospital Header */}
-      <View style={styles.headerCard}>
-        <View style={styles.headerRow}>
-          {hospital?.logoUrl ? (
-            <Image source={{ uri: hospital.logoUrl }} style={styles.logo} resizeMode="contain" />
-          ) : (
-            <View style={styles.logoPlaceholder} />
-          )}
-          <View style={{ flex: 1 }}>
-            <Text style={styles.hospitalName}>{hospital?.name || 'Hospital'}</Text>
-            {!!hospital?.units?.length && (
-              <Text style={styles.hospitalMeta}>{hospital.units.length} active units</Text>
-            )}
-          </View>
-        </View>
-      </View>
-      {/* Quick Actions (match HR style) */}
-      <View style={styles.quickActionsSection}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.quickActionsGrid}>
-          <TouchableOpacity style={styles.quickActionWrapper} activeOpacity={0.9} onPress={() => (navigation as any).navigate('CreateJob')}>
-            <View style={styles.quickActionCard}>
-              <LinearGradient colors={["#3B82F6", "#2563EB"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.quickActionGradient}>
-                <FontAwesomeIcon icon="plus" size={Responsive.iconSize(22)} color="#FFFFFF" />
-              </LinearGradient>
-              <Text style={styles.quickActionTitle}>Create Job</Text>
-              <Text style={styles.quickActionSubtitle}>Post new opening</Text>
+    <SafeAreaView style={styles.container}>
+      <StatusBar
+        backgroundColor="#FFFFFF"
+        barStyle="dark-content"
+        translucent={false}
+      />
+
+      <View style={styles.innerContainer}>
+        {/* Simple Header */}
+        <View style={styles.simpleHeader}>
+          <View style={styles.headerContent}>
+            <View style={styles.headerLeft}>
+              <Text style={styles.headerGreeting}>
+                Hello <Text style={styles.headerRole}>Hospital Admin</Text>
+              </Text>
+              <Text style={styles.headerName}>
+                {userProfile ? `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() : hospital?.name || 'Hospital'}!
+              </Text>
             </View>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickActionWrapper} activeOpacity={0.9} onPress={() => (navigation as any).navigate('HospitalAdminUploadLogo')}>
-            <View style={styles.quickActionCard}>
-              <LinearGradient colors={["#10B981", "#059669"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.quickActionGradient}>
-                <FontAwesomeIcon icon="image" size={Responsive.iconSize(22)} color="#FFFFFF" />
-              </LinearGradient>
-              <Text style={styles.quickActionTitle}>Upload Logo</Text>
-              <Text style={styles.quickActionSubtitle}>Brand your hospital</Text>
-            </View>
-          </TouchableOpacity>
-              <TouchableOpacity style={styles.quickActionWrapper} activeOpacity={0.9} onPress={() => (navigation as any).navigate('HospitalAdminThemes')}>
-                <View style={styles.quickActionCard}>
-                  <LinearGradient colors={["#8B5CF6", "#7C3AED"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.quickActionGradient}>
-                    <FontAwesomeIcon icon="palette" size={Responsive.iconSize(22)} color="#FFFFFF" />
+            <View style={styles.headerRight}>
+              <View style={styles.headerRightContainer}>
+                <TouchableOpacity
+                  style={styles.simpleNotificationButton}
+                  onPress={() => (navigation as any).navigate('Notifications')}>
+                  <FontAwesomeIcon icon="bell" size={Responsive.iconSize(18)} color="#F59E0B" />
+                  {unreadCount > 0 && (
+                    <View style={styles.simpleNotificationBadge}>
+                      <Text style={styles.simpleNotificationBadgeText}>
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.headerProfileImage}
+                  onPress={() => (navigation as any).navigate('Profile')}>
+                  <LinearGradient colors={['#8B5CF6', '#7C3AED']} style={styles.headerProfileGradient}>
+                    <Text style={styles.headerProfileInitials}>
+                      {userProfile
+                        ? (userProfile.firstName || userProfile.lastName || 'H').charAt(0).toUpperCase()
+                        : 'H'}
+                    </Text>
                   </LinearGradient>
-                  <Text style={styles.quickActionTitle}>Manage Themes</Text>
-                  <Text style={styles.quickActionSubtitle}>Colors & branding</Text>
-                </View>
-              </TouchableOpacity>
-        </View>
-      </View>
-
-      {isLoading ? (
-        <Text style={styles.subtitle}>Loading...</Text>
-      ) : (
-        <View>
-          {/* MAIN STATS (2-column square boxes) */}
-          <View style={styles.mainStatsGrid}>
-            <TouchableOpacity style={styles.statCard} activeOpacity={0.8} onPress={() => (navigation as any).navigate('HospitalAdminJobs')}>
-              <View style={styles.statContainer}>
-                <View style={styles.statIconWrapper}>
-                  <FontAwesomeIcon icon="briefcase" size={Responsive.iconSize(22)} color="#1C2A3A" />
-                </View>
-                <View style={styles.statContent}>
-                  <Text style={styles.statValue}>{(dashboard?.jobs?.total ?? 0).toLocaleString()}</Text>
-                  <Text style={styles.statTitle}>Total Jobs</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-            <View style={styles.statCard}>
-              <View style={styles.statContainer}>
-                <View style={styles.statIconWrapper}>
-                  <FontAwesomeIcon icon="play" size={Responsive.iconSize(22)} color="#1C2A3A" />
-                </View>
-                <View style={styles.statContent}>
-                  <Text style={styles.statValue}>{(dashboard?.jobs?.active ?? 0).toLocaleString()}</Text>
-                  <Text style={styles.statTitle}>Active Jobs</Text>
-                </View>
-              </View>
-            </View>
-            <TouchableOpacity style={styles.statCard} activeOpacity={0.8} onPress={() => (navigation as any).navigate('HospitalAdminStaff')}>
-              <View style={styles.statContainer}>
-                <View style={styles.statIconWrapper}>
-                  <FontAwesomeIcon icon="users" size={Responsive.iconSize(22)} color="#1C2A3A" />
-                </View>
-                <View style={styles.statContent}>
-                  <Text style={styles.statValue}>{(dashboard?.users?.total ?? 0).toLocaleString()}</Text>
-                  <Text style={styles.statTitle}>Total Staff</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-            <View style={styles.statCard}>
-              <View style={styles.statContainer}>
-                <View style={styles.statIconWrapper}>
-                  <FontAwesomeIcon icon="hospital" size={Responsive.iconSize(22)} color="#1C2A3A" />
-                </View>
-                <View style={styles.statContent}>
-                  <Text style={styles.statValue}>{(dashboard?.units ?? hospital?.units?.length ?? 0).toLocaleString()}</Text>
-                  <Text style={styles.statTitle}>Units</Text>
-                </View>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
+        </View>
 
-          {/* OVERVIEW ICON STATS (floating numbers) */}
+        {/* Scrollable Content */}
+        <ScrollView
+          style={styles.scrollableContent}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContentContainer}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: false }
+          )}
+          scrollEventThrottle={16}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366F1" colors={['#6366F1']} />
+          }>
+
+          {/* Dashboard Title */}
+          <View style={styles.dashboardTitleSection}>
+            <Text style={styles.dashboardTitle}>Hospital Admin Dashboard</Text>
+          </View>
+
+          {/* Hospital Header Card */}
+          {hospital && (
+            <View style={styles.headerCard}>
+              <View style={styles.headerRow}>
+                {(hospital?.logoUrl || hospital?.logo) ? (() => {
+                  const logoPath = hospital.logoUrl || hospital.logo;
+                  // Construct full URL if it's a relative path
+                  let logoUri = logoPath;
+                  if (logoPath && !logoPath.startsWith('http')) {
+                    const baseUrl = getFinalApiUrl().replace('/api/v1', '');
+                    logoUri = logoPath.startsWith('/') 
+                      ? `${baseUrl}${logoPath}` 
+                      : `${baseUrl}/${logoPath}`;
+                  }
+                  return (
+                    <Image 
+                      source={{ uri: logoUri }} 
+                      style={styles.logo} 
+                      resizeMode="contain"
+                      onError={(e) => {
+                        console.error('Logo load error:', e);
+                      }}
+                    />
+                  );
+                })() : (
+                  <View style={styles.logoPlaceholder} />
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.hospitalName}>{hospital?.name || 'Hospital'}</Text>
+                  {!!hospital?.units?.length && (
+                    <Text style={styles.hospitalMeta}>{hospital.units.length} active units</Text>
+                  )}
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* MAIN STATS */}
+          <View style={styles.mainStatsGrid}>
+            <StatCard
+              title="Total Jobs"
+              value={dashboard?.jobs?.total || 0}
+              icon="briefcase"
+              onPress={() => (navigation as any).navigate('HospitalAdminJobs')}
+            />
+            <StatCard
+              title="Total Staff"
+              value={dashboard?.users?.total || 0}
+              icon="users"
+              onPress={() => (navigation as any).navigate('HospitalAdminStaff')}
+            />
+          </View>
+
+          {/* Overview Stats */}
           <View style={styles.overviewSection}>
             <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionTitle}>Overview</Text>
+              <TouchableOpacity onPress={scrollToEnd} style={styles.scrollToEndButton}>
+                <Text style={styles.viewAllText}>See All</Text>
+                <FontAwesomeIcon icon="arrow-right" size={Responsive.iconSize(14)} color="#6366F1" />
+              </TouchableOpacity>
             </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.overviewScroll} contentContainerStyle={styles.overviewScrollContent}>
+
+            <ScrollView
+              ref={overviewScrollRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              scrollEventThrottle={16}
+              style={styles.overviewScroll}
+              contentContainerStyle={styles.overviewScrollContent}>
               <View style={styles.iconStatsRow}>
-                <TouchableOpacity style={styles.iconStatItem} activeOpacity={0.7} onPress={() => (navigation as any).navigate('HospitalAdminJobs')}>
-                  <View style={styles.iconStatContainer}>
-                    <View style={[styles.iconStatIconWrapper, { backgroundColor: '#3B82F615' }]}>
-                      <FontAwesomeIcon icon="briefcase" size={Responsive.iconSize(22)} color="#3B82F6" />
-                    </View>
-                    <View style={styles.iconStatBadge}><Text style={styles.iconStatValue}>{(dashboard?.jobs?.total ?? 0).toLocaleString()}</Text></View>
-                  </View>
-                  <Text style={styles.iconStatTitle}>Total Jobs</Text>
-                </TouchableOpacity>
-
-                <View style={styles.iconStatItem}>
-                  <View style={styles.iconStatContainer}>
-                    <View style={[styles.iconStatIconWrapper, { backgroundColor: '#10B98115' }]}>
-                      <FontAwesomeIcon icon="play" size={Responsive.iconSize(22)} color="#10B981" />
-                    </View>
-                    <View style={styles.iconStatBadge}><Text style={styles.iconStatValue}>{(dashboard?.jobs?.active ?? 0).toLocaleString()}</Text></View>
-                  </View>
-                  <Text style={styles.iconStatTitle}>Active Jobs</Text>
-                </View>
-
-                <View style={styles.iconStatItem}>
-                  <View style={styles.iconStatContainer}>
-                    <View style={[styles.iconStatIconWrapper, { backgroundColor: '#8B5CF615' }]}>
-                      <FontAwesomeIcon icon="user-check" size={Responsive.iconSize(22)} color="#8B5CF6" />
-                    </View>
-                    <View style={styles.iconStatBadge}><Text style={styles.iconStatValue}>{(dashboard?.assignments?.total ?? 0).toLocaleString()}</Text></View>
-                  </View>
-                  <Text style={styles.iconStatTitle}>Assignments</Text>
-                </View>
-
-                <View style={styles.iconStatItem}>
-                  <View style={styles.iconStatContainer}>
-                    <View style={[styles.iconStatIconWrapper, { backgroundColor: '#05966915' }]}>
-                      <FontAwesomeIcon icon="check-circle" size={Responsive.iconSize(22)} color="#059669" />
-                    </View>
-                    <View style={styles.iconStatBadge}><Text style={styles.iconStatValue}>{(dashboard?.jobs?.completed ?? 0).toLocaleString()}</Text></View>
-                  </View>
-                  <Text style={styles.iconStatTitle}>Completed</Text>
-                </View>
-
-                <View style={styles.iconStatItem}>
-                  <View style={styles.iconStatContainer}>
-                    <View style={[styles.iconStatIconWrapper, { backgroundColor: '#7C3AED15' }]}>
-                      <FontAwesomeIcon icon="hospital" size={Responsive.iconSize(22)} color="#7C3AED" />
-                    </View>
-                    <View style={styles.iconStatBadge}><Text style={styles.iconStatValue}>{(dashboard?.units ?? hospital?.units?.length ?? 0).toLocaleString()}</Text></View>
-                  </View>
-                  <Text style={styles.iconStatTitle}>Units</Text>
-                </View>
+                <IconStatItem title="Total Jobs" value={dashboard?.jobs?.total || 0} icon="briefcase" iconColor="#3B82F6" onPress={() => (navigation as any).navigate('HospitalAdminJobs')} />
+                <IconStatItem title="Active Jobs" value={dashboard?.jobs?.active || 0} icon="play" iconColor="#10B981" />
+                <IconStatItem title="Assignments" value={dashboard?.assignments?.total || 0} icon="user-check" iconColor="#8B5CF6" />
+                <IconStatItem title="Completed" value={dashboard?.jobs?.completed || 0} icon="check-circle" iconColor="#059669" />
+                <IconStatItem title="Total Staff" value={dashboard?.users?.total || 0} icon="users" iconColor="#6366F1" onPress={() => (navigation as any).navigate('HospitalAdminStaff')} />
+                <IconStatItem title="Units" value={dashboard?.units || hospital?.units?.length || 0} icon="hospital" iconColor="#7C3AED" />
               </View>
             </ScrollView>
           </View>
 
+          {/* Quick Actions */}
+          <View style={styles.quickActionsSection}>
+            <Text style={styles.sectionTitle}>Quick Actions</Text>
+            <View style={styles.quickActionsGrid}>
+              <QuickAction title="Create Job" subtitle="Post new opening" icon="plus" gradient={['#3B82F6', '#2563EB']} onPress={() => (navigation as any).navigate('CreateJob')} />
+              <QuickAction title="Upload Logo" subtitle="Brand your hospital" icon="image" gradient={['#10B981', '#059669']} onPress={() => (navigation as any).navigate('HospitalAdminUploadLogo')} />
+              <QuickAction title="Manage Themes" subtitle="Colors & branding" icon="palette" gradient={['#8B5CF6', '#7C3AED']} onPress={() => (navigation as any).navigate('HospitalAdminThemes')} />
+              <QuickAction title="Manage Units" subtitle="Create & edit units" icon="hospital" gradient={['#F59E0B', '#D97706']} onPress={() => (navigation as any).navigate('HospitalAdminUnits')} />
+              <QuickAction title="Permissions" subtitle="View & manage" icon="shield-alt" gradient={['#6366F1', '#4F46E5']} onPress={() => (navigation as any).navigate('PermissionManagement')} />
+              <QuickAction title="Agency Blacklist" subtitle="Manage agencies" icon="ban" gradient={['#EF4444', '#DC2626']} onPress={() => (navigation as any).navigate('AgencyBlacklist')} />
+            </View>
+          </View>
+
+          {/* Recent Jobs */}
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionTitle}>Recent Jobs</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <TouchableOpacity onPress={() => (navigation as any).navigate('HospitalAdminThemes')}>
-                  <Text style={styles.viewAllText}>Manage Themes</Text>
-                </TouchableOpacity>
-                <View style={{ width: 12 }} />
-                <TouchableOpacity onPress={() => (navigation as any).navigate('HRJobs')}>
-                  <Text style={styles.viewAllText}>View All</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            {(dashboard?.recentJobs || []).slice(0, 10).map((job: any, index: number) => (
-              <TouchableOpacity
-                key={job.id || index}
-                style={styles.listItem}
-                onPress={() => (navigation as any).navigate('JobDetails', { jobId: job.id })}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.listTitle}>{job.title || 'Untitled Job'}</Text>
-                <Text style={styles.listSubtitle}>{job.department || job.location || ''}</Text>
+              <TouchableOpacity onPress={() => (navigation as any).navigate('HRJobs')}>
+                <Text style={styles.viewAllText}>View All</Text>
               </TouchableOpacity>
-            ))}
-            {(!dashboard?.recentJobs || dashboard?.recentJobs?.length === 0) && (
-              <Text style={styles.subtitle}>No recent jobs</Text>
-            )}
+            </View>
+            <View style={styles.listCard}>
+              {dashboard?.recentJobs && dashboard.recentJobs.length > 0 ? (
+                dashboard.recentJobs.slice(0, 3).map((job: any, index: number) => (
+                  <TouchableOpacity
+                    key={job.id}
+                    style={[styles.listItem, index === Math.min(2, dashboard.recentJobs.length - 1) && styles.listItemLast]}
+                    onPress={() => (navigation as any).navigate('JobDetails', { jobId: job.id })}
+                    activeOpacity={0.7}>
+                    <View style={styles.listIconWrapper}>
+                      <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.listIcon}>
+                        <FontAwesomeIcon icon="briefcase" size={Responsive.iconSize(18)} color="#FFFFFF" />
+                      </LinearGradient>
+                    </View>
+                    <View style={styles.listContent}>
+                      <Text style={styles.listTitle} numberOfLines={1}>{job.title || 'Untitled Job'}</Text>
+                      <Text style={styles.listSubtitle} numberOfLines={1}>{job.department || job.location || ''}</Text>
+                      {job.priority && (
+                        <View style={styles.listFooter}>
+                          <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(job.priority) + '20' }]}>
+                            <Text style={[styles.priorityText, { color: getPriorityColor(job.priority) }]}>{job.priority}</Text>
+                          </View>
+                          {job.hourlyRate && (
+                            <Text style={styles.listRate}>₹{job.hourlyRate}/hr</Text>
+                          )}
+                        </View>
+                      )}
+                    </View>
+                    {job.createdAt && (
+                      <Text style={styles.listTime}>{formatDate(job.createdAt)}</Text>
+                    )}
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <View style={styles.emptyState}>
+                  <View style={styles.emptyIcon}>
+                    <FontAwesomeIcon icon="briefcase" size={Responsive.iconSize(32)} color="#D1D5DB" />
+                  </View>
+                  <Text style={styles.emptyTitle}>No Recent Jobs</Text>
+                  <Text style={styles.emptySubtitle}>Job postings will appear here</Text>
+                </View>
+              )}
+            </View>
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Themes</Text>
-            {!themes ? (
-              <ActivityIndicator color={Colors.primary} />
-            ) : (
-              <View style={styles.themeList}>
-                <View style={{ flexDirection: 'row', marginBottom: 8 }}>
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={async () => {
-                      try {
-                        await HospitalAdminApi.createTheme({
-                          id: 'brand_purple',
-                          name: 'Brand Purple',
-                          primaryColor: '#7c3aed',
-                          secondaryColor: '#a78bfa',
-                          backgroundColor: '#faf5ff',
-                          textColor: '#4c1d95',
-                          accentTextColor: '#ffffff',
-                        });
-                        await HospitalAdminApi.setDefaultTheme('brand_purple');
-                        await load();
-                      } catch {}
-                    }}
-                  >
-                    <Text style={styles.actionButtonText}>Create Theme</Text>
-                  </TouchableOpacity>
-                </View>
-                {(themes?.themes || themes || []).map((t: any) => (
-                  <View key={t.id || t.name} style={styles.themeItem}>
-                    <View style={[styles.themeDot, { backgroundColor: t.primaryColor || t.color || Colors.primary }]} />
-                    <Text style={styles.listTitle}>{t.name || 'Theme'}</Text>
-                    {themes?.current && (themes.current.id === t.id || themes.current === t.name) && (
-                      <Text style={styles.currentTag}>Current</Text>
-                    )}
-                    <TouchableOpacity
-                      style={styles.shareCurl}
-                      onPress={async () => {
-                        const base = (require('../../config/api') as any).API_BASE_URL || '';
-                        const curl = `curl -X PUT \"${base}/hospital-admin/themes/default/${t.id || t.name}\" \\\n  -H \"Authorization: Bearer <HOSPITAL_ADMIN_TOKEN>\"`;
-                        try { await Share.share({ message: curl }); } catch {}
-                      }}
-                    >
-                      <Text style={styles.shareCurlText}>Share cURL</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.applyTheme}
-                      onPress={async () => {
-                        try {
-                          await HospitalAdminApi.setDefaultTheme(t.id || t.name);
-                          await load();
-                        } catch {}
-                      }}
-                    >
-                      <Text style={styles.applyThemeText}>Set Default</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.deleteTheme}
-                      onPress={async () => {
-                        try {
-                          const isCurrent = !!(themes?.current && (themes.current.id === t.id || themes.current === t.name));
-                          if (isCurrent) {
-                            // Prevent deleting current default; require user to change default first
-                            return;
-                          }
-                          await HospitalAdminApi.deleteTheme(t.id || t.name);
-                          await load();
-                        } catch {}
-                      }}
-                    >
-                      <Text style={styles.deleteThemeText}>Delete</Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
-                {(!themes?.themes || themes?.themes?.length === 0) && (
-                  <Text style={styles.subtitle}>No themes</Text>
-                )}
-              </View>
-            )}
-          </View>
-        </View>
-      )}
       </ScrollView>
+
+      {/* Powered By */}
+      <View style={styles.poweredByContainer}>
+        <Text style={styles.poweredByText}>Powered by</Text>
+        <Image source={require('../../assets/footer_logo.png')} style={styles.companyLogo} resizeMode="contain" />
+      </View>
+
       <HRFooterNavigation activeRoute="Dashboard" scrollY={scrollY} />
+      </View>
     </SafeAreaView>
   );
 };
@@ -365,11 +453,15 @@ const HospitalAdminDashboardScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#F3F9FF',
+  },
+  innerContainer: {
+    flex: 1,
+    backgroundColor: '#F3F9FF',
   },
   simpleHeader: {
     backgroundColor: '#FFFFFF',
-    paddingTop: 10,
+    paddingTop: Platform.OS === 'android' ? 10 : 0,
     paddingHorizontal: 20,
     paddingBottom: 16,
     shadowColor: '#000',
@@ -383,47 +475,167 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  headerLeft: { flex: 1 },
-  headerRole: { fontSize: 16, fontFamily: Typography.fontFamily.medium, color: '#6366F1' },
-  headerGreeting: { fontSize: 16, fontFamily: Typography.fontFamily.regular, color: '#6B7280', marginBottom: 2 },
-  headerName: { fontSize: 24, fontFamily: Typography.fontFamily.bold, color: '#111827' },
-  headerRight: { flexDirection: 'row', alignItems: 'center' },
-  simpleNotificationButton: { width: 40, height: 40, borderRadius: 22, backgroundColor: '#FEF3C7', justifyContent: 'center', alignItems: 'center', position: 'relative' },
-  simpleNotificationBadge: { position: 'absolute', top: -4, right: -4, backgroundColor: '#EF4444', borderRadius: 10, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4, borderWidth: 2, borderColor: '#FFFFFF' },
-  simpleNotificationBadgeText: { color: '#FFFFFF', fontSize: 9, fontFamily: Typography.fontFamily.bold },
-  content: {
-    padding: 16,
+  headerLeft: {
+    flex: 1,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 12,
+  headerRole: {
+    fontSize: 16,
+    fontFamily: Typography.fontFamily.medium,
+    color: '#6366F1',
+  },
+  headerGreeting: {
+    fontSize: 16,
+    fontFamily: Typography.fontFamily.regular,
+    color: '#6B7280',
+    marginBottom: 2,
+  },
+  headerName: {
+    fontSize: 24,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#111827',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerRightContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    borderRadius: 0,
+    borderWidth: 0,
+    borderColor: 'transparent',
+  },
+  simpleNotificationButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 22,
+    backgroundColor: '#FEF3C7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  simpleNotificationBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#EF4444',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  simpleNotificationBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontFamily: Typography.fontFamily.bold,
+  },
+  headerProfileImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 22,
+    overflow: 'hidden',
+    borderWidth: 0,
+    borderColor: 'transparent',
+  },
+  headerProfileGradient: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerProfileInitials: {
+    fontSize: 20,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#FFFFFF',
   },
   scrollableContent: {
     flex: 1,
   },
-  subtitle: {
-    fontSize: 14,
-    color: Colors.textSecondary,
+  scrollContentContainer: {
+    paddingBottom: 8,
   },
-  cards: {
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    fontFamily: Typography.fontFamily.medium,
+    color: '#6B7280',
+  },
+  dashboardTitleSection: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  dashboardTitle: {
+    fontSize: 16,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#111827',
+    letterSpacing: -0.3,
+  },
+  headerCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 20,
+    marginTop: 8,
+    marginBottom: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
+  },
+  logo: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+  },
+  logoPlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+  },
+  hospitalName: {
+    fontSize: 18,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#111827',
+  },
+  hospitalMeta: {
+    fontSize: 13,
+    fontFamily: Typography.fontFamily.regular,
+    color: '#6B7280',
+    marginTop: 2,
   },
   mainStatsGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    gap: 12,
     paddingHorizontal: 20,
     marginTop: 8,
-    marginBottom: 4,
+    marginBottom: 0,
   },
   statCard: {
-    width: '48%',
-    flexBasis: '48%',
-    flexGrow: 0,
+    flex: 1,
     minHeight: 100,
-    marginBottom: 8,
   },
   statContainer: {
     backgroundColor: '#ffffff',
@@ -469,13 +681,37 @@ const styles = StyleSheet.create({
     letterSpacing: 0.1,
   },
   overviewSection: {
+    paddingHorizontal: 20,
+    marginTop: 2,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#111827',
+    letterSpacing: -0.3,
+  },
+  scrollToEndButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  viewAllText: {
+    fontSize: 14,
+    fontFamily: Typography.fontFamily.medium,
+    color: '#6366F1',
     marginTop: 2,
   },
   overviewScroll: {
-    marginHorizontal: -4,
+    marginHorizontal: -20,
   },
   overviewScrollContent: {
-    paddingHorizontal: 2,
+    paddingHorizontal: 6,
     paddingBottom: 4,
   },
   iconStatsRow: {
@@ -531,28 +767,21 @@ const styles = StyleSheet.create({
     lineHeight: 15,
     maxWidth: 80,
   },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  viewAllText: {
-    fontSize: 14,
-    fontFamily: Typography.fontFamily.medium,
-    color: '#6366F1',
-  },
   quickActionsSection: {
-    marginTop: 8,
+    paddingHorizontal: 20,
+    marginTop: 10,
   },
   quickActionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    marginTop: 16,
     justifyContent: 'space-between',
-    marginTop: 12,
   },
   quickActionWrapper: {
     width: '48%',
+    flexBasis: '48%',
+    flexGrow: 0,
+    flexShrink: 0,
     marginBottom: 8,
   },
   quickActionCard: {
@@ -584,6 +813,7 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 1,
     textAlign: 'center',
+    letterSpacing: -0.2,
   },
   quickActionSubtitle: {
     fontSize: 13,
@@ -591,166 +821,125 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
   },
-  headerCard: {
-    backgroundColor: Colors.white,
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  logo: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    backgroundColor: Colors.background,
-  },
-  logoPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    backgroundColor: Colors.background,
-  },
-  hospitalName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-  },
-  hospitalMeta: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  card: {
-    backgroundColor: Colors.white,
-    borderRadius: 10,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  cardTitle: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-  },
-  cardValue: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    marginTop: 4,
-  },
-  cardDetail: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    marginTop: 4,
-  },
   section: {
-    marginTop: 8,
+    paddingHorizontal: 20,
+    marginTop: 24,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: 8,
+  listCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   listItem: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  listTitle: {
-    fontSize: 14,
-    color: Colors.textPrimary,
-  },
-  listSubtitle: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-  },
-  themeList: {
-    gap: 8,
-  },
-  themeItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 8,
+    padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: '#F3F4F6',
   },
-  themeDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: Colors.primary,
+  listItemLast: {
+    borderBottomWidth: 0,
   },
-  currentTag: {
-    marginLeft: 'auto',
-    fontSize: 12,
-    color: Colors.primary,
-    fontWeight: '600',
+  listIconWrapper: {
+    marginRight: 14,
   },
-  shareCurl: {
-    marginLeft: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: Colors.background,
-  },
-  shareCurlText: {
-    color: Colors.textPrimary,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  applyTheme: {
-    marginLeft: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: Colors.white,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  applyThemeText: {
-    color: Colors.textPrimary,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  actionButton: {
-    flex: 0,
-    backgroundColor: Colors.primary,
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+  listIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  actionButtonText: {
-    color: Colors.white,
-    fontSize: 14,
-    fontWeight: '600',
+  listContent: {
+    flex: 1,
+    marginRight: 12,
   },
-  deleteTheme: {
-    marginLeft: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: '#FEE2E2',
-    borderWidth: 1,
-    borderColor: '#FCA5A5',
+  listTitle: {
+    fontSize: 15,
+    fontFamily: Typography.fontFamily.medium,
+    color: '#111827',
+    marginBottom: 4,
   },
-  deleteThemeText: {
-    color: '#B91C1C',
+  listSubtitle: {
+    fontSize: 13,
+    fontFamily: Typography.fontFamily.regular,
+    color: '#6B7280',
+    marginBottom: 8,
+  },
+  listFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  priorityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  priorityText: {
+    fontSize: 11,
+    fontFamily: Typography.fontFamily.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  listRate: {
+    fontSize: 13,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#111827',
+  },
+  listTime: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: Typography.fontFamily.medium,
+    color: '#9CA3AF',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+  },
+  emptyIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontFamily: Typography.fontFamily.medium,
+    color: '#374151',
+    marginBottom: 4,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    fontFamily: Typography.fontFamily.regular,
+    color: '#9CA3AF',
+    textAlign: 'center',
+  },
+  poweredByContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingVertical: 6,
+    marginTop: 0,
+  },
+  poweredByText: {
+    fontSize: 12,
+    fontFamily: Typography.fontFamily.medium,
+    color: '#6B7280',
+    marginRight: -2,
+  },
+  companyLogo: {
+    height: 15,
+    width: 80,
+    marginLeft: -12,
   },
 });
 

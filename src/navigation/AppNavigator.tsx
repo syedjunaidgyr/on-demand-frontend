@@ -35,6 +35,7 @@ import ChangePasswordScreen from '../screens/common/ChangePasswordScreen';
 import JobDetailsCommonScreen from '../screens/common/JobDetailsCommonScreen';
 import PDFViewerScreen from '../screens/common/PDFViewerScreen';
 import NotificationsScreen from '../screens/common/NotificationsScreen';
+import PermissionManagementScreen from '../screens/common/PermissionManagementScreen';
 
 // Agency Screens
 import AgencyDashboardScreen from '../screens/agency/AgencyDashboardScreen';
@@ -48,6 +49,8 @@ import HospitalAdminJobsScreen from '../screens/hospitalAdmin/HospitalAdminJobsS
 import HospitalAdminStaffScreen from '../screens/hospitalAdmin/HospitalAdminStaffScreen';
 import HospitalAdminUploadLogoScreen from '../screens/hospitalAdmin/HospitalAdminUploadLogoScreen';
 import HospitalAdminThemeManageScreen from '../screens/hospitalAdmin/HospitalAdminThemeManageScreen';
+import HospitalAdminUnitsScreen from '../screens/hospitalAdmin/HospitalAdminUnitsScreen';
+import HospitalAdminAgencyBlacklistScreen from '../screens/hospitalAdmin/HospitalAdminAgencyBlacklistScreen';
 
 // Test Components
 import GeolocationTest from '../components/GeolocationTest';
@@ -101,6 +104,9 @@ export type RootStackParamList = {
   AgencyOnboardNurses: undefined;
   HospitalAdminUploadLogo: undefined;
   HospitalAdminThemes: undefined;
+  HospitalAdminUnits: undefined;
+  PermissionManagement: undefined;
+  AgencyBlacklist: undefined;
 };
 
 export type AuthStackParamList = {
@@ -479,6 +485,27 @@ const MainNavigator = ({ user }: { user: User }) => {
           title: 'Manage Themes',
           headerStyle: { backgroundColor: Colors.primary },
           headerTintColor: Colors.white,
+        }}
+      />
+      <Stack.Screen 
+        name="HospitalAdminUnits" 
+        component={HospitalAdminUnitsScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="PermissionManagement" 
+        component={PermissionManagementScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="AgencyBlacklist" 
+        component={HospitalAdminAgencyBlacklistScreen}
+        options={{
+          headerShown: false,
         }}
       />
     </Stack.Navigator>

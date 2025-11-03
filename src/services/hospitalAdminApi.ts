@@ -99,7 +99,52 @@ class HospitalAdminApiService {
   }
 
   async deleteTheme(themeId: string | number): Promise<void> {
-    await this.api.delete(`/hospital-admin/themes/${themeId}`);
+    try {
+      // Debug log for backend tracing
+      // eslint-disable-next-line no-console
+      console.log('[HospitalAdminApi] DELETE theme ->', `/hospital-admin/themes/${themeId}`);
+      await this.api.delete(`/hospital-admin/themes/${themeId}`);
+    } catch (e: any) {
+      // eslint-disable-next-line no-console
+      console.error('[HospitalAdminApi] DELETE theme failed', { themeId, error: e?.response?.data || e?.message });
+      throw e;
+    }
+  }
+
+  // Unit Management APIs
+  async listUnits(): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get('/hospital-admin/units');
+    return response.data;
+  }
+
+  async createUnit(data: { unitCode: string; unitName: string }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post('/hospital-admin/units', data);
+    return response.data;
+  }
+
+  async updateUnit(unitCode: string, data: Partial<{ unitCode: string; unitName: string }>): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.put(`/hospital-admin/units/${unitCode}`, data);
+    return response.data;
+  }
+
+  async deleteUnit(unitCode: string): Promise<void> {
+    await this.api.delete(`/hospital-admin/units/${unitCode}`);
+  }
+
+  // Agency Blacklisting APIs
+  async listBlacklistedAgencies(hospitalId: number, params?: { q?: string; from?: string; to?: string }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get(`/agency/hospitals/${hospitalId}/blacklisted`, { params });
+    return response.data;
+  }
+
+  async blacklistAgency(agencyId: number, hospitalId: number, data: { reasonCategory: string; reasonDetails: string }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post(`/agency/${agencyId}/hospitals/${hospitalId}/blacklist`, data);
+    return response.data;
+  }
+
+  async restoreAgency(agencyId: number, hospitalId: number): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post(`/agency/${agencyId}/hospitals/${hospitalId}/restore`);
+    return response.data;
   }
 }
 

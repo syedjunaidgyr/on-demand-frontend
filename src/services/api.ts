@@ -725,22 +725,139 @@ class ApiService {
     }
   }
 
-  // Health check - using a simple endpoint that exists
+  // Permission Management APIs (Admin/HR)
+  async getMyPermissions(params?: { hospitalId?: number; unitCode?: string }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get('/permissions/my-permissions', { params });
+    return response.data;
+  }
+
+  async getAllPermissions(params?: { page?: number; limit?: number; category?: string; resource?: string; action?: string; scope?: string }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get('/permissions', { params });
+    return response.data;
+  }
+
+  async getUserPermissions(userId: number, params?: { hospitalId?: number; unitCode?: string }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get(`/permissions/users/${userId}`, { params });
+    return response.data;
+  }
+
+  async grantPermission(userId: number, data: {
+    permissionCode: string;
+    hospitalId?: number;
+    unitCode?: string;
+    expiresAt?: string;
+    notes?: string;
+  }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post(`/permissions/users/${userId}/grant`, data);
+    return response.data;
+  }
+
+  async revokePermission(userId: number, data: {
+    permissionCode: string;
+    hospitalId?: number;
+    unitCode?: string;
+  }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post(`/permissions/users/${userId}/revoke`, data);
+    return response.data;
+  }
+
+  async applyPermissionMaster(userId: number, data: {
+    masterId: number;
+    hospitalId?: number;
+    unitCode?: string;
+  }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post(`/permissions/users/${userId}/apply-master`, data);
+    return response.data;
+  }
+
+  async getPermissionMasters(params?: { page?: number; limit?: number; role?: string }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get('/permissions/masters', { params });
+    return response.data;
+  }
+
+  async createPermissionMaster(data: {
+    name: string;
+    code: string;
+    description?: string;
+    role?: string;
+    permissions?: number[];
+    hospitalPermissions?: number[];
+    unitPermissions?: number[];
+    isDefault?: boolean;
+  }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post('/permissions/masters', data);
+    return response.data;
+  }
+
+  // Admin Hospital Management APIs
+  async createHospital(data: any, logo?: FormData): Promise<any> {
+    if (logo) {
+      // If logo provided, append all data fields to formData
+      Object.keys(data).forEach((key) => {
+        if (key === 'address' || key === 'contactInfo' || key === 'units') {
+          logo.append(key, JSON.stringify(data[key]));
+        } else {
+          logo.append(key, data[key]);
+        }
+      });
+      const response: AxiosResponse<any> = await this.api.post('/admin/hospitals', logo, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } else {
+      const response: AxiosResponse<any> = await this.api.post('/admin/hospitals', data);
+      return response.data;
+    }
+  }
+
+  async updateHospital(hospitalId: number, data: any): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.put(`/admin/hospitals/${hospitalId}`, data);
+    return response.data;
+  }
+
+  async deleteHospital(hospitalId: number): Promise<void> {
+    await this.api.delete(`/admin/hospitals/${hospitalId}`);
+  }
+
+  async uploadHospitalLogo(hospitalId: number, formData: FormData): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post(`/admin/hospitals/${hospitalId}/logo`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  }
+
+  async deleteHospitalLogo(hospitalId: number): Promise<void> {
+    await this.api.delete(`/admin/hospitals/${hospitalId}/logo`);
+  }
+
+  async getAdminDashboard(): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get('/admin/dashboard');
+    return response.data;
+  }
+
+  // Health check
   async healthCheck(): Promise<any> {
     try {
-      console.log('🏥 Health check to:', `${BASE_URL}/auth/login`);
-      // Use a simple HEAD request to test connection without actually logging in
-      const response: AxiosResponse<any> = await this.api.head('/auth/login');
-      console.log('✅ Health check successful - server is reachable');
-      return { status: 'ok', message: 'Server is reachable' };
+      // Use the dedicated health endpoint if available, fallback to base URL
+      const healthUrl = BASE_URL.replace('/api/v1', '/health');
+      const axiosInstance = axios.create({ timeout: 5000 });
+      const response: AxiosResponse<any> = await axiosInstance.get(healthUrl);
+      console.log('✅ Health check successful');
+      return response.data;
     } catch (error: any) {
-      // If we get a 405 (Method Not Allowed) or 400 (Bad Request), the server is reachable
-      if (error.response?.status === 405 || error.response?.status === 400) {
-        console.log('✅ Health check successful - server is reachable (method not allowed is expected)');
+      // Try fallback method
+      try {
+        const response: AxiosResponse<any> = await this.api.head('/auth/login');
+        console.log('✅ Health check successful - server is reachable');
         return { status: 'ok', message: 'Server is reachable' };
+      } catch (fallbackError: any) {
+        if (fallbackError.response?.status === 405 || fallbackError.response?.status === 400) {
+          console.log('✅ Health check successful - server is reachable');
+          return { status: 'ok', message: 'Server is reachable' };
+        }
+        console.error('❌ Health check failed:', fallbackError.response?.data || fallbackError.message);
+        throw fallbackError;
       }
-      console.error('❌ Health check failed:', error.response?.data || error.message);
-      throw error;
     }
   }
 

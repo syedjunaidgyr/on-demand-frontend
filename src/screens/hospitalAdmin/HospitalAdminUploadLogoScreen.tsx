@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, Image } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Colors } from '../../constants/colors';
 import { useAppColors } from '../../hooks/useAppColors';
 import HospitalAdminApi from '../../services/hospitalAdminApi';
 import { launchCamera, launchImageLibrary, Asset } from 'react-native-image-picker';
 
 const HospitalAdminUploadLogoScreen: React.FC = () => {
+  const navigation = useNavigation();
   const appColors = useAppColors();
   const [filePath, setFilePath] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -28,6 +30,8 @@ const HospitalAdminUploadLogoScreen: React.FC = () => {
       });
       await HospitalAdminApi.uploadLogo(form);
       Alert.alert('Success', 'Logo uploaded successfully.');
+      // Navigate back to refresh dashboard
+      navigation.goBack();
     } catch (e: any) {
       Alert.alert('Upload failed', e?.response?.data?.message || e?.message || 'Please try again');
     } finally {
