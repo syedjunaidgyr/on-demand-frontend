@@ -74,6 +74,10 @@ const HRDashboardScreen: React.FC = () => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // Pending check-in approvals
+  const [showApprovalsModal, setShowApprovalsModal] = useState(false);
+  const [pendingCheckIns, setPendingCheckIns] = useState<any[]>([]);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
   const overviewScrollRef = React.useRef<ScrollView>(null);
 
   const scrollY = React.useRef(new Animated.Value(0)).current;
@@ -142,6 +146,46 @@ const HRDashboardScreen: React.FC = () => {
         recent: { jobs: [], assignments: [] }
       });
       setIsLoading(false);
+    }
+  };
+
+  const loadPendingCheckIns = async () => {
+    try {
+      console.log('🔍 Loading pending check-ins...');
+      const list = await ApiService.getPendingCheckIns();
+      console.log('✅ Pending check-ins loaded:', list?.length || 0, list);
+      setPendingCheckIns(list || []);
+    } catch (e) {
+      console.error('❌ Failed to load pending check-ins:', e);
+      setPendingCheckIns([]);
+    }
+  };
+
+  const handleOpenApprovals = async () => {
+    await loadPendingCheckIns();
+    setShowApprovalsModal(true);
+  };
+
+  const handleApprove = async (checkIn: any) => {
+    try {
+      setApprovingId(checkIn.id);
+      await ApiService.approveCheckIn(checkIn.id);
+      setPendingCheckIns(prev => prev.filter(ci => ci.id !== checkIn.id));
+    } catch (e) {
+      // noop; you can add alert if needed
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  const handleReject = async (checkIn: any) => {
+    try {
+      setApprovingId(checkIn.id);
+      await ApiService.rejectCheckIn(checkIn.id, 'Not compliant');
+      setPendingCheckIns(prev => prev.filter(ci => ci.id !== checkIn.id));
+    } catch (e) {
+    } finally {
+      setApprovingId(null);
     }
   };
 
@@ -313,6 +357,11 @@ const HRDashboardScreen: React.FC = () => {
               </View>
               <View style={styles.headerRight}>
                 <View style={styles.headerRightContainer}>
+                  <TouchableOpacity
+                    style={styles.simpleNotificationButton}
+                    onPress={handleOpenApprovals}>
+                    <FontAwesomeIcon icon="clock" size={Responsive.iconSize(18)} color="#111827" />
+                  </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.simpleNotificationButton}
                     onPress={() => (navigation as any).navigate('Notifications')}>
@@ -614,13 +663,49 @@ const HRDashboardScreen: React.FC = () => {
 
       </ScrollView>
 
+      {/* Pending Check-ins Modal */}
+      {showApprovalsModal && (
+        <View style={styles.approvalsOverlay}>
+          <View style={styles.approvalsSheet}>
+            <View style={styles.approvalsHeader}>
+              <Text style={styles.approvalsTitle}>Pending Check-ins</Text>
+              <TouchableOpacity onPress={() => setShowApprovalsModal(false)}>
+                <FontAwesomeIcon icon="times" size={Responsive.iconSize(18)} color="#111827" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ maxHeight: Dimensions.get('window').height * 0.6 }}>
+              {pendingCheckIns.length === 0 ? (
+                <Text style={{ color: '#6B7280', paddingVertical: 12 }}>No pending items</Text>
+              ) : (
+                pendingCheckIns.map((ci) => (
+                  <View key={ci.id} style={styles.approvalRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.approvalJob}>{ci?.job?.title || 'Job'}</Text>
+                      <Text style={styles.approvalMeta}>{(ci?.user?.firstName || '') + ' ' + (ci?.user?.lastName || '')} • {(ci?.job?.facilityName || ci?.job?.location || '')}</Text>
+                    </View>
+                    <View style={styles.approvalActions}>
+                      <TouchableOpacity disabled={approvingId===ci.id} style={[styles.approveBtn, approvingId===ci.id && { opacity: 0.6 }]} onPress={() => handleApprove(ci)}>
+                        <Text style={styles.approvalBtnText}>Approve</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity disabled={approvingId===ci.id} style={[styles.rejectBtn, approvingId===ci.id && { opacity: 0.6 }]} onPress={() => handleReject(ci)}>
+                        <Text style={styles.approvalBtnText}>Reject</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      )}
+
       {/* Powered By */}
       <View style={styles.poweredByContainer}>
         <Text style={styles.poweredByText}>Powered by</Text>
         <Image source={require('../../assets/footer_logo.png')} style={styles.companyLogo} resizeMode="contain" />
       </View>
 
-      <HRFooterNavigation activeRoute="Dashboard" scrollY={scrollY} />
+      <HRFooterNavigation activeRoute="Dashboard" scrollY={scrollY} isLoading={isLoading} />
       </View>
     </SafeAreaView>
   );
@@ -1086,6 +1171,25 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     marginTop: 0,
   },
+  approvalsOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end'
+  },
+  approvalsSheet: {
+    backgroundColor: '#FFFFFF', borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    paddingHorizontal: 20, paddingTop: 12, paddingBottom: 20
+  },
+  approvalsHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12
+  },
+  approvalsTitle: { fontSize: 16, fontFamily: Typography.fontFamily.medium, color: '#111827' },
+  approvalRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#EFEFEF' },
+  approvalJob: { fontSize: 14, fontFamily: Typography.fontFamily.medium, color: '#111827' },
+  approvalMeta: { fontSize: 12, color: '#6B7280', marginTop: 2 },
+  approvalActions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginLeft: 12 },
+  approveBtn: { backgroundColor: '#10B981', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
+  rejectBtn: { backgroundColor: '#EF4444', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
+  approvalBtnText: { color: '#FFFFFF', fontSize: 12, fontFamily: Typography.fontFamily.medium },
   poweredByText: {
     fontSize: 12,
     fontFamily: Typography.fontFamily.medium,

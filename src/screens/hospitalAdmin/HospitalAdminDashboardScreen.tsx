@@ -444,7 +444,7 @@ const HospitalAdminDashboardScreen: React.FC = () => {
         <Image source={require('../../assets/footer_logo.png')} style={styles.companyLogo} resizeMode="contain" />
       </View>
 
-      <HRFooterNavigation activeRoute="Dashboard" scrollY={scrollY} />
+      <HRFooterNavigation activeRoute="Dashboard" scrollY={scrollY} isLoading={isLoading} />
       </View>
     </SafeAreaView>
   );

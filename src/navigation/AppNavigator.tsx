@@ -384,10 +384,7 @@ const MainNavigator = ({ user }: { user: User }) => {
         name="CheckInOut"
         component={CheckInOutScreen}
         options={{
-          headerShown: true,
-          title: 'Check In/Out',
-          headerStyle: { backgroundColor: Colors.primary },
-          headerTintColor: Colors.white,
+          headerShown: false,
         }}
       />
       <Stack.Screen

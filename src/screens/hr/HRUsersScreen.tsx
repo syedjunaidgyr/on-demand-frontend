@@ -464,7 +464,7 @@ const HRUsersScreen: React.FC = () => {
         </Animated.View>
       )}
       
-      <HRFooterNavigation activeRoute="Users" scrollY={scrollY} />
+      <HRFooterNavigation activeRoute="Users" scrollY={scrollY} isLoading={isLoading} />
     </View>
   );
 };

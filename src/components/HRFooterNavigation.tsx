@@ -12,14 +12,16 @@ import { FontAwesomeIcon } from '../utils/icons';
 import { Typography } from '../constants/typography';
 import Responsive from '../utils/responsive';
 import { useAuth } from '../navigation/AppNavigator';
+import { SkeletonFooter } from './SkeletonComponents';
 
 interface HRFooterNavigationProps {
   activeRoute?: 'Dashboard' | 'Jobs' | 'Users';
   scrollY?: Animated.Value;
   todaysJobsCount?: number;
+  isLoading?: boolean;
 }
 
-const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, scrollY, todaysJobsCount }) => {
+const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, scrollY, todaysJobsCount, isLoading = false }) => {
   const navigation = useNavigation();
   const { user } = useAuth();
   const translateY = useRef(new Animated.Value(0)).current;
@@ -84,6 +86,11 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, sc
       return () => scrollY.removeListener(listener);
     }
   }, [scrollY, translateY]);
+
+  // Show skeleton if loading
+  if (isLoading) {
+    return <SkeletonFooter />;
+  }
 
   return (
     <Animated.View style={[styles.floatingContainer, { transform: [{ translateY }] }]}>

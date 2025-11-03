@@ -14,6 +14,7 @@ import {
   ScrollView,
   StatusBar,
   TextInput,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -50,6 +51,43 @@ const HRJobsScreen: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterPriority, setFilterPriority] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Success bottom-sheet modal state (registration-style)
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successText, setSuccessText] = useState('Success');
+  const { height } = Dimensions.get('window');
+  const modalSlideAnim = React.useRef(new Animated.Value(height)).current;
+  const checkmarkScale = React.useRef(new Animated.Value(0)).current;
+  const sparkleScale1 = React.useRef(new Animated.Value(0)).current;
+  const sparkleScale2 = React.useRef(new Animated.Value(0)).current;
+  const sparkleScale3 = React.useRef(new Animated.Value(0)).current;
+  const sparkleScale4 = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    if (showSuccessModal) {
+      // slide up
+      Animated.spring(modalSlideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 80,
+        friction: 10,
+      }).start();
+      // checkmark + sparkles
+      Animated.spring(checkmarkScale, { toValue: 1, useNativeDriver: true }).start();
+      setTimeout(() => Animated.spring(sparkleScale1, { toValue: 1, useNativeDriver: true }).start(), 50);
+      setTimeout(() => Animated.spring(sparkleScale2, { toValue: 1, useNativeDriver: true }).start(), 120);
+      setTimeout(() => Animated.spring(sparkleScale3, { toValue: 1, useNativeDriver: true }).start(), 180);
+      setTimeout(() => Animated.spring(sparkleScale4, { toValue: 1, useNativeDriver: true }).start(), 240);
+    } else {
+      // reset when closed
+      modalSlideAnim.setValue(height);
+      checkmarkScale.setValue(0);
+      sparkleScale1.setValue(0);
+      sparkleScale2.setValue(0);
+      sparkleScale3.setValue(0);
+      sparkleScale4.setValue(0);
+    }
+  }, [showSuccessModal, height, modalSlideAnim, checkmarkScale, sparkleScale1, sparkleScale2, sparkleScale3, sparkleScale4]);
 
   useEffect(() => {
     loadJobs();
@@ -400,6 +438,7 @@ const HRJobsScreen: React.FC = () => {
       <HRFooterNavigation 
         activeRoute="Jobs" 
         scrollY={scrollY}
+        isLoading={isLoading}
         todaysJobsCount={jobs.filter(j => {
           try {
             if (!j.startDate) return false;
@@ -422,6 +461,13 @@ const HRJobsScreen: React.FC = () => {
           setAssignVisible(false);
           loadJobs(1, true);
         }}
+        onShowSuccess={(text: string) => {
+          setSuccessText(text || 'Success');
+          setShowSuccessModal(true);
+          setTimeout(() => {
+            setShowSuccessModal(false);
+          }, 1500);
+        }}
       />
 
       <FilterBottomSheet
@@ -442,6 +488,42 @@ const HRJobsScreen: React.FC = () => {
           setFilterPriority('');
         }}
       />
+
+      {/* Registration-style Success Bottom Sheet */}
+      {showSuccessModal && (
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setShowSuccessModal(false)} />
+          <Animated.View
+            style={[
+              styles.modalContainer,
+              { transform: [{ translateY: modalSlideAnim }] }
+            ]}
+          >
+            <View style={styles.modalIconContainer}>
+              <Animated.View style={[styles.sparkle, styles.sparkle1, { transform: [{ scale: sparkleScale1 }] }]}>
+                <FontAwesomeIcon icon="star" size={20} color="#FFD700" />
+              </Animated.View>
+              <Animated.View style={[styles.sparkle, styles.sparkle2, { transform: [{ scale: sparkleScale2 }] }]}>
+                <FontAwesomeIcon icon="star" size={18} color="#C0C0C0" />
+              </Animated.View>
+              <Animated.View style={[styles.sparkle, styles.sparkle3, { transform: [{ scale: sparkleScale3 }] }]}>
+                <FontAwesomeIcon icon="star" size={18} color="#FFB6C1" />
+              </Animated.View>
+              <Animated.View style={[styles.sparkle, styles.sparkle4, { transform: [{ scale: sparkleScale4 }] }]}>
+                <FontAwesomeIcon icon="star" size={16} color="#87CEEB" />
+              </Animated.View>
+              <Animated.View style={{ transform: [{ scale: checkmarkScale }] }}>
+                <FontAwesomeIcon icon="check-circle" size={Responsive.iconSize(64)} color="#4CAF50" />
+              </Animated.View>
+            </View>
+            <Text style={styles.modalTitle}>Success</Text>
+            <Text style={styles.modalMessage}>{successText}</Text>
+            <TouchableOpacity style={styles.modalDoneButton} onPress={() => setShowSuccessModal(false)}>
+              <Text style={styles.modalDoneButtonText}>Done</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -453,6 +535,7 @@ const AssignBottomSheet = ({
   assignments,
   loading,
   onAssignedSuccess,
+  onShowSuccess,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -460,6 +543,7 @@ const AssignBottomSheet = ({
   assignments: any[];
   loading: boolean;
   onAssignedSuccess?: () => void;
+  onShowSuccess?: (text: string) => void;
 }) => {
   const localFormatDate = (dateString: string) => {
     if (!dateString) return '—';
@@ -511,8 +595,6 @@ const AssignBottomSheet = ({
 
   const accepted = (assignments || []).filter(a => a?.status === 'ACCEPTED');
   const [isSelecting, setIsSelecting] = React.useState(false);
-  const [confirmVisible, setConfirmVisible] = React.useState(false);
-  const [confirmText, setConfirmText] = React.useState('');
 
   const handleSelectCandidate = async (assignment: any) => {
     if (!job) return;
@@ -530,17 +612,16 @@ const AssignBottomSheet = ({
               await ApiService.selectCandidate(job.id.toString(), assignment.id?.toString());
               const f = staff.firstName || '';
               const l = staff.lastName || '';
-              setConfirmText(`${f} ${l} has been assigned to this job.`.trim());
-              setConfirmVisible(true);
-              setTimeout(() => {
-                setConfirmVisible(false);
+              const text = `${f} ${l} has been assigned to this job.`.trim();
+              // Close the assign sheet first, then show success from parent
                 onClose();
+              onShowSuccess && onShowSuccess(text);
                 onAssignedSuccess && onAssignedSuccess();
-              }, 1500);
             } catch (e: any) {
-              setConfirmText(e?.message || 'Unable to select candidate.');
-              setConfirmVisible(true);
-              setTimeout(() => setConfirmVisible(false), 1500);
+              const text = e?.message || 'Unable to select candidate.';
+              // Close the assign sheet first, then show error message in the same success modal style
+              onClose();
+              onShowSuccess && onShowSuccess(text);
             } finally {
               setIsSelecting(false);
             }
@@ -846,16 +927,7 @@ const AssignBottomSheet = ({
           </TouchableOpacity>
           )}
         </View>
-        {/* Centered confirmation popup */}
-        {confirmVisible && (
-          <View style={styles.fullscreenSuccessOverlay}>
-            <View style={styles.fullscreenRightContent}>
-              <FontAwesomeIcon icon="check-circle" size={40} color="#FFFFFF" />
-              <Text style={styles.fullscreenSuccessTitle}>Success</Text>
-              <Text style={styles.fullscreenSuccessMessage} numberOfLines={2}>{confirmText}</Text>
-            </View>
-          </View>
-        )}
+        {/* Removed green fullscreen confirmation; success handled by parent bottom-sheet */}
       </View>
     </Modal>
   );
@@ -1755,77 +1827,81 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.medium,
     color: Colors.textPrimary,
   },
-  centerOverlay: {
+  // Registration-style modal styles
+  modalOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'flex-end',
+    zIndex: 9999,
   },
-  centerCard: {
-    width: '80%',
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContainer: {
     backgroundColor: Colors.white,
-    borderRadius: 14,
-    paddingVertical: 18,
-    paddingHorizontal: 16,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 28,
+    paddingTop: 24,
+    paddingBottom: 28,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 8,
+    width: '100%',
   },
-  centerTitle: {
-    marginTop: 8,
-    fontSize: Typography.fontSize.lg,
+  modalTitle: {
+    fontSize: 24,
     fontFamily: Typography.fontFamily.bold,
-    color: Colors.textPrimary,
-  },
-  centerMessage: {
-    marginTop: 6,
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.regular,
-    color: Colors.textSecondary,
+    color: '#333333',
+    marginBottom: 12,
     textAlign: 'center',
   },
-  centerButton: {
-    marginTop: 14,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    backgroundColor: Colors.primary,
-    borderRadius: 10,
+  modalIconContainer: {
+    marginBottom: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 100,
+    height: 100,
+    position: 'relative',
   },
-  centerButtonText: {
-    fontSize: Typography.fontSize.base,
+  sparkle: { position: 'absolute' },
+  sparkle1: { top: 10, left: 10 },
+  sparkle2: { bottom: 15, left: 8 },
+  sparkle3: { top: 15, right: 8 },
+  sparkle4: { bottom: 10, right: 10 },
+  modalMessage: {
+    fontSize: 15,
+    fontFamily: Typography.fontFamily.regular,
+    color: '#666666',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+    paddingHorizontal: 4,
+  },
+  modalDoneButton: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 48,
+    alignItems: 'center',
+    minWidth: 140,
+    marginBottom: 0,
+  },
+  modalDoneButtonText: {
+    fontSize: 16,
     fontFamily: Typography.fontFamily.bold,
     color: Colors.white,
-  },
-  fullscreenSuccessOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: Colors.success,
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-    paddingRight: 24,
-  },
-  fullscreenRightContent: {
-    alignItems: 'flex-end',
-    gap: 6,
-  },
-  fullscreenSuccessTitle: {
-    fontSize: Typography.fontSize['2xl'] || 20,
-    fontFamily: Typography.fontFamily.bold,
-    color: '#FFFFFF',
-  },
-  fullscreenSuccessMessage: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamily.medium,
-    color: '#FFFFFF',
-    textAlign: 'right',
-    maxWidth: '80%',
   },
 });
 
