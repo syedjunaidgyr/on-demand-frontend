@@ -44,8 +44,6 @@ const HRJobsScreen: React.FC = () => {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [loadingAssignments, setLoadingAssignments] = useState(false);
-  const [jobDetailsVisible, setJobDetailsVisible] = useState(false);
-  const [selectedJobDetails, setSelectedJobDetails] = useState<Job | null>(null);
   const [filterVisible, setFilterVisible] = useState(false);
   const [filterFrom, setFilterFrom] = useState<string>('');
   const [filterTo, setFilterTo] = useState<string>('');
@@ -188,11 +186,6 @@ const HRJobsScreen: React.FC = () => {
     }
   };
 
-  const handleShowJobDetails = (job: Job) => {
-    setSelectedJobDetails(job);
-    setJobDetailsVisible(true);
-  };
-
   const handleReviewCandidates = async (job: Job) => {
     try {
       setSelectedJob(job);
@@ -222,7 +215,11 @@ const HRJobsScreen: React.FC = () => {
     const subtitleRight = timeRange;
     
     return (
-      <View style={styles.jobCard}>
+      <TouchableOpacity 
+        style={styles.jobCard}
+        onPress={() => handleReviewCandidates(job)}
+        activeOpacity={0.8}
+      >
         {/* Date header with edit button */}
         <View style={styles.cardTopRow}>
           <Text style={styles.cardTimeText}>{dateRange}</Text>
@@ -252,11 +249,11 @@ const HRJobsScreen: React.FC = () => {
 
             {/* Progress / Stat / Charge row (3 columns) */}
             <View style={styles.assignmentRow}>
-              <View style={styles.infoCol}>
+              <View style={[styles.infoCol, { marginHorizontal: 6 }]}>
                 <Text style={styles.infoLabel}>Progress</Text>
                 <Text style={styles.infoValue}>Accepted: {acceptedAssignments}</Text>
               </View>
-              <View style={styles.infoCol}>
+              <View style={[styles.infoCol, { marginHorizontal: 6 }]}>
                 <Text style={styles.infoLabel}>Stat</Text>
                 <View style={[styles.priorityPill, { backgroundColor: getPriorityColor(job.priority) + '1A' }]}>
                   <Text style={[styles.priorityPillText, { color: getPriorityColor(job.priority) }]} numberOfLines={1}>
@@ -264,7 +261,7 @@ const HRJobsScreen: React.FC = () => {
                   </Text>
                 </View>
               </View>
-              <View style={styles.infoCol}>
+              <View style={[styles.infoCol, { marginHorizontal: 6 }]}>
                 <Text style={styles.infoLabel}>Charge</Text>
                 <Text style={styles.infoValue}>₹{job.hourlyRate}/hr</Text>
               </View>
@@ -275,27 +272,9 @@ const HRJobsScreen: React.FC = () => {
               <Text style={styles.infoLabel}>Department</Text>
               <Text style={styles.infoValue}>{job.department || '—'}</Text>
             </View>
-
-            {/* Action Buttons */}
-            <View style={styles.cardActionButtons}>
-              <TouchableOpacity 
-                style={styles.assignButton} 
-                onPress={() => handleReviewCandidates(job)}>
-                <FontAwesomeIcon icon="user-check" size={16} color={Colors.white} />
-                <Text style={styles.assignButtonText}>Assign</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.jobDetailsButton} 
-                onPress={() => handleShowJobDetails(job)}>
-                <FontAwesomeIcon icon="info-circle" size={16} color={Colors.primary} />
-                <Text style={styles.jobDetailsButtonText}>Job Details</Text>
-              </TouchableOpacity>
             </View>
           </View>
-        </View>
-
-        
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -364,23 +343,23 @@ const HRJobsScreen: React.FC = () => {
       {isLoading && jobs.length === 0 ? (
         <SkeletonSearchBar />
       ) : (
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <FontAwesomeIcon icon="search" size={16} color={Colors.textSecondary} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search by title"
-              placeholderTextColor={Colors.textTertiary}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <FontAwesomeIcon icon="times" size={16} color={Colors.textTertiary} />
-              </TouchableOpacity>
-            )}
-          </View>
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBar}>
+          <FontAwesomeIcon icon="search" size={16} color={Colors.textSecondary} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by title"
+            placeholderTextColor={Colors.textTertiary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <FontAwesomeIcon icon="times" size={16} color={Colors.textTertiary} />
+            </TouchableOpacity>
+          )}
         </View>
+      </View>
       )}
 
       {/* Jobs List */}
@@ -393,24 +372,24 @@ const HRJobsScreen: React.FC = () => {
           ))}
         </ScrollView>
       ) : (
-        <FlatList
-          data={displayJobs}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <JobCard job={item} />}
-          contentContainerStyle={styles.listContainer}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.5}
-          ListFooterComponent={renderFooter}
-          showsVerticalScrollIndicator={false}
-          onScroll={Animated.event(
-            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-            { useNativeDriver: false }
-          )}
-          scrollEventThrottle={16}
-        />
+      <FlatList
+        data={displayJobs}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => <JobCard job={item} />}
+        contentContainerStyle={styles.listContainer}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
+        showsVerticalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+        scrollEventThrottle={16}
+      />
       )}
 
       {/* Floating Action Button */}
@@ -443,12 +422,6 @@ const HRJobsScreen: React.FC = () => {
           setAssignVisible(false);
           loadJobs(1, true);
         }}
-      />
-
-      <JobDetailsBottomSheet
-        visible={jobDetailsVisible}
-        onClose={() => setJobDetailsVisible(false)}
-        job={selectedJobDetails}
       />
 
       <FilterBottomSheet
@@ -506,6 +479,36 @@ const AssignBottomSheet = ({
     return `${displayHour}:${mins} ${ampm}`;
   };
 
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'URGENT':
+        return Colors.urgent;
+      case 'HIGH':
+        return Colors.high;
+      case 'MEDIUM':
+        return Colors.medium;
+      case 'LOW':
+        return Colors.low;
+      default:
+        return Colors.primary;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'ACTIVE':
+        return Colors.success;
+      case 'CANCELLED':
+        return Colors.error;
+      case 'COMPLETED':
+        return Colors.info;
+      case 'FILLED':
+        return Colors.warning;
+      default:
+        return Colors.textTertiary;
+    }
+  };
+
   const accepted = (assignments || []).filter(a => a?.status === 'ACCEPTED');
   const [isSelecting, setIsSelecting] = React.useState(false);
   const [confirmVisible, setConfirmVisible] = React.useState(false);
@@ -553,85 +556,208 @@ const AssignBottomSheet = ({
         <Pressable style={styles.sheetBackdropTouchable} onPress={onClose} />
         <View style={styles.sheetContainer}>
           <View style={styles.sheetHandle} />
-          <Text style={styles.sheetTitle}>Review Candidates</Text>
-          {/* <Text style={styles.sheetSubtitle} numberOfLines={2}>
-            {job ? job.title : ''}
-          </Text> */}
-          <View style={styles.sheetDivider} />
+          
           {loading ? (
-            <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+            <View style={{ paddingVertical: 40, alignItems: 'center' }}>
               <ActivityIndicator size="small" color={Colors.primary} />
             </View>
           ) : (
-            <ScrollView contentContainerStyle={styles.sheetContent}>
-              {/* Job details card */}
+            <ScrollView 
+              contentContainerStyle={styles.sheetContent}
+              showsVerticalScrollIndicator={false}>
+              
+              {/* Header Section */}
               {job && (
                 <>
-                  <Text style={styles.sheetSectionTitle}>Job Details</Text>
-                  <View style={styles.jobDetailCard}>
-                  <Text style={styles.jobDetailTitle} numberOfLines={2}>{job.title || '—'}</Text>
-                  {!!job.description && (
-                    <Text style={styles.jobDetailDescription} numberOfLines={3}>{job.description}</Text>
-                  )}
-                  <View style={styles.jobDetailGrid}>
-                    {!!job.facilityName && (
-                      <View style={styles.jobDetailItemRow}>
-                        <Text style={styles.jobDetailLabel}>Facility</Text>
-                        <Text style={styles.jobDetailValue} numberOfLines={1}>{job.facilityName}</Text>
-                      </View>
-                    )}
-                    {!!job.location && (
-                      <View style={styles.jobDetailItemRow}>
-                        <Text style={styles.jobDetailLabel}>Location</Text>
-                        <Text style={styles.jobDetailValue} numberOfLines={1}>{job.location}</Text>
-                      </View>
-                    )}
-                    {!!job.department && (
-                      <View style={styles.jobDetailItemRow}>
-                        <Text style={styles.jobDetailLabel}>Department</Text>
-                        <Text style={styles.jobDetailValue} numberOfLines={1}>{job.department}</Text>
-                      </View>
-                    )}
-                    {!!job.specialization && (
-                      <View style={styles.jobDetailItemRow}>
-                        <Text style={styles.jobDetailLabel}>Specialization</Text>
-                        <Text style={styles.jobDetailValue} numberOfLines={1}>{job.specialization}</Text>
-                      </View>
-                    )}
-                    <View style={styles.jobDetailItemRow}>
-                      <Text style={styles.jobDetailLabel}>Dates</Text>
-                      <Text style={styles.jobDetailValue} numberOfLines={1}>
-                        {`${(job.startDate ? localFormatDate(job.startDate as any) : '—')} - ${(job.endDate ? localFormatDate(job.endDate as any) : '—')}`}
+                  <View style={styles.modalHeader}>
+                    <View style={styles.modalHeaderTop}>
+                      <Text style={styles.modalTitle} numberOfLines={2}>
+                        {job.title || 'Job Details'}
                       </Text>
-                    </View>
-                    <View style={styles.jobDetailItemRow}>
-                      <Text style={styles.jobDetailLabel}>Time</Text>
-                      <Text style={styles.jobDetailValue} numberOfLines={1}>
-                        {`${(job.startTime ? localFormatTime(job.startTime as any) : '—')} - ${(job.endTime ? localFormatTime(job.endTime as any) : '—')} • ${(job.status || '—')}`}
-                      </Text>
-                    </View>
-                    
-                    <View style={styles.jobDetailItemRow}>
-                      <Text style={styles.jobDetailLabel}>Progress</Text>
-                      <Text style={styles.jobDetailValue} numberOfLines={1}>
-                        {`Accepted: ${(accepted.length || 0)} • ${job.hourlyRate ? `₹${job.hourlyRate}/hr` : '—'}`}
-                      </Text>
-                    </View>
-                    <View style={styles.jobDetailItemRow}>
-                      <Text style={styles.jobDetailLabel}>Priority</Text>
-                      <Text style={styles.jobDetailValue}>{job.priority || '—'}</Text>
-                    </View>
-                    
-                  </View>
-                </View>
-                </>
-              )}
+                      <TouchableOpacity onPress={onClose} style={styles.modalCloseIcon}>
+                        <FontAwesomeIcon icon="times" size={20} color={Colors.textSecondary} />
+                      </TouchableOpacity>
+                      </View>
+                    {/* <Text style={styles.modalSubtitle}>
+                      {`${localFormatDate(job.startDate as any)} - ${localFormatTime(job.startTime as any)}`}
+                    </Text> */}
+                      </View>
 
-              <View style={{ marginBottom: 12 }}>
-                {accepted.length === 0 ? (
-                  <Text style={styles.sheetInfoText}>No accepted candidates yet.</Text>
-                ) : (
-                  accepted.map((a, idx) => {
+                  {/* Time Details Section */}
+                  <View style={styles.modalSection}>
+                    <View style={styles.modalInfoRow}>
+                      <FontAwesomeIcon icon="clock" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                      <View style={styles.modalInfoContent}>
+                        <Text style={styles.modalInfoLabel}>Start Date</Text>
+                        <Text style={styles.modalInfoValue}>
+                          {job.startDate ? localFormatDate(job.startDate as any) : '—'}, {job.startTime ? localFormatTime(job.startTime as any) : '—'}
+                      </Text>
+                    </View>
+                      <View style={[styles.modalInfoContent, { marginLeft: 20 }]}>
+                        <Text style={styles.modalInfoLabel}>End Date</Text>
+                        <Text style={styles.modalInfoValue}>
+                          {job.endDate ? localFormatDate(job.endDate as any) : '—'}, {job.endTime ? localFormatTime(job.endTime as any) : '—'}
+                      </Text>
+                    </View>
+                    </View>
+                    {/* Duration & Location in same row */}
+                    <View style={styles.modalTwoColRow}>
+                      <View style={styles.modalCol}>
+                        <View style={styles.modalInfoRow}>
+                          <FontAwesomeIcon icon="clock" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                          <View style={styles.modalInfoContent}>
+                            <Text style={styles.modalInfoLabel}>Duration</Text>
+                            <Text style={styles.modalInfoValue} numberOfLines={1}>
+                              {job.startTime && job.endTime ? 
+                                (() => {
+                                  const start = new Date(`2000-01-01 ${job.startTime}`);
+                                  const end = new Date(`2000-01-01 ${job.endTime}`);
+                                  const diff = end.getTime() - start.getTime();
+                                  const hours = Math.floor(diff / (1000 * 60 * 60));
+                                  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                                  return `${hours} hr, ${minutes} min`;
+                                })() : '—'}
+                      </Text>
+                    </View>
+                    </View>
+                  </View>
+                      {job.location && (
+                        <View style={styles.modalCol}>
+                          <View style={styles.modalInfoRow}>
+                            <FontAwesomeIcon icon="map-marker-alt" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                            <View style={styles.modalInfoContent}>
+                              <Text style={styles.modalInfoLabel}>Location</Text>
+                              <Text style={styles.modalInfoValue} numberOfLines={1}>{job.location}</Text>
+                </View>
+                          </View>
+                        </View>
+                      )}
+                        </View>
+                        </View>
+
+                  {/* Facility & Department (two columns) */}
+                  {(job.facilityName || job.department) && (
+                    <View style={styles.modalSection}>
+                      <View style={styles.modalTwoColRow}>
+                        {job.facilityName && (
+                          <View style={styles.modalCol}>
+                            <View style={styles.modalInfoRow}>
+                              <FontAwesomeIcon icon="hospital" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                              <View style={styles.modalInfoContent}>
+                                <Text style={styles.modalInfoLabel}>Facility</Text>
+                                <Text style={styles.modalInfoValue} numberOfLines={1}>{job.facilityName}</Text>
+                        </View>
+                          </View>
+                      </View>
+                        )}
+                        {job.department && (
+                          <View style={styles.modalCol}>
+                            <View style={styles.modalInfoRow}>
+                              <FontAwesomeIcon icon="building" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                              <View style={styles.modalInfoContent}>
+                                <Text style={styles.modalInfoLabel}>Department</Text>
+                                <Text style={styles.modalInfoValue} numberOfLines={1}>{job.department}</Text>
+              </View>
+            </View>
+          </View>
+        )}
+      </View>
+                    </View>
+                  )}
+
+                  {/* Role & Candidates (two columns) */}
+                  {(job.requiredRole) && (
+                    <View style={styles.modalSection}>
+                      <View style={styles.modalTwoColRow}>
+                        <View style={styles.modalCol}>
+                          <View style={styles.modalInfoRow}>
+                            <FontAwesomeIcon icon="user-md" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                            <View style={styles.modalInfoContent}>
+                              <Text style={styles.modalInfoLabel}>Role</Text>
+                              <Text style={styles.modalInfoValue} numberOfLines={1}>{job.requiredRole}</Text>
+              </View>
+                </View>
+              </View>
+                        <View style={styles.modalCol}>
+                          <View style={styles.modalInfoRow}>
+                            <FontAwesomeIcon icon="users" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                            <View style={styles.modalInfoContent}>
+                              <Text style={styles.modalInfoLabel}>Candidates</Text>
+                              <Text style={styles.modalInfoValue} numberOfLines={1}>{accepted.length || 0}</Text>
+                </View>
+              </View>
+              </View>
+            </View>
+                    </View>
+                  )}
+
+                  {/* Rate & Status (two columns) */}
+                  <View style={styles.modalSection}>
+                    <View style={styles.modalTwoColRow}>
+                      <View style={styles.modalCol}>
+                        <View style={styles.modalInfoRow}>
+                          <FontAwesomeIcon icon="rupee-sign" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                          <View style={styles.modalInfoContent}>
+                            <Text style={styles.modalInfoLabel}>Rate</Text>
+                            <Text style={styles.modalInfoValue}>₹{job.hourlyRate || '—'}/hr</Text>
+              </View>
+              </View>
+              </View>
+                      <View style={styles.modalCol}>
+                        <View style={styles.modalInfoRow}>
+                          <FontAwesomeIcon icon="info-circle" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                          <View style={styles.modalInfoContent}>
+                            <Text style={styles.modalInfoLabel}>Status</Text>
+                            <View style={[styles.modalStatusBadge, { backgroundColor: getStatusColor(job.status || '') + '1A' }]}> 
+                              <Text style={[styles.modalStatusBadgeText, { color: getStatusColor(job.status || '') }]}>
+                                {job.status || '—'}
+                              </Text>
+              </View>
+            </View>
+              </View>
+                      </View>
+              </View>
+            </View>
+
+                  {/* Priority */}
+                  {job.priority && (
+                    <View style={styles.modalSection}>
+                      <View style={styles.modalInfoRow}>
+                        <FontAwesomeIcon icon="exclamation-triangle" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                        <View style={styles.modalInfoContent}>
+                          <Text style={styles.modalInfoLabel}>Priority</Text>
+                          <View style={[styles.modalPriorityBadge, { backgroundColor: getPriorityColor(job.priority) + '1A' }]}> 
+                            <Text style={[styles.modalPriorityBadgeText, { color: getPriorityColor(job.priority) }]}>
+                              {job.priority}
+                            </Text>
+              </View>
+              </View>
+            </View>
+                    </View>
+                  )}
+
+                  {/* Description LAST */}
+                  {job.description && (
+                    <View style={styles.modalSection}>
+                      <View style={styles.modalInfoRow}>
+                        <FontAwesomeIcon icon="file-alt" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                        <View style={styles.modalInfoContent}>
+                          <Text style={styles.modalInfoLabel}>Description</Text>
+                          <Text style={styles.modalInfoValue}>{job.description}</Text>
+                    </View>
+                    </View>
+                    </View>
+                  )}
+
+                  {/* Candidates Section */}
+                  <View style={styles.modalCandidatesSection}>
+                    <Text style={styles.modalCandidatesTitle}>Candidates</Text>
+                    {accepted.length === 0 ? (
+                      <View style={styles.modalEmptyCandidates}>
+                        <Text style={styles.sheetInfoText}>No accepted candidates yet.</Text>
+                    </View>
+                    ) : (
+                      accepted.map((a, idx) => {
                     const firstName = a?.user?.firstName || 'Unknown';
                     const lastName = a?.user?.lastName || '';
                     const fullName = `${firstName} ${lastName}`.trim();
@@ -642,50 +768,83 @@ const AssignBottomSheet = ({
                     const displayRole = specialization ? `${role} • ${specialization}` : role;
                     const acceptedAt = a?.updatedAt || a?.acceptedAt || a?.createdAt || undefined;
                     return (
-                      <View key={`acc-${idx}`} style={styles.candidateCard}>
-                        <View style={styles.candidateHeader}>
-                          <Text style={styles.candidateName} numberOfLines={1}>{fullName}</Text>
-                          <Text style={[styles.assignmentStatus, { color: Colors.success }]}>ACCEPTED</Text>
-                        </View>
-                        <Text style={styles.candidateRole} numberOfLines={1}>{displayRole}</Text>
-                        <View style={styles.candidateInfoRow}>
-                          <Text style={styles.candidateInfoLabel}>Phone:</Text>
-                          <Text style={styles.candidateInfoValue} numberOfLines={1}>{phone}</Text>
-                        </View>
-                        <View style={styles.candidateInfoRow}>
-                          <Text style={styles.candidateInfoLabel}>Email:</Text>
-                          <Text style={styles.candidateInfoValue} numberOfLines={1}>{email}</Text>
-                        </View>
-                        {acceptedAt && (
-                          <View style={styles.candidateInfoRow}>
-                            <Text style={styles.candidateInfoLabel}>Accepted:</Text>
-                            <Text style={styles.candidateInfoValue}>{new Date(acceptedAt).toLocaleString()}</Text>
+                        <View key={`acc-${idx}`} style={styles.modalCandidateCard}>
+                          <View style={styles.modalCandidateHeader}>
+                            <View style={styles.modalCandidateInfo}>
+                              <FontAwesomeIcon icon="user" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                              <View style={styles.modalInfoContent}>
+                                <Text style={styles.modalInfoLabel}>Candidate</Text>
+                                <Text style={styles.modalInfoValue} numberOfLines={1}>{fullName}</Text>
+                    </View>
+                    </View>
+                            <Text style={[styles.assignmentStatus, { color: Colors.success }]}>ACCEPTED</Text>
+                    </View>
+                          
+                          <View style={styles.modalCandidateDetails}>
+                            <View style={styles.modalInfoRow}>
+                              <FontAwesomeIcon icon="briefcase" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                              <View style={styles.modalInfoContent}>
+                                <Text style={styles.modalInfoLabel}>Role</Text>
+                                <Text style={styles.modalInfoValue} numberOfLines={1}>{displayRole}</Text>
+                </View>
+                            </View>
+                            
+                            <View style={styles.modalInfoRow}>
+                              <FontAwesomeIcon icon="phone" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                              <View style={styles.modalInfoContent}>
+                                <Text style={styles.modalInfoLabel}>Phone</Text>
+                                <Text style={styles.modalInfoValue} numberOfLines={1}>{phone}</Text>
+                    </View>
+                </View>
+                            
+                            <View style={styles.modalInfoRow}>
+                              <FontAwesomeIcon icon="envelope" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                              <View style={styles.modalInfoContent}>
+                                <Text style={styles.modalInfoLabel}>Email</Text>
+                                <Text style={styles.modalInfoValue} numberOfLines={1}>{email}</Text>
+                    </View>
+                    </View>
+                            
+                            {acceptedAt && (
+                              <View style={styles.modalInfoRow}>
+                                <FontAwesomeIcon icon="calendar-check" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                                <View style={styles.modalInfoContent}>
+                                  <Text style={styles.modalInfoLabel}>Accepted</Text>
+                                  <Text style={styles.modalInfoValue}>{new Date(acceptedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
+                </View>
+                              </View>
+                            )}
                           </View>
-                        )}
-                        <TouchableOpacity 
-                          style={styles.selectButton}
-                          onPress={() => handleSelectCandidate(a)}
-                          disabled={isSelecting}
-                        >
-                          {isSelecting ? (
-                            <ActivityIndicator size="small" color={Colors.white} />
-                          ) : (
-                            <>
-                              <FontAwesomeIcon icon="check" size={16} color={Colors.white} />
-                              <Text style={styles.selectButtonText}>Select Candidate</Text>
-                            </>
-                          )}
-                        </TouchableOpacity>
-                      </View>
+                          
+                          <TouchableOpacity 
+                            style={styles.modalSelectButton}
+                            onPress={() => handleSelectCandidate(a)}
+                            disabled={isSelecting}
+                          >
+                            {isSelecting ? (
+                              <ActivityIndicator size="small" color={Colors.white} />
+                            ) : (
+                              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <FontAwesomeIcon icon="check" size={16} color={Colors.white} style={{ marginRight: 8 }} />
+                                <Text style={styles.modalSelectButtonText}>Select Candidate</Text>
+                </View>
+              )}
+                          </TouchableOpacity>
+                </View>
                     );
-                  })
-                )}
-              </View>
-            </ScrollView>
+                      })
+              )}
+            </View>
+                </>
+              )}
+          </ScrollView>
           )}
+
+          {!loading && (
           <TouchableOpacity style={styles.sheetCloseButton} onPress={onClose}>
             <Text style={styles.sheetCloseText}>Close</Text>
           </TouchableOpacity>
+          )}
         </View>
         {/* Centered confirmation popup */}
         {confirmVisible && (
@@ -702,264 +861,6 @@ const AssignBottomSheet = ({
   );
 };
 
-const JobDetailsBottomSheet = ({
-  visible,
-  onClose,
-  job,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  job: Job | null;
-}) => {
-  const localFormatDate = (dateString: string) => {
-    if (!dateString) return '—';
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return '—';
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
-
-  const localFormatTime = (timeString: string) => {
-    if (!timeString || typeof timeString !== 'string' || !timeString.includes(':')) return '—';
-    const [hours, minutes] = timeString.split(':');
-    const hour = parseInt(hours, 10);
-    if (isNaN(hour)) return '—';
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour % 12 || 12;
-    const mins = (minutes ?? '00').slice(0, 2);
-    return `${displayHour}:${mins} ${ampm}`;
-  };
-
-  const formatDateTime = (dateString: string) => {
-    if (!dateString) return '—';
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return '—';
-    return date.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-  };
-
-  if (!job) return null;
-
-  const jobAny = job as any;
-  const facilityAddress = jobAny.facilityAddress || {};
-  const creator = jobAny.creator || {};
-  const assignmentStatus = jobAny.assignmentStatus || {};
-
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.sheetBackdrop}>
-        <Pressable style={styles.sheetBackdropTouchable} onPress={onClose} />
-        <View style={styles.sheetContainer}>
-          <View style={styles.sheetHandle} />
-          <Text style={styles.sheetTitle}>Job Details</Text>
-          <View style={styles.sheetDivider} />
-
-          <ScrollView contentContainerStyle={styles.sheetContent}>
-            {/* Basic Job Information */}
-            <Text style={styles.sheetSectionTitle}>Job Information</Text>
-            <View style={styles.jobDetailCard}>
-              <View style={styles.jobDetailItemRow}>
-                <Text style={styles.jobDetailLabel}>Title</Text>
-                <Text style={styles.jobDetailValue} numberOfLines={3}>{job.title || '—'}</Text>
-              </View>
-              {job.description && (
-                <View style={styles.jobDetailItemRow}>
-                  <Text style={styles.jobDetailLabel}>Description</Text>
-                  <Text style={styles.jobDetailValue} numberOfLines={5}>{job.description}</Text>
-                </View>
-              )}
-              <View style={styles.jobDetailItemRow}>
-                <Text style={styles.jobDetailLabel}>Department</Text>
-                <Text style={styles.jobDetailValue}>{job.department || '—'}</Text>
-              </View>
-              {job.specialization && (
-                <View style={styles.jobDetailItemRow}>
-                  <Text style={styles.jobDetailLabel}>Specialization</Text>
-                  <Text style={styles.jobDetailValue}>{job.specialization}</Text>
-                </View>
-              )}
-              <View style={styles.jobDetailItemRow}>
-                <Text style={styles.jobDetailLabel}>Role</Text>
-                <Text style={styles.jobDetailValue}>{job.requiredRole || '—'}</Text>
-              </View>
-              <View style={styles.jobDetailItemRow}>
-                <Text style={styles.jobDetailLabel}>Location</Text>
-                <Text style={styles.jobDetailValue}>{job.location || '—'}</Text>
-              </View>
-            </View>
-
-            {/* Schedule */}
-            <Text style={styles.sheetSectionTitle}>Schedule</Text>
-            <View style={styles.jobDetailCard}>
-              <View style={styles.jobDetailItemRow}>
-                <Text style={styles.jobDetailLabel}>Start Date</Text>
-                <Text style={styles.jobDetailValue}>{localFormatDate(job.startDate)}</Text>
-              </View>
-              <View style={styles.jobDetailItemRow}>
-                <Text style={styles.jobDetailLabel}>End Date</Text>
-                <Text style={styles.jobDetailValue}>{localFormatDate(job.endDate)}</Text>
-              </View>
-              <View style={styles.jobDetailItemRow}>
-                <Text style={styles.jobDetailLabel}>Start Time</Text>
-                <Text style={styles.jobDetailValue}>{localFormatTime(job.startTime)}</Text>
-              </View>
-              <View style={styles.jobDetailItemRow}>
-                <Text style={styles.jobDetailLabel}>End Time</Text>
-                <Text style={styles.jobDetailValue}>{localFormatTime(job.endTime)}</Text>
-              </View>
-            </View>
-
-            {/* Compensation */}
-            <Text style={styles.sheetSectionTitle}>Compensation</Text>
-            <View style={styles.jobDetailCard}>
-              <View style={styles.jobDetailItemRow}>
-                <Text style={styles.jobDetailLabel}>Hourly Rate</Text>
-                <Text style={styles.jobDetailValue}>₹{job.hourlyRate || '—'}/hr</Text>
-              </View>
-              <View style={styles.jobDetailItemRow}>
-                <Text style={styles.jobDetailLabel}>Max Assignments</Text>
-                <Text style={styles.jobDetailValue}>{jobAny.maxAssignments || '—'}</Text>
-              </View>
-            </View>
-
-            {/* Status & Priority */}
-            <Text style={styles.sheetSectionTitle}>Status & Priority</Text>
-            <View style={styles.jobDetailCard}>
-              <View style={styles.jobDetailItemRow}>
-                <Text style={styles.jobDetailLabel}>Status</Text>
-                <Text style={styles.jobDetailValue}>{job.status || '—'}</Text>
-              </View>
-              <View style={styles.jobDetailItemRow}>
-                <Text style={styles.jobDetailLabel}>Priority</Text>
-                <Text style={styles.jobDetailValue}>{job.priority || '—'}</Text>
-              </View>
-            </View>
-
-            {/* Facility Information */}
-            {(jobAny.facilityName || facilityAddress.street || facilityAddress.city) && (
-              <>
-                <Text style={styles.sheetSectionTitle}>Facility Information</Text>
-                <View style={styles.jobDetailCard}>
-                  {jobAny.facilityName && (
-                    <View style={styles.jobDetailItemRow}>
-                      <Text style={styles.jobDetailLabel}>Facility Name</Text>
-                      <Text style={styles.jobDetailValue}>{jobAny.facilityName}</Text>
-                    </View>
-                  )}
-                  {facilityAddress.street && (
-                    <View style={styles.jobDetailItemRow}>
-                      <Text style={styles.jobDetailLabel}>Street</Text>
-                      <Text style={styles.jobDetailValue}>{facilityAddress.street}</Text>
-                    </View>
-                  )}
-                  {facilityAddress.city && (
-                    <View style={styles.jobDetailItemRow}>
-                      <Text style={styles.jobDetailLabel}>City</Text>
-                      <Text style={styles.jobDetailValue}>{facilityAddress.city}</Text>
-                    </View>
-                  )}
-                  {facilityAddress.state && (
-                    <View style={styles.jobDetailItemRow}>
-                      <Text style={styles.jobDetailLabel}>State</Text>
-                      <Text style={styles.jobDetailValue}>{facilityAddress.state}</Text>
-                    </View>
-                  )}
-                  {facilityAddress.zipCode && (
-                    <View style={styles.jobDetailItemRow}>
-                      <Text style={styles.jobDetailLabel}>ZIP Code</Text>
-                      <Text style={styles.jobDetailValue}>{facilityAddress.zipCode}</Text>
-                    </View>
-                  )}
-                  {facilityAddress.country && (
-                    <View style={styles.jobDetailItemRow}>
-                      <Text style={styles.jobDetailLabel}>Country</Text>
-                      <Text style={styles.jobDetailValue}>{facilityAddress.country}</Text>
-                    </View>
-                  )}
-                  {jobAny.hospitalId && (
-                    <View style={styles.jobDetailItemRow}>
-                      <Text style={styles.jobDetailLabel}>Hospital ID</Text>
-                      <Text style={styles.jobDetailValue}>{jobAny.hospitalId}</Text>
-                    </View>
-                  )}
-                  {jobAny.unitCode && (
-                    <View style={styles.jobDetailItemRow}>
-                      <Text style={styles.jobDetailLabel}>Unit Code</Text>
-                      <Text style={styles.jobDetailValue}>{jobAny.unitCode}</Text>
-                    </View>
-                  )}
-                </View>
-              </>
-            )}
-
-            {/* Assignment Status */}
-            {Object.keys(assignmentStatus).length > 0 && (
-              <>
-                <Text style={styles.sheetSectionTitle}>Assignment Status</Text>
-                <View style={styles.jobDetailCard}>
-                  {Object.entries(assignmentStatus).map(([status, count]: [string, any]) => (
-                    <View key={status} style={styles.jobDetailItemRow}>
-                      <Text style={styles.jobDetailLabel}>{status}</Text>
-                      <Text style={styles.jobDetailValue}>{count || 0}</Text>
-                    </View>
-                  ))}
-                </View>
-              </>
-            )}
-
-            {/* Creator Information */}
-            {creator.firstName && (
-              <>
-                <Text style={styles.sheetSectionTitle}>Created By</Text>
-                <View style={styles.jobDetailCard}>
-                  {creator.firstName && (
-                    <View style={styles.jobDetailItemRow}>
-                      <Text style={styles.jobDetailLabel}>Name</Text>
-                      <Text style={styles.jobDetailValue}>
-                        {`${creator.firstName || ''} ${creator.lastName || ''}`.trim() || '—'}
-                      </Text>
-                    </View>
-                  )}
-                  {creator.email && (
-                    <View style={styles.jobDetailItemRow}>
-                      <Text style={styles.jobDetailLabel}>Email</Text>
-                      <Text style={styles.jobDetailValue}>{creator.email}</Text>
-                    </View>
-                  )}
-                </View>
-              </>
-            )}
-
-            {/* Timestamps */}
-            <Text style={styles.sheetSectionTitle}>Timestamps</Text>
-            <View style={styles.jobDetailCard}>
-              {jobAny.createdAt && (
-                <View style={styles.jobDetailItemRow}>
-                  <Text style={styles.jobDetailLabel}>Created At</Text>
-                  <Text style={styles.jobDetailValue}>{formatDateTime(jobAny.createdAt)}</Text>
-                </View>
-              )}
-              {jobAny.updatedAt && (
-                <View style={styles.jobDetailItemRow}>
-                  <Text style={styles.jobDetailLabel}>Updated At</Text>
-                  <Text style={styles.jobDetailValue}>{formatDateTime(jobAny.updatedAt)}</Text>
-                </View>
-              )}
-            </View>
-          </ScrollView>
-
-          <TouchableOpacity style={styles.sheetCloseButton} onPress={onClose}>
-            <Text style={styles.sheetCloseText}>Close</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
-};
 
 const FilterBottomSheet = ({
   visible,
@@ -1112,7 +1013,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Responsive.scale(Spacing.md),
     paddingBottom: Responsive.verticalScale(Spacing.xs),
     backgroundColor: Colors.background,
-    marginTop: Responsive.verticalScale(Spacing.xs),
+    marginTop: Responsive.verticalScale(Spacing.md),
   },
   searchBar: {
     flexDirection: 'row',
@@ -1345,7 +1246,7 @@ const styles = StyleSheet.create({
   assignmentRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    marginHorizontal: -6,
   },
   infoCol: {
     flex: 1,
@@ -1472,7 +1373,146 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
   sheetContent: {
+    paddingBottom: 24,
+  },
+  modalHeader: {
+    marginBottom: 24,
     paddingBottom: 16,
+  },
+  modalHeaderTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  modalTitle: {
+    flex: 1,
+    fontSize: Typography.fontSize.xl,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+    marginRight: 12,
+  },
+  modalSubtitle: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.textSecondary,
+    marginTop: 4,
+  },
+  modalCloseIcon: {
+    padding: 4,
+  },
+  modalSection: {
+    marginBottom: 24,
+  },
+  modalInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  modalIcon: {
+    marginRight: 12,
+    marginTop: 2,
+    width: 20,
+  },
+  modalInfoContent: {
+    flex: 1,
+  },
+  modalInfoLabel: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textTertiary,
+    marginBottom: 4,
+  },
+  modalInfoValue: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+    lineHeight: 22,
+  },
+  modalCandidatesSection: {
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  modalCandidatesTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+    marginBottom: 16,
+  },
+  modalEmptyCandidates: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  modalCandidateCard: {
+    backgroundColor: Colors.background,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+  },
+  modalCandidateHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalCandidateInfo: {
+    flexDirection: 'row',
+    flex: 1,
+    alignItems: 'flex-start',
+  },
+  modalCandidateDetails: {
+    marginBottom: 16,
+  },
+  modalSelectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.success,
+    borderRadius: BorderRadius.md,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginTop: 8,
+  },
+  modalSelectButtonText: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.white,
+  },
+  modalTwoColRow: {
+    flexDirection: 'row',
+    marginHorizontal: -8,
+  },
+  modalCol: {
+    flex: 1,
+    marginHorizontal: 8,
+  },
+  modalStatusBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  modalStatusBadgeText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  modalPriorityBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  modalPriorityBadgeText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   jobDetailCard: {
     backgroundColor: Colors.white,
@@ -1547,6 +1587,7 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.regular,
     color: Colors.textPrimary,
     backgroundColor: Colors.white,
+    marginHorizontal: 4,
   },
   chipsRow: {
     flexDirection: 'row',
@@ -1560,6 +1601,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.borderLight,
     backgroundColor: Colors.background,
+    marginRight: 8,
+    marginTop: 4,
   },
   chipText: {
     fontSize: Typography.fontSize.xs,
@@ -1579,6 +1622,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.borderLight,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 5,
   },
   clearButtonText: {
     fontSize: Typography.fontSize.base,
@@ -1592,6 +1636,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    marginLeft: 5,
   },
   applyButtonText: {
     fontSize: Typography.fontSize.base,
@@ -1785,3 +1830,4 @@ const styles = StyleSheet.create({
 });
 
 export default HRJobsScreen;
+

@@ -1278,39 +1278,39 @@ const RegisterScreen: React.FC = () => {
           />
 
           {formData.role === 'DOCTOR' && (
-            <SpecializationDropdown 
-              open={specializationDropdownOpen}
-              setOpen={(open) => {
-                setSpecializationDropdownOpen(open);
-                if (open) {
-                  setHospitalDropdownOpen(false);
-                  setUnitDropdownOpen(false);
-                  setDepartmentDropdownOpen(false);
-                }
-              }}
-              value={formData.specialization}
-              setValue={(callback) => {
-                const newValue = callback(formData.specialization);
-                handleInputChange('specialization', newValue);
-              }}
-              items={(departmentSpecializations[formData.department] || []).map(specialization => ({
-                label: specialization,
-                value: specialization,
-              }))}
-              placeholder="Select your specialization"
-              styles={styles}
-              error={validationErrors.specialization}
-            />
+              <SpecializationDropdown 
+                open={specializationDropdownOpen}
+                setOpen={(open) => {
+                  setSpecializationDropdownOpen(open);
+                  if (open) {
+                    setHospitalDropdownOpen(false);
+                    setUnitDropdownOpen(false);
+                    setDepartmentDropdownOpen(false);
+                  }
+                }}
+                value={formData.specialization}
+                setValue={(callback) => {
+                  const newValue = callback(formData.specialization);
+                  handleInputChange('specialization', newValue);
+                }}
+                items={(departmentSpecializations[formData.department] || []).map(specialization => ({
+                  label: specialization,
+                  value: specialization,
+                }))}
+                placeholder="Select your specialization"
+                styles={styles}
+                error={validationErrors.specialization}
+              />
           )}
 
-          <InputField
-            label="License Number"
-            value={formData.licenseNumber}
-            onChangeText={handleLicenseNumberChange}
+              <InputField
+                label="License Number"
+                value={formData.licenseNumber}
+                onChangeText={handleLicenseNumberChange}
             placeholder={formData.role === 'DOCTOR' ? 'Medical license number' : 'Nursing license number'}
-            icon="file-medical"
-            error={validationErrors.licenseNumber}
-          />
+                icon="file-medical"
+                error={validationErrors.licenseNumber}
+              />
 
           <InputField
             label="Phone Number"

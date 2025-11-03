@@ -28,6 +28,7 @@ import {
   SkeletonStatCard,
   SkeletonListCard,
   SkeletonQuickAction,
+  SkeletonTitle,
 } from '../../components/SkeletonComponents';
 
 interface DashboardStats {
@@ -357,7 +358,11 @@ const HRDashboardScreen: React.FC = () => {
 
           {/* Dashboard Title */}
           <View style={styles.dashboardTitleSection}>
-            <Text style={styles.dashboardTitle}>HR Dashboard</Text>
+            {isLoading ? (
+              <SkeletonTitle width={150} height={16} />
+            ) : (
+              <Text style={styles.dashboardTitle}>HR Dashboard</Text>
+            )}
           </View>
 
           {/* MAIN STATS */}
@@ -391,7 +396,11 @@ const HRDashboardScreen: React.FC = () => {
           {/* Overview Stats */}
           <View style={styles.overviewSection}>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Overview</Text>
+              {isLoading ? (
+                <SkeletonTitle width={100} height={16} />
+              ) : (
+                <Text style={styles.sectionTitle}>Overview</Text>
+              )}
               {!isLoading && (
                 <TouchableOpacity onPress={scrollToEnd} style={styles.scrollToEndButton}>
                   <Text style={styles.viewAllText}>See All</Text>
@@ -440,7 +449,11 @@ const HRDashboardScreen: React.FC = () => {
 
           {/* Quick Actions */}
           <View style={styles.quickActionsSection}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
+            {isLoading ? (
+              <SkeletonTitle width={120} height={16} style={{ marginBottom: 16 }} />
+            ) : (
+              <Text style={styles.sectionTitle}>Quick Actions</Text>
+            )}
             {isLoading || !stats ? (
               <View style={styles.quickActionsGrid}>
                 {[...Array(4)].map((_, i) => (
@@ -460,7 +473,11 @@ const HRDashboardScreen: React.FC = () => {
           {/* Recent Jobs */}
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Recent Jobs</Text>
+              {isLoading ? (
+                <SkeletonTitle width={120} height={16} />
+              ) : (
+                <Text style={styles.sectionTitle}>Recent Jobs</Text>
+              )}
               {!isLoading && stats && (
                 <TouchableOpacity onPress={() => (navigation as any).navigate('HRJobs')}>
                   <Text style={styles.viewAllText}>View All</Text>
@@ -516,7 +533,11 @@ const HRDashboardScreen: React.FC = () => {
           {/* Recent Assignments */}
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Recent Assignments</Text>
+              {isLoading ? (
+                <SkeletonTitle width={160} height={16} />
+              ) : (
+                <Text style={styles.sectionTitle}>Recent Assignments</Text>
+              )}
               {!isLoading && stats && (
                 <TouchableOpacity>
                   <Text style={styles.viewAllText}>View All</Text>

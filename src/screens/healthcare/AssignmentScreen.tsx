@@ -31,6 +31,8 @@ const AssignmentScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [detailsVisible, setDetailsVisible] = useState(false);
+  const [selectedAssignment, setSelectedAssignment] = useState<any | null>(null);
 
   useEffect(() => {
     loadAssignments();
@@ -200,10 +202,10 @@ const AssignmentScreen: React.FC = () => {
   };
 
   const getRoleConfig = () => {
-    return {
-      color: Colors.primary,
+        return {
+          color: Colors.primary,
       title: 'My Jobs'
-    };
+        };
   };
 
   const getAssignmentStatusConfig = (status: string) => {
@@ -218,6 +220,22 @@ const AssignmentScreen: React.FC = () => {
         return { color: Colors.info, text: 'Completed' };
       default:
         return { color: Colors.textTertiary, text: 'Unknown' };
+    }
+  };
+
+  // Priority color mapping (screen-level so it can be used in the bottom sheet as well)
+  const getPriorityColor = (priority: string) => {
+    switch (priority?.toUpperCase()) {
+      case 'URGENT':
+        return '#EF4444';
+      case 'HIGH':
+        return '#F59E0B';
+      case 'MEDIUM':
+        return '#3B82F6';
+      case 'LOW':
+        return '#10B981';
+      default:
+        return '#6B7280';
     }
   };
 
@@ -289,12 +307,8 @@ const AssignmentScreen: React.FC = () => {
       <TouchableOpacity 
         style={styles.jobCard}
         onPress={() => {
-          console.log('🔍 Assignment object:', assignment);
-          console.log('🔍 Assignment.job:', assignment.job);
-          (navigation as any).navigate('JobDetails', { 
-            jobId: assignment.job?.id, 
-            job: assignment.job 
-          });
+          setSelectedAssignment(assignment);
+          setDetailsVisible(true);
         }}
         activeOpacity={0.8}>
         {/* Top row: Posted time and Status */}
@@ -308,91 +322,72 @@ const AssignmentScreen: React.FC = () => {
         </View>
         <View style={styles.cardDivider} />
 
-        {/* Main row: Avatar + Job details */}
+        {/* Main row: Job details */}
         <View style={styles.profileRow}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarInitials}>{companyInitials}</Text>
-          </View>
           <View style={styles.profileContent}>
-            <Text style={styles.cardTitle} numberOfLines={2}>
+            <Text style={styles.cardTitle} numberOfLines={1}>
               {job.title || 'Unknown Job'}
             </Text>
             {/* Subtitle row: Facility • Location */}
             <View style={styles.subtitleRow}>
               {facilityName && (
-                <Text style={styles.subtitleText} numberOfLines={1}>{facilityName}</Text>
+                <Text style={styles.subtitleText} numberOfLines={2}>{facilityName}</Text>
               )}
               {facilityName && location && (
                 <Text style={styles.subtitleDot}> • </Text>
               )}
               {location && (
-                <Text style={styles.subtitleText} numberOfLines={1}>{location}</Text>
+                <Text style={styles.subtitleText} numberOfLines={2}>{location}</Text>
               )}
             </View>
 
-            {/* Compact info row: Department, Role, Rate */}
+            {/* Compact info row: Priority, Role, Rate */}
             <View style={styles.assignmentRow}>
-              {department && (
+              {priority && (
                 <View style={styles.infoCol}>
-                  <Text style={styles.infoLabel}>Department</Text>
-                  <Text style={styles.infoValue} numberOfLines={1}>{department}</Text>
+                  <Text style={styles.infoLabel}>Priority</Text>
+                  <Text style={[styles.infoValue, { color: getPriorityColor(priority) }]}>{priority}</Text>
                 </View>
               )}
               {requiredRole && (
                 <View style={styles.infoCol}>
                   <Text style={styles.infoLabel}>Role</Text>
                   <Text style={styles.infoValue} numberOfLines={1}>{requiredRole}</Text>
-                </View>
+          </View>
               )}
               <View style={styles.infoCol}>
                 <Text style={styles.infoLabel}>Rate</Text>
                 <Text style={styles.infoValue} numberOfLines={1}>₹{hourlyRateDisplay}/hr</Text>
-              </View>
-            </View>
+        </View>
+          </View>
 
-            {/* Priority badge if exists */}
-            {priority && (
-              <View style={styles.priorityRow}>
-                <View style={[styles.priorityBadgeInline, { backgroundColor: getPriorityColor(priority) + '20', borderColor: getPriorityColor(priority) }]}>
-                  <Text style={[styles.priorityBadgeTextInline, { color: getPriorityColor(priority) }]}>
-                    {priority} Priority
+            {/* Department inline badge with label */}
+            {department ? (
+              <View style={[styles.priorityRow, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}> 
+                <Text style={styles.infoLabel}>Department</Text>
+                <View style={[styles.priorityBadgeInline, { backgroundColor: Colors.backgroundSecondary, borderColor: Colors.border }]}> 
+                  <Text style={[styles.priorityBadgeTextInline, { color: Colors.textPrimary }]} numberOfLines={1}>
+                    {department}
                   </Text>
                 </View>
               </View>
-            )}
+            ) : null}
 
-            {/* Accept/Reject buttons for pending assignments */}
-            {isPending && (
-              <View style={styles.actionButtons}>
-                <TouchableOpacity 
-                  style={[styles.rejectButton, { flex: 1, marginRight: Spacing.sm }]}
-                  onPress={() => handleRejectAssignment(assignment)}>
-                  <FontAwesomeIcon icon="times" size={Responsive.iconSize(16)} color={Colors.white} />
-                  <Text style={styles.rejectButtonText}>Reject</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={[styles.acceptButton, { flex: 1, marginLeft: Spacing.sm }]}
-                  onPress={() => handleAcceptAssignment(assignment)}>
-                  <FontAwesomeIcon icon="check" size={Responsive.iconSize(16)} color={Colors.white} />
-                  <Text style={styles.acceptButtonText}>Accept</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+            {/* Card-level action buttons removed per request (actions stay in modal) */}
 
             {/* Status info for non-pending assignments */}
-            {!isPending && (
-              <View style={styles.assignmentInfo}>
-                <Text style={styles.assignmentInfoText}>
-                  {assignment.status === 'ACCEPTED' 
-                    ? 'Congratulations! You have been selected for this job. HR will contact you with further details.'
-                    : assignment.status === 'REJECTED' 
-                    ? `Rejected: ${assignment.rejectionReason || 'No reason provided'}`
-                    : 'Assignment status: ' + statusConfig.text
-                  }
-                </Text>
-              </View>
-            )}
+        {!isPending && (
+          <View style={styles.assignmentInfo}>
+            <Text style={styles.assignmentInfoText}>
+              {assignment.status === 'ACCEPTED' 
+                ? 'Congratulations! You have been selected for this job. HR will contact you with further details.'
+                : assignment.status === 'REJECTED' 
+                ? `Rejected: ${assignment.rejectionReason || 'No reason provided'}`
+                : 'Assignment status: ' + statusConfig.text
+              }
+            </Text>
+          </View>
+        )}
           </View>
         </View>
       </TouchableOpacity>
@@ -431,7 +426,7 @@ const AssignmentScreen: React.FC = () => {
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
-            </View>
+              </View>
           </View>
         )}
 
@@ -441,7 +436,7 @@ const AssignmentScreen: React.FC = () => {
             <Text style={styles.jobCountText}>
               {filteredAssignments.length} {filteredAssignments.length === 1 ? 'Job' : 'Jobs'} Found
             </Text>
-          </View>
+        </View>
         )}
 
         {isLoading ? (
@@ -452,28 +447,214 @@ const AssignmentScreen: React.FC = () => {
           </>
         ) : (
           <>
-            {filteredAssignments.length > 0 ? (
-              filteredAssignments.map((assignment) => (
-                <AssignmentCard key={assignment.id} assignment={assignment} />
-              ))
-            ) : (
-              <View style={styles.emptyState}>
-                <FontAwesomeIcon icon="clipboard-list" size={Responsive.iconSize(64)} color={Colors.textTertiary} />
-                <Text style={styles.emptyStateTitle}>No Job Assignments</Text>
-                <Text style={styles.emptyStateText}>
-                  You don't have any job assignments at the moment. HR will assign compatible jobs to you based on your profile.
-                </Text>
-                <TouchableOpacity 
-                  style={[styles.primaryButton, { backgroundColor: roleConfig.color }]}
-                  onPress={onRefresh}>
-                  <FontAwesomeIcon icon="sync" size={Responsive.iconSize(16)} color={Colors.white} />
-                  <Text style={styles.primaryButtonText}>Refresh</Text>
-                </TouchableOpacity>
-              </View>
+        {filteredAssignments.length > 0 ? (
+          filteredAssignments.map((assignment) => (
+            <AssignmentCard key={assignment.id} assignment={assignment} />
+          ))
+        ) : (
+          <View style={styles.emptyState}>
+            <FontAwesomeIcon icon="clipboard-list" size={Responsive.iconSize(64)} color={Colors.textTertiary} />
+            <Text style={styles.emptyStateTitle}>No Job Assignments</Text>
+            <Text style={styles.emptyStateText}>
+              You don't have any job assignments at the moment. HR will assign compatible jobs to you based on your profile.
+            </Text>
+            <TouchableOpacity 
+              style={[styles.primaryButton, { backgroundColor: roleConfig.color }]}
+              onPress={onRefresh}>
+              <FontAwesomeIcon icon="sync" size={Responsive.iconSize(16)} color={Colors.white} />
+              <Text style={styles.primaryButtonText}>Refresh</Text>
+            </TouchableOpacity>
+          </View>
             )}
           </>
         )}
       </ScrollView>
+
+      {/* Job Details Bottom Sheet */}
+      <Modal visible={detailsVisible} transparent animationType="slide" onRequestClose={() => setDetailsVisible(false)}>
+        <View style={styles.sheetBackdrop}>
+          <TouchableOpacity style={styles.sheetBackdropTouchable} onPress={() => setDetailsVisible(false)} />
+          <View style={styles.sheetContainer}>
+            {selectedAssignment ? (
+              <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={true} scrollEnabled={true}>
+                {(() => {
+                   const job = selectedAssignment.job || {};
+                   const facilityName = (job.facilityName || '').trim();
+                   const location = (job.location || '').trim();
+                   const department = job.department || '';
+                   const requiredRole = job.requiredRole || '';
+                   const hourlyRate = selectedAssignment.hourlyRate || job.hourlyRate || '0';
+                   const startDate = job.startDate ? formatDate(job.startDate) : '—';
+                   const endDate = job.endDate ? formatDate(job.endDate) : '—';
+                   const startTime = job.startTime ? formatTime(job.startTime) : '—';
+                   const endTime = job.endTime ? formatTime(job.endTime) : '—';
+                   const status = job.status || 'ACTIVE';
+                   const priority = job.priority || '';
+                   const address = job.facilityAddress || {};
+                   const contact = job.contactPerson || {};
+                   const requirements = job.requirements || {};
+                   const skills: string[] = Array.isArray(requirements.skills) ? requirements.skills : [];
+                   const trusted = job?.benefits?.malpractice ? true : false;
+                   return (
+                     <>
+                      {/* Modal Header */}
+                      <View style={styles.modalHeaderTop}>
+                        <TouchableOpacity onPress={() => setDetailsVisible(false)} style={styles.modalBackButton}>
+                          <FontAwesomeIcon icon="arrow-left" size={18} color={Colors.textPrimary} />
+                        </TouchableOpacity>
+                        <Text style={styles.modalHeaderTitle}>Job Details</Text>
+                        <View style={{ width: 24 }} />
+                      </View>
+                      {/* Job Title */}
+                      <Text style={styles.sheetTitleText}>{job.title || 'Job Details'}</Text>
+
+                      {/* Dark Pills: Department • Role • Charge */}
+                      <View style={styles.darkPillsRow}>
+                        {!!department && (
+                          <View style={styles.darkPill}><Text style={styles.darkPillText}>{department}</Text></View>
+                        )}
+                        {!!requiredRole && (
+                          <View style={styles.darkPill}><Text style={styles.darkPillText}>{requiredRole}</Text></View>
+                        )}
+                        <View style={styles.darkPill}><Text style={styles.darkPillText}>₹{typeof hourlyRate === 'string' ? hourlyRate : hourlyRate.toString()}</Text></View>
+                      </View>
+                       <View style={styles.sheetDivider} />
+
+                      {/* Job Info (first) */}
+                      <View style={{ marginBottom: 16 }}>
+                        <Text style={styles.metaLabel}>Job Info</Text>
+                        <View style={styles.row2}>
+                          <View style={styles.col}>
+                            <Text style={styles.metaLabel}>Start</Text>
+                            <Text style={styles.descText}>{startDate}, {startTime}</Text>
+                          </View>
+                          <View style={styles.col}>
+                            <Text style={styles.metaLabel}>End</Text>
+                            <Text style={styles.descText}>{endDate}, {endTime}</Text>
+                          </View>
+                        </View>
+                        <View style={styles.row2}>
+                          <View style={styles.col}>
+                            <Text style={styles.metaLabel}>Location</Text>
+                            <Text style={styles.descText} numberOfLines={1}>{location || '—'}</Text>
+                          </View>
+                          <View style={styles.col}>
+                            <Text style={styles.metaLabel}>Facility</Text>
+                            <Text style={styles.descText} numberOfLines={1}>{facilityName || '—'}</Text>
+                          </View>
+                        </View>
+                        <View style={styles.row2}>
+                          <View style={styles.col}>
+                            <Text style={styles.metaLabel}>Department</Text>
+                            <Text style={styles.descText} numberOfLines={1}>{department || '—'}</Text>
+                          </View>
+                          <View style={styles.col}>
+                            <Text style={styles.metaLabel}>Role</Text>
+                            <Text style={styles.descText} numberOfLines={1}>{requiredRole || '—'}</Text>
+                          </View>
+                        </View>
+                      </View>
+
+                      {/* About the Role */}
+                       {job.description ? (
+                         <View style={{ marginTop: 16, marginBottom: 16 }}>
+                           <Text style={styles.metaLabel}>About the Role</Text>
+                           <Text style={styles.descText}>{job.description}</Text>
+                         </View>
+                       ) : null}
+
+                       {/* Qualifications / Requirements */}
+                       {(skills.length > 0 || requirements.experience) && (
+                         <View style={{ marginBottom: 16 }}>
+                           <Text style={styles.metaLabel}>Qualification</Text>
+                           <View style={{ marginTop: 6 }}>
+                             {requirements.experience ? (
+                               <View style={styles.bulletRow}>
+                                 <View style={styles.bulletDot} />
+                                 <Text style={styles.descText}>{requirements.experience}</Text>
+                               </View>
+                             ) : null}
+                             {skills.map((s, idx) => (
+                               <View key={`sk-${idx}`} style={styles.bulletRow}>
+                                 <View style={styles.bulletDot} />
+                                 <Text style={styles.descText}>{s}</Text>
+                               </View>
+                             ))}
+                           </View>
+                         </View>
+                       )}
+
+                      
+
+                      {/* (Duplicate Job Info removed) */}
+
+                      {/* Benefits */}
+                      {job.benefits && (
+                        <View style={{ marginBottom: 16 }}>
+                          <Text style={styles.metaLabel}>Benefits</Text>
+                          {Object.entries(job.benefits).map(([key, val]) => (
+                            <View key={`benefit-${key}`} style={styles.bulletRow}>
+                              <View style={styles.bulletDot} />
+                              <Text style={styles.descText}>{key}: {val ? 'Yes' : 'No'}</Text>
+                            </View>
+                ))}
+              </View>
+                      )}
+
+                      {/* Notes */}
+                      {!!job.notes && (
+                        <View style={{ marginBottom: 16 }}>
+                          <Text style={styles.metaLabel}>Notes</Text>
+                          <Text style={styles.descText}>{job.notes}</Text>
+            </View>
+                      )}
+
+                      {/* Hospital */}
+                      {job.hospital && (
+                        <View style={{ marginBottom: 16 }}>
+                          <Text style={styles.metaLabel}>Hospital</Text>
+                          <Text style={styles.descText}>{job.hospital.name} ({job.hospital.code})</Text>
+                          {job.hospital.address && (
+                            <Text style={styles.descText}>
+                              {[job.hospital.address.street, job.hospital.address.city, job.hospital.address.state, job.hospital.address.zipCode].filter(Boolean).join(', ')}
+                            </Text>
+                          )}
+                        </View>
+                      )}
+
+                      {/* Contact Person (moved after Hospital) */}
+                      {(contact.name || contact.phone || contact.email) && (
+                        <View style={{ marginBottom: 20 }}>
+                          <Text style={styles.metaLabel}>Contact</Text>
+                          {!!contact.name && <Text style={styles.descText}>{contact.name}</Text>}
+                          {!!contact.phone && <Text style={styles.descText}>{contact.phone}</Text>}
+                          {!!contact.email && <Text style={styles.descText}>{contact.email}</Text>}
+                        </View>
+                      )}
+
+                      {/* Removed: Creator and Assignment sections per request */}
+                     </>
+                   );
+                 })()}
+              </ScrollView>
+            ) : null}
+            
+            {/* Fixed Actions at Bottom */}
+            {selectedAssignment && (
+              <View style={styles.sheetActionsRow}>
+                <TouchableOpacity style={[styles.sheetRejectButton]} onPress={() => { setDetailsVisible(false); handleRejectAssignment(selectedAssignment); }}>
+                  <FontAwesomeIcon icon="times" size={16} color={Colors.white} />
+                  <Text style={styles.sheetButtonText}>Reject</Text>
+              </TouchableOpacity>
+                <TouchableOpacity style={[styles.sheetAcceptButton]} onPress={() => { setDetailsVisible(false); handleAcceptAssignment(selectedAssignment); }}>
+                  <FontAwesomeIcon icon="check" size={16} color={Colors.white} />
+                  <Text style={styles.sheetButtonText}>Accept</Text>
+              </TouchableOpacity>
+            </View>
+            )}
+          </View>
+        </View>
+      </Modal>
 
     </SafeAreaView>
   );
@@ -653,7 +834,7 @@ const styles = StyleSheet.create({
   subtitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
     flexWrap: 'nowrap',
   },
   subtitleText: {
@@ -661,7 +842,6 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.regular,
     color: Colors.textSecondary,
     flexShrink: 1,
-    maxWidth: '45%',
   },
   subtitleDot: {
     fontSize: Typography.fontSize.sm,
@@ -680,23 +860,29 @@ const styles = StyleSheet.create({
   },
   assignmentRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginTop: 6,
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 16,
+    marginTop: 10,
   },
   infoCol: {
     flex: 1,
+    minWidth: 0,
+    paddingRight: 8,
   },
   infoLabel: {
     fontSize: Typography.fontSize.xs,
     fontFamily: Typography.fontFamily.medium,
     color: Colors.textTertiary,
+    marginBottom: 2,
   },
   infoValue: {
     marginTop: 2,
     fontSize: Typography.fontSize.sm,
     fontFamily: Typography.fontFamily.bold,
     color: Colors.textPrimary,
+    flexShrink: 1,
+    flexWrap: 'wrap',
   },
   priorityRow: {
     marginTop: 8,
@@ -863,6 +1049,156 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.medium,
     color: Colors.white,
     marginLeft: Spacing.sm,
+  },
+  // Bottom sheet styles (reuse existing design language)
+  sheetBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+    flexDirection: 'column',
+  },
+  sheetBackdropTouchable: { flex: 1 },
+  sheetContainer: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 20,
+    minHeight: '80%',
+    maxHeight: '92%',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  sheetHandle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.border,
+    marginBottom: 6,
+  },
+  sheetTitleText: {
+    fontSize: Typography.fontSize.xl,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textPrimary,
+    flex: 1,
+    flexWrap: 'wrap',
+  },
+  sheetDivider: {
+    height: 1,
+    backgroundColor: Colors.borderLight,
+    marginVertical: 12,
+  },
+  modalHeaderTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+    marginTop: 8,
+  },
+  modalBackButton: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalHeaderTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textPrimary,
+  },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
+  modalAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#EDE9FE',
+    borderWidth: 1,
+    borderColor: '#DDD6FE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalAvatarText: {
+    fontSize: 12,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#4C1D95',
+  },
+  headerSubRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
+  headerSubText: { fontSize: Typography.fontSize.sm, color: Colors.textSecondary },
+  headerDot: { color: Colors.textSecondary, marginHorizontal: 6 },
+  headerRateBold: { fontSize: Typography.fontSize.sm, color: Colors.textPrimary, fontFamily: Typography.fontFamily.bold },
+  trustedRow: { flexDirection: 'row', alignItems: 'center' },
+  trustedDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#22C55E', marginRight: 6 },
+  trustedText: { fontSize: Typography.fontSize.sm, color: '#22C55E', fontFamily: Typography.fontFamily.medium },
+  darkPillsRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8, marginBottom: 4, justifyContent: 'flex-start', alignItems: 'center' },
+  darkPill: { backgroundColor: '#111', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, marginRight: 8, marginTop: 6 },
+  darkPillText: { color: '#fff', fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily.medium },
+  pillsRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 6, marginBottom: 8 },
+  pill: { backgroundColor: Colors.background, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, marginRight: 8, marginTop: 6, borderWidth: 1, borderColor: Colors.borderLight },
+  pillText: { fontSize: Typography.fontSize.xs, color: Colors.textPrimary, fontFamily: Typography.fontFamily.medium },
+  row2: { flexDirection: 'row', marginHorizontal: -8, marginBottom: 12 },
+  col: { flex: 1, marginHorizontal: 8 },
+  singleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  metaLabel: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textPrimary,
+    marginBottom: 4,
+  },
+  metaValue: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.textPrimary,
+  },
+  descText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+  },
+  bulletRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 },
+  bulletDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.textSecondary, marginTop: 7, marginRight: 8 },
+  badge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  badgeText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.bold,
+  },
+  sheetActionsRow: {
+    flexDirection: 'row',
+    marginTop: 16,
+    gap: 12,
+  },
+  sheetAcceptButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.success,
+    borderRadius: BorderRadius.md,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  sheetRejectButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.error,
+    borderRadius: BorderRadius.md,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  sheetButtonText: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.white,
+    marginLeft: 8,
   },
 });
 
