@@ -443,7 +443,7 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
         {/* Top row: Posted time */}
         <View style={styles.cardTopRow}>
           <Text style={styles.cardTimeText}>Posted {postedTime}</Text>
-        </View>
+            </View>
         <View style={styles.cardDivider} />
 
         {/* Main row: Avatar + Job details */}
@@ -473,10 +473,10 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
                 <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor(jobStatus) + '1A' }]}>
                   <Text style={[styles.inlineStatusText, { color: getStatusColor(jobStatus) }]} numberOfLines={1}>
                     {jobStatus}
-                  </Text>
-                </View>
-              )}
+              </Text>
             </View>
+              )}
+              </View>
 
             {/* Compact info row: Department, Role, Rate */}
             <View style={styles.assignmentRow}>
@@ -484,13 +484,13 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
                 <View style={styles.infoCol}>
                   <Text style={styles.infoLabel}>Department</Text>
                   <Text style={styles.infoValue} numberOfLines={1}>{department}</Text>
-                </View>
+            </View>
               )}
               {requiredRole && (
                 <View style={styles.infoCol}>
                   <Text style={styles.infoLabel}>Role</Text>
                   <Text style={styles.infoValue} numberOfLines={1}>{requiredRole}</Text>
-                </View>
+          </View>
               )}
               <View style={styles.infoCol}>
                 <Text style={styles.infoLabel}>Rate</Text>
@@ -504,8 +504,8 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
                 <View style={[styles.priorityBadgeInline, { backgroundColor: getPriorityColor(priority) + '20', borderColor: getPriorityColor(priority) }]}>
                   <Text style={[styles.priorityBadgeTextInline, { color: getPriorityColor(priority) }]}>
                     {priority} Priority
-                  </Text>
-                </View>
+              </Text>
+            </View>
               </View>
             )}
           </View>
@@ -536,25 +536,25 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
               <View style={styles.headerLeft}>
                 <Text style={styles.headerGreeting}>
                   Hello <Text style={styles.headerRole}>{user?.role || 'Provider'}</Text>
-                </Text>
+                  </Text>
                 <Text style={styles.headerName}>
                   {user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Loading...'}!
                 </Text>
               </View>
               <View style={styles.headerRight}>
                 <View style={styles.headerRightContainer}>
-                  <TouchableOpacity
+            <TouchableOpacity 
                     style={styles.simpleNotificationButton}
                     onPress={() => (navigation as any).navigate('Notifications')}>
                     <FontAwesomeIcon icon="bell" size={Responsive.iconSize(18)} color="#F59E0B" />
-                    {unreadCount > 0 && (
+              {unreadCount > 0 && (
                       <View style={styles.simpleNotificationBadge}>
                         <Text style={styles.simpleNotificationBadgeText}>
-                          {unreadCount > 9 ? '9+' : unreadCount}
-                        </Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.headerProfileImage}
                     onPress={() => (navigation as any).navigate('Profile')}>
@@ -563,12 +563,12 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
                         {user
                           ? (user.firstName || user.lastName || 'U').charAt(0).toUpperCase()
                           : 'U'}
-                      </Text>
+            </Text>
                     </LinearGradient>
                   </TouchableOpacity>
-                </View>
-              </View>
-            </View>
+          </View>
+        </View>
+      </View>
             {/* Dashboard Title inside Header */}
             {/* <View style={styles.dashboardTitleSection}>
               <Text style={styles.dashboardTitle}>{roleConfig.title}</Text>
@@ -576,10 +576,10 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Scrollable Content */}
-        <ScrollView
-          style={styles.scrollableContent}
-          showsVerticalScrollIndicator={false}
+      {/* Scrollable Content */}
+      <ScrollView
+        style={styles.scrollableContent}
+        showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContentContainer}
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -613,55 +613,55 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
               ))}
             </ScrollView>
           ) : (
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.quickActionsScroll}
-              decelerationRate="fast"
-              snapToInterval={182}
-              snapToAlignment="start">
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.quickActionsScroll}
+            decelerationRate="fast"
+            snapToInterval={182}
+            snapToAlignment="start">
+            <QuickActionHorizontal
+              icon="calendar-check"
+              title="Job Assignments"
+              subtitle={`${myAssignments.length} Active`}
+              onPress={() => (navigation as any).navigate('Assignments')}
+              gradient={['#6366F1', '#4F46E5']}
+              iconColor="#4F46E5"
+            />
+            {/* <QuickActionHorizontal
+              icon="briefcase"
+              title="Job Assignments"
+              subtitle={`${availableJobs.length} Available`}
+              onPress={() => navigation.navigate('MyAssignments' as never)}
+              gradient={['#10B981', '#059669']}
+            /> */}
+            {myAssignments && myAssignments.length > 0 && (
               <QuickActionHorizontal
-                icon="calendar-check"
-                title="Job Assignments"
-                subtitle={`${myAssignments.length} Active`}
-                onPress={() => (navigation as any).navigate('Assignments')}
-                gradient={['#6366F1', '#4F46E5']}
-                iconColor="#4F46E5"
+                icon="clock"
+                title="Check In/Out"
+                subtitle={`${myAssignments.filter(a => a.status === 'ASSIGNED' || a.status === 'IN_PROGRESS').length} Active`}
+                onPress={() => (navigation as any).navigate('CheckInOut')}
+                gradient={['#F59E0B', '#D97706']}
+                iconColor="#D97706"
               />
-              {/* <QuickActionHorizontal
-                icon="briefcase"
-                title="Job Assignments"
-                subtitle={`${availableJobs.length} Available`}
-                onPress={() => navigation.navigate('MyAssignments' as never)}
-                gradient={['#10B981', '#059669']}
-              /> */}
-              {myAssignments && myAssignments.length > 0 && (
-                <QuickActionHorizontal
-                  icon="clock"
-                  title="Check In/Out"
-                  subtitle={`${myAssignments.filter(a => a.status === 'ASSIGNED' || a.status === 'IN_PROGRESS').length} Active`}
-                  onPress={() => (navigation as any).navigate('CheckInOut')}
-                  gradient={['#F59E0B', '#D97706']}
-                  iconColor="#D97706"
-                />
-              )}
-              <QuickActionHorizontal
-                icon="chart-line"
-                title="Reports"
-                subtitle="View Stats"
-                onPress={() => navigation.navigate('Reports' as never)}
-                gradient={['#8B5CF6', '#7C3AED']}
-                iconColor="#7C3AED"
-              />
-              <QuickActionHorizontal
-                icon="user-md"
-                title="Profile"
-                subtitle="Settings"
-                onPress={() => navigation.navigate('Profile' as never)}
-                gradient={['#EC4899', '#DB2777']}
-                iconColor="#DB2777"
-              />
-            </ScrollView>
+            )}
+            <QuickActionHorizontal
+              icon="chart-line"
+              title="Reports"
+              subtitle="View Stats"
+              onPress={() => navigation.navigate('Reports' as never)}
+              gradient={['#8B5CF6', '#7C3AED']}
+              iconColor="#7C3AED"
+            />
+            <QuickActionHorizontal
+              icon="user-md"
+              title="Profile"
+              subtitle="Settings"
+              onPress={() => navigation.navigate('Profile' as never)}
+              gradient={['#EC4899', '#DB2777']}
+              iconColor="#DB2777"
+            />
+          </ScrollView>
           )}
         </View>
 
@@ -697,9 +697,9 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>My Jobs</Text>
             {!isLoading && (
-              <TouchableOpacity onPress={() => (navigation as any).navigate('Assignments')}>
-                <Text style={styles.seeAllText}>See All</Text>
-              </TouchableOpacity>
+            <TouchableOpacity onPress={() => (navigation as any).navigate('Assignments')}>
+              <Text style={styles.seeAllText}>See All</Text>
+            </TouchableOpacity>
             )}
           </View>
           {isLoading ? (
@@ -710,15 +710,15 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
             </>
           ) : (
             <>
-              {myAssignments && myAssignments.length > 0 ? (
-                myAssignments.slice(0, 3).map((assignment) => (
-                  <AssignmentCard key={assignment.id} assignment={assignment} />
-                ))
-              ) : (
-                <View style={styles.emptyState}>
-                  <FontAwesomeIcon icon="calendar" size={Responsive.iconSize(48)} color={Colors.textTertiary} />
-                  <Text style={styles.emptyStateText}>No current assignments</Text>
-                </View>
+          {myAssignments && myAssignments.length > 0 ? (
+            myAssignments.slice(0, 3).map((assignment) => (
+              <AssignmentCard key={assignment.id} assignment={assignment} />
+            ))
+          ) : (
+            <View style={styles.emptyState}>
+              <FontAwesomeIcon icon="calendar" size={Responsive.iconSize(48)} color={Colors.textTertiary} />
+              <Text style={styles.emptyStateText}>No current assignments</Text>
+            </View>
               )}
             </>
           )}

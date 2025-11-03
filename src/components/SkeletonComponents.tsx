@@ -1,62 +1,102 @@
-import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
+import React from 'react';
+import { View, StyleSheet, Animated, Platform } from 'react-native';
+import MaskedView from '@react-native-masked-view/masked-view';
+import LinearGradient from 'react-native-linear-gradient';
+import useShimmer from '../hooks/useShimmer';
 import { Colors } from '../constants/colors';
 import { Spacing, BorderRadius } from '../constants/spacing';
 
-// Simple shimmer animation
-const useShimmer = () => {
-  const shimmerAnim = useRef(new Animated.Value(0)).current;
+// Premium shimmer skeleton view component
+const SkeletonView = ({
+  width = '100%',
+  height = 20,
+  borderRadius = 8,
+  baseColor = '#E0E0E0',
+  highlightColor = 'rgba(255,255,255,0.7)',
+  style,
+}: {
+  width?: number | string;
+  height?: number;
+  borderRadius?: number;
+  baseColor?: string;
+  highlightColor?: string;
+  style?: any;
+}) => {
+  // Calculate width for animation - use a larger value for smooth shimmer
+  const widthValue = typeof width === 'string' 
+    ? (width.includes('%') ? 400 : parseInt(width) || 400)
+    : width || 400;
+  
+  // Use larger range for smoother animation
+  const shimmerWidth = widthValue * 1.5;
+  const translateX = useShimmer(1500, shimmerWidth);
 
-  useEffect(() => {
-    const shimmer = Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmerAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(shimmerAnim, {
-          toValue: 0,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    shimmer.start();
-    return () => shimmer.stop();
-  }, []);
+  const containerStyle = {
+    width: width as any,
+    height,
+    borderRadius,
+    overflow: 'hidden' as const,
+    backgroundColor: baseColor,
+  };
 
-  const opacity = shimmerAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 0.6],
-  });
+  const maskStyle = {
+    backgroundColor: 'black' as const,
+    width: width as any,
+    height,
+    borderRadius,
+  };
 
-  return opacity;
-};
-
-const SkeletonView = ({ width, height, borderRadius = 4, style }: any) => {
-  const opacity = useShimmer();
   return (
-    <Animated.View
-      style={[
-        {
-          width,
-          height,
-          borderRadius,
-          backgroundColor: '#E0E0E0',
-          opacity,
-        },
-        style,
-      ]}
-    />
+    <View style={[containerStyle, style]}>
+      <MaskedView
+        style={{ width: width as any, height }}
+        maskElement={
+          <View style={maskStyle} />
+        }
+      >
+        {/* Base background - exact size to prevent any gaps */}
+        <View 
+          style={{
+            backgroundColor: baseColor,
+            width: typeof width === 'number' ? width : shimmerWidth,
+            height,
+          }} 
+        />
+        {/* Animated shimmer gradient - properly positioned */}
+        <Animated.View
+          style={{
+            position: 'absolute',
+            top: -2,
+            left: -shimmerWidth / 2,
+            width: shimmerWidth,
+            height: height + 4,
+            transform: [{ translateX }],
+          }}
+          pointerEvents="none"
+        >
+          <LinearGradient
+            colors={['transparent', highlightColor, 'transparent']}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={{ width: shimmerWidth, height: height + 4 }}
+          />
+        </Animated.View>
+      </MaskedView>
+    </View>
   );
 };
+
+export const SkeletonTitle = ({ width = 150, height = 16, style }: { width?: number | string; height?: number; style?: any }) => (
+  <SkeletonView width={width} height={height} borderRadius={4} style={style} />
+);
 
 export const SkeletonHeader = () => (
   <View style={styles.skeletonHeaderContainer}>
     <View style={styles.header}>
       <View style={styles.headerLeft}>
+        {/* Title skeleton */}
         <SkeletonView width={100} height={14} style={{ marginBottom: 6 }} />
+        {/* Subtitle skeleton */}
         <SkeletonView width={150} height={24} />
       </View>
       <View style={styles.headerRight}>
@@ -72,7 +112,9 @@ export const SkeletonStatCard = () => (
     <View style={styles.statCard}>
       <SkeletonView width={48} height={48} borderRadius={12} style={{ marginRight: Spacing.md }} />
       <View style={styles.statContent}>
+        {/* Title skeleton */}
         <SkeletonView width="50%" height={28} style={{ marginBottom: 6 }} />
+        {/* Subtitle skeleton */}
         <SkeletonView width="70%" height={14} />
       </View>
     </View>
@@ -83,6 +125,7 @@ export const SkeletonListCard = () => (
   <View style={styles.skeletonListCardWrapper}>
     <View style={styles.listCard}>
       <View style={styles.listTopRow}>
+        {/* Time skeleton */}
         <SkeletonView width={120} height={12} />
         <SkeletonView width={16} height={16} borderRadius={8} />
       </View>
@@ -90,7 +133,9 @@ export const SkeletonListCard = () => (
       <View style={styles.listContentRow}>
         <SkeletonView width={44} height={44} borderRadius={22} style={{ marginRight: Spacing.sm }} />
         <View style={styles.listContent}>
+          {/* Title skeleton */}
           <SkeletonView width="70%" height={18} style={{ marginBottom: 6 }} />
+          {/* Subtitle skeleton */}
           <SkeletonView width="85%" height={14} style={{ marginBottom: 8 }} />
           <View style={styles.listInfoRow}>
             <SkeletonView width="30%" height={30} style={{ marginRight: 12 }} />
@@ -107,6 +152,7 @@ export const SkeletonSearchBar = () => (
   <View style={styles.skeletonSearchBarWrapper}>
     <View style={styles.searchBar}>
       <SkeletonView width={18} height={18} borderRadius={9} style={{ marginRight: Spacing.sm }} />
+      {/* Search input skeleton */}
       <SkeletonView width="100%" height={20} style={{ flex: 1 }} />
     </View>
   </View>
@@ -116,7 +162,9 @@ export const SkeletonQuickAction = () => (
   <View style={styles.skeletonQuickActionWrapper}>
     <View style={styles.quickAction}>
       <SkeletonView width={56} height={56} borderRadius={28} style={{ marginBottom: Spacing.md }} />
+      {/* Title skeleton */}
       <SkeletonView width="80%" height={18} style={{ marginBottom: 8 }} />
+      {/* Subtitle skeleton */}
       <SkeletonView width="60%" height={14} />
     </View>
   </View>
@@ -125,17 +173,29 @@ export const SkeletonQuickAction = () => (
 export const SkeletonJobCard = () => (
   <View style={styles.skeletonJobCardWrapper}>
     <View style={styles.jobCard}>
-      <View style={styles.jobHeader}>
-        <SkeletonView width="70%" height={20} style={{ flex: 1, marginRight: Spacing.sm }} />
-        <SkeletonView width={80} height={24} borderRadius={12} />
+      <View style={styles.jobTopRow}>
+        {/* Time skeleton */}
+        <SkeletonView width={120} height={12} />
+        {/* Status badge skeleton */}
+        <SkeletonView width={80} height={20} borderRadius={10} />
       </View>
-      <SkeletonView width="100%" height={60} style={{ marginBottom: Spacing.md }} />
-      <View style={styles.jobDetails}>
-        <SkeletonView width="100%" height={16} style={{ marginBottom: 8 }} />
-        <SkeletonView width="100%" height={16} style={{ marginBottom: 8 }} />
-        <SkeletonView width="100%" height={16} style={{ marginBottom: 8 }} />
+      <View style={styles.jobDivider} />
+      <View style={styles.jobContentRow}>
+        <SkeletonView width={44} height={44} borderRadius={22} style={{ marginRight: Spacing.sm }} />
+        <View style={styles.jobContent}>
+          {/* Title skeleton */}
+          <SkeletonView width="90%" height={20} style={{ marginBottom: 6 }} />
+          {/* Subtitle skeleton */}
+          <SkeletonView width="95%" height={14} style={{ marginBottom: 8 }} />
+          <View style={styles.jobInfoRow}>
+            <SkeletonView width="28%" height={30} style={{ marginRight: 12 }} />
+            <SkeletonView width="28%" height={30} style={{ marginRight: 12 }} />
+            <SkeletonView width="28%" height={30} />
+          </View>
+          {/* Priority badge skeleton */}
+          <SkeletonView width={100} height={22} borderRadius={12} style={{ marginTop: 8 }} />
+        </View>
       </View>
-      <SkeletonView width="100%" height={40} style={{ marginTop: Spacing.md }} />
     </View>
   </View>
 );
@@ -144,6 +204,7 @@ export const SkeletonUserCard = () => (
   <View style={styles.skeletonUserCardWrapper}>
     <View style={styles.userCard}>
       <View style={styles.userTopRow}>
+        {/* Time skeleton */}
         <SkeletonView width={120} height={12} />
         <SkeletonView width={16} height={16} borderRadius={8} />
       </View>
@@ -151,7 +212,9 @@ export const SkeletonUserCard = () => (
       <View style={styles.userRow}>
         <SkeletonView width={44} height={44} borderRadius={22} style={{ marginRight: Spacing.sm }} />
         <View style={styles.userContent}>
+          {/* Title skeleton */}
           <SkeletonView width="60%" height={18} style={{ marginBottom: 6 }} />
+          {/* Subtitle skeleton */}
           <SkeletonView width="80%" height={14} style={{ marginBottom: 8 }} />
           <View style={styles.userInfoRow}>
             <SkeletonView width="30%" height={30} style={{ marginRight: 12 }} />
@@ -282,13 +345,32 @@ const styles = StyleSheet.create({
   jobCard: {
     backgroundColor: Colors.white,
     borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
+    padding: Spacing.md,
     marginBottom: Spacing.md,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  jobTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
+  },
+  jobDivider: {
+    width: '100%',
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginVertical: Spacing.xs,
+  },
+  jobContentRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  jobContent: {
+    flex: 1,
   },
   jobHeader: {
     flexDirection: 'row',
@@ -297,6 +379,10 @@ const styles = StyleSheet.create({
   },
   jobDetails: {
     marginBottom: Spacing.md,
+  },
+  jobInfoRow: {
+    flexDirection: 'row',
+    marginTop: 6,
   },
   // User card styles
   skeletonUserCardWrapper: {
