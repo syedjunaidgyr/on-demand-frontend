@@ -896,6 +896,12 @@ class ApiService {
     return response.data;
   }
 
+  // User-level theme selection
+  async updateUserTheme(themeId: string): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.put('/auth/profile/theme', { themeId });
+    return response.data;
+  }
+
   // Health check
   async healthCheck(): Promise<any> {
     try {

@@ -39,13 +39,12 @@ const HospitalAdminDashboardScreen: React.FC = () => {
         setUserProfile(null);
       }
 
-      const [dashRes, hospRes, themesRes] = await Promise.all([
+      const [dashRes, themesRes] = await Promise.all([
         HospitalAdminApi.getDashboard(),
-        HospitalAdminApi.getHospitalDetails(),
         HospitalAdminApi.getThemes(),
       ]);
       setDashboard(dashRes);
-      setHospital((hospRes as any)?.hospital || hospRes);
+      setHospital((dashRes as any)?.hospital || null);
       setThemes(themesRes);
     } catch (e) {
       setDashboard(null);
