@@ -64,11 +64,17 @@ const ProfileScreen: React.FC = () => {
               await ApiService.logout();
               // Then call auth context logout to update UI state
               await authLogout();
-              // Navigation will be handled by AppNavigator
+              // Force navigation reset as a fallback (in case state change doesn't immediately re-render)
+              try {
+                (navigation as any).reset({ index: 0, routes: [{ name: 'Auth' }] });
+              } catch {}
             } catch (error) {
               console.error('Logout error:', error);
               // Even if there's an error, try to logout from auth context
               await authLogout();
+              try {
+                (navigation as any).reset({ index: 0, routes: [{ name: 'Auth' }] });
+              } catch {}
             }
           },
         },

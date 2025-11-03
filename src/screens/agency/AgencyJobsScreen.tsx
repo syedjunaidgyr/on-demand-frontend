@@ -548,7 +548,7 @@ const AssignBottomSheet = ({
           onPress: async () => {
             try {
               setIsSelecting(true);
-              await ApiService.selectCandidate(job.id.toString(), assignment.id?.toString());
+              await ApiService.selectCandidateForAgency(job.id.toString(), assignment.id?.toString());
               const f = staff.firstName || '';
               const l = staff.lastName || '';
               setConfirmText(`${f} ${l} has been assigned to this job.`.trim());
@@ -681,20 +681,22 @@ const AssignBottomSheet = ({
                             <Text style={styles.candidateInfoValue}>{new Date(acceptedAt).toLocaleString()}</Text>
                           </View>
                         )}
-                        <TouchableOpacity 
-                          style={styles.selectButton}
-                          onPress={() => handleSelectCandidate(a)}
-                          disabled={isSelecting}
-                        >
-                          {isSelecting ? (
-                            <ActivityIndicator size="small" color={Colors.white} />
-                          ) : (
-                            <>
-                              <FontAwesomeIcon icon="check" size={16} color={Colors.white} />
-                              <Text style={styles.selectButtonText}>Select Candidate</Text>
-                            </>
-                          )}
-                        </TouchableOpacity>
+                        {status === 'PENDING' && (
+                          <TouchableOpacity 
+                            style={styles.selectButton}
+                            onPress={() => handleSelectCandidate(a)}
+                            disabled={isSelecting}
+                          >
+                            {isSelecting ? (
+                              <ActivityIndicator size="small" color={Colors.white} />
+                            ) : (
+                              <>
+                                <FontAwesomeIcon icon="check" size={16} color={Colors.white} />
+                                <Text style={styles.selectButtonText}>Select Candidate</Text>
+                              </>
+                            )}
+                          </TouchableOpacity>
+                        )}
                       </View>
                     );
                   })

@@ -1131,6 +1131,18 @@ class ApiService {
     }
   }
 
+  // Agency: select candidate for a job
+  async selectCandidateForAgency(jobId: string | number, assignmentId: string | number): Promise<void> {
+    try {
+      const body = { assignmentId };
+      const response = await this.api.post(`/agency/jobs/${jobId}/select-candidate`, body);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Agency select candidate failed:', error?.response?.data || error?.message || error);
+      throw error;
+    }
+  }
+
   // Assignment Details API
   async getAssignmentDetails(assignmentId: string): Promise<JobAssignment> {
     try {
