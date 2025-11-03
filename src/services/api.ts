@@ -308,6 +308,30 @@ class ApiService {
     }
   }
 
+  // Agency get job assignments
+  async getAgencyJobAssignments(jobId: string | number): Promise<any> {
+    try {
+      const url = `/agency/jobs/${jobId}/assignments`;
+      const response = await this.api.get(url);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to get agency job assignments:', error?.response?.data || error?.message || error);
+      throw error;
+    }
+  }
+
+  // Agency assign nurses to a job
+  async assignNursesToAgencyJob(jobId: string | number, body: { mode: 'FULL' | 'PARTIAL'; hourlyRate: number; assignments: Array<{ userId: string | number }> }): Promise<any> {
+    try {
+      const url = `/agency/jobs/${jobId}/assign`;
+      const response = await this.api.post(url, body);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to assign nurses to job:', error?.response?.data || error?.message || error);
+      throw error;
+    }
+  }
+
   // Agency add nurses (bulk)
   async addNursesToAgency(agencyId: string | number, nurseIds: Array<string | number>): Promise<any> {
     try {
@@ -440,6 +464,26 @@ class ApiService {
     }
   }
 
+  async getActiveAssignments(): Promise<any[]> {
+    try {
+      console.log('🔧 Getting active assignments');
+      const response = await this.api.get('/staff/assignments/active');
+      console.log('✅ Active assignments response:', response.data);
+      // Handle different response formats
+      if (Array.isArray(response.data)) {
+        return response.data;
+      } else if (response.data.assignments) {
+        return response.data.assignments;
+      } else if (response.data.data) {
+        return response.data.data;
+      }
+      return [];
+    } catch (error: any) {
+      console.error('❌ Failed to get active assignments:', error?.response?.data || error?.message || error);
+      return [];
+    }
+  }
+
   async checkIn(jobAssignmentId: string, location: { latitude: number; longitude: number; address: string }, notes?: string): Promise<any> {
     console.log('🔧 API checkIn called with:');
     console.log('📍 jobAssignmentId:', jobAssignmentId);
@@ -486,7 +530,7 @@ class ApiService {
     return this.checkOut(checkOutData.jobAssignmentId, checkOutData.location, checkOutData.notes);
   }
 
-  async getCheckInStatus(jobAssignmentId: string): Promise<{ isCheckedIn: boolean; checkInId: string | null; checkInTime: string | null }> {
+  async getCheckInStatus(jobAssignmentId: string): Promise<{ isCheckedIn: boolean; checkInId: string | null; checkInTime: string | null; approvalStatus?: 'pending' | 'approved' | 'rejected'; approvedBy?: any; approvedAt?: string | null; rejectionReason?: string }> {
     try {
       const response = await this.api.get(`/staff/check-in-status/${jobAssignmentId}`);
       return response.data;
@@ -496,7 +540,11 @@ class ApiService {
       return {
         isCheckedIn: false,
         checkInId: null,
-        checkInTime: null
+        checkInTime: null,
+        approvalStatus: undefined,
+        approvedBy: undefined,
+        approvedAt: null,
+        rejectionReason: undefined,
       };
     }
   }
@@ -1057,8 +1105,8 @@ class ApiService {
       return response.data;
     } catch (error: any) {
       console.error('❌ Failed to get accepted assignments:', error);
-      console.error('❌ Error response:', error.response?.data);
-      console.error('❌ Error status:', error.response?.status);
+      console.error('❌ Error response:', (error as any)?.response?.data);
+      console.error('❌ Error status:', (error as any)?.response?.status);
       throw error;
     }
   }
@@ -1077,8 +1125,8 @@ class ApiService {
       console.log('✅ Select candidate successful:', response.data);
     } catch (error: any) {
       console.error('❌ Select candidate failed:', error);
-      console.error('❌ Error response:', error.response?.data);
-      console.error('❌ Error status:', error.response?.status);
+      console.error('❌ Error response:', (error as any)?.response?.data);
+      console.error('❌ Error status:', (error as any)?.response?.status);
       throw error;
     }
   }
@@ -1311,6 +1359,30 @@ class ApiService {
       console.error('❌ Error data:', error.response?.data);
       console.error('❌ Error headers:', error.response?.headers);
       throw new Error(error.response?.data?.message || 'Failed to fetch assignment details');
+    }
+  }
+
+  // HR Reports – Check-In/Out Payout
+  async getPayoutReport(params: {
+    startDate: string;
+    endDate: string;
+    userId?: string;
+    jobId?: string;
+  }): Promise<{
+    lines: any[];
+    totals: { byUser: Array<{ userId: string; staffName: string; amount: number }>; grandTotal: number };
+    period?: any;
+  }> {
+    try {
+      const { startDate, endDate, userId, jobId } = params;
+      const q: string[] = [`startDate=${encodeURIComponent(startDate)}`, `endDate=${encodeURIComponent(endDate)}`];
+      if (userId) q.push(`userId=${encodeURIComponent(userId)}`);
+      if (jobId) q.push(`jobId=${encodeURIComponent(jobId)}`);
+      const response = await this.api.get(`/hr/reports/payout?${q.join('&')}`);
+      return response.data?.data || response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to fetch payout report:', error?.response?.data || error?.message || error);
+      throw error;
     }
   }
 

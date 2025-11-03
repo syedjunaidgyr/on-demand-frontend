@@ -41,7 +41,9 @@ import PermissionManagementScreen from '../screens/common/PermissionManagementSc
 import AgencyDashboardScreen from '../screens/agency/AgencyDashboardScreen';
 import AgencyJobsScreen from '../screens/agency/AgencyJobsScreen';
 import AgencyNursesScreen from '../screens/agency/AgencyNursesScreen';
+import AgencyAssignNurseScreen from '../screens/agency/AgencyAssignNurseScreen';
 import AgencyOnboardNursesScreen from '../screens/agency/AgencyOnboardNursesScreen';
+import AgencyNurseDetailsScreen from '../screens/agency/AgencyNurseDetailsScreen';
 
 // Hospital Admin Screens
 import HospitalAdminDashboardScreen from '../screens/hospitalAdmin/HospitalAdminDashboardScreen';
@@ -103,6 +105,8 @@ export type RootStackParamList = {
   PDFViewer: { uri: string; title?: string };
   GeolocationTest: undefined;
   AgencyOnboardNurses: undefined;
+  AgencyNurseDetails: { userId: number };
+  AgencyAssignNurse: { jobId: string; hourlyRate?: number; mode?: 'FULL' | 'PARTIAL' };
   HospitalAdminUploadLogo: undefined;
   HospitalAdminThemes: undefined;
   HospitalAdminUnits: undefined;
@@ -211,11 +215,7 @@ const HealthcareProviderTabNavigator = () => {
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.textTertiary,
         tabBarStyle: {
-          backgroundColor: Colors.white,
-          borderTopColor: Colors.border,
-          paddingBottom: 5,
-          paddingTop: 5,
-          height: 60,
+          display: 'none',
         },
         headerShown: false,
       })}>
@@ -331,43 +331,43 @@ const MainNavigator = ({ user }: { user: User }) => {
         cardStyle: { backgroundColor: appColors.background },
       }}>
       <Stack.Screen name="Main" component={MainScreen} />
-      <Stack.Screen 
-        name="Profile" 
+      <Stack.Screen
+        name="Profile"
         component={ProfileScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="ProfileSettings" 
+      <Stack.Screen
+        name="ProfileSettings"
         component={ProfileSettingsScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="EditProfile" 
+      <Stack.Screen
+        name="EditProfile"
         component={EditProfileScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="ChangePassword" 
+      <Stack.Screen
+        name="ChangePassword"
         component={ChangePasswordScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="Notifications" 
+      <Stack.Screen
+        name="Notifications"
         component={NotificationsScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="JobDetails" 
+      <Stack.Screen
+        name="JobDetails"
         component={JobDetailsCommonScreen}
         options={{
           headerShown: true,
@@ -376,18 +376,15 @@ const MainNavigator = ({ user }: { user: User }) => {
           headerTintColor: Colors.white,
         }}
       />
-      <Stack.Screen 
-        name="CreateJob" 
+      <Stack.Screen
+        name="CreateJob"
         component={CreateJobScreen}
         options={{
-          headerShown: true,
-          title: 'Create Job',
-          headerStyle: { backgroundColor: Colors.primary },
-          headerTintColor: Colors.white,
+          headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="CheckInOut" 
+      <Stack.Screen
+        name="CheckInOut"
         component={CheckInOutScreen}
         options={{
           headerShown: true,
@@ -396,15 +393,15 @@ const MainNavigator = ({ user }: { user: User }) => {
           headerTintColor: Colors.white,
         }}
       />
-      <Stack.Screen 
-        name="JobAssignment" 
+      <Stack.Screen
+        name="JobAssignment"
         component={JobAssignmentScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="AssignmentDetails" 
+      <Stack.Screen
+        name="AssignmentDetails"
         component={AssignmentDetailsScreen}
         options={{
           headerShown: true,
@@ -413,45 +410,52 @@ const MainNavigator = ({ user }: { user: User }) => {
           headerTintColor: Colors.white,
         }}
       />
-      <Stack.Screen 
-        name="QRScanner" 
+      <Stack.Screen
+        name="QRScanner"
         component={QRScannerScreen}
         options={{
           headerShown: false, // We handle our own header in the scanner
           title: 'QR Scanner',
         }}
       />
-      <Stack.Screen 
-        name="QRCodeDisplay" 
+      <Stack.Screen
+        name="QRCodeDisplay"
         component={QRCodeDisplayScreen}
         options={{
           headerShown: false, // We handle our own header
           title: 'QR Code Display',
         }}
       />
-      <Stack.Screen 
-        name="Reports" 
+      <Stack.Screen
+        name="Reports"
         component={ReportsScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="ReportDetails" 
+      <Stack.Screen
+        name="AgencyAssignNurse"
+        component={AgencyAssignNurseScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="ReportDetails"
         component={ReportDetailsScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="PDFViewer" 
+      <Stack.Screen
+        name="PDFViewer"
         component={PDFViewerScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="GeolocationTest" 
+      <Stack.Screen
+        name="GeolocationTest"
         component={GeolocationTest}
         options={{
           headerShown: true,
@@ -460,8 +464,8 @@ const MainNavigator = ({ user }: { user: User }) => {
           headerTintColor: Colors.white,
         }}
       />
-      <Stack.Screen 
-        name="AgencyOnboardNurses" 
+      <Stack.Screen
+        name="AgencyOnboardNurses"
         component={AgencyOnboardNursesScreen}
         options={{
           headerShown: true,
@@ -470,8 +474,19 @@ const MainNavigator = ({ user }: { user: User }) => {
           headerTintColor: Colors.white,
         }}
       />
-      <Stack.Screen 
-        name="HospitalAdminUploadLogo" 
+      <Stack.Screen
+        name="AgencyNurseDetails"
+        component={AgencyNurseDetailsScreen}
+        options={{
+          headerShown: true,
+          title: 'Nurse Details',
+          headerStyle: { backgroundColor: Colors.primary },
+          headerTintColor: Colors.white,
+        }}
+      />
+
+      <Stack.Screen
+        name="HospitalAdminUploadLogo"
         component={HospitalAdminUploadLogoScreen}
         options={{
           headerShown: true,
@@ -480,8 +495,9 @@ const MainNavigator = ({ user }: { user: User }) => {
           headerTintColor: Colors.white,
         }}
       />
-      <Stack.Screen 
-        name="HospitalAdminThemes" 
+
+      <Stack.Screen
+        name="HospitalAdminThemes"
         component={HospitalAdminThemeManageScreen}
         options={{
           headerShown: true,
@@ -490,22 +506,25 @@ const MainNavigator = ({ user }: { user: User }) => {
           headerTintColor: Colors.white,
         }}
       />
-      <Stack.Screen 
-        name="HospitalAdminUnits" 
+
+      <Stack.Screen
+        name="HospitalAdminUnits"
         component={HospitalAdminUnitsScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="PermissionManagement" 
+
+      <Stack.Screen
+        name="PermissionManagement"
         component={PermissionManagementScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="AgencyBlacklist" 
+
+      <Stack.Screen
+        name="AgencyBlacklist"
         component={HospitalAdminAgencyBlacklistScreen}
         options={{
           headerShown: false,
@@ -523,10 +542,10 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
   useEffect(() => {
     checkAuthStatus();
-    
+
     // Register global logout handler for API service
     setGlobalLogoutHandler(logout);
-    
+
     // Cleanup function
     return () => {
       setGlobalLogoutHandler(() => Promise.resolve());
@@ -552,7 +571,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       // Check if user is logged in
       const token = await AsyncStorage.getItem('jwt_token');
       const userData = await AsyncStorage.getItem('user_data');
-      
+
       if (token && userData) {
         setUser(JSON.parse(userData));
         setIsAuthenticated(true);
@@ -614,7 +633,7 @@ const AppNavigator = () => {
 
   React.useEffect(() => {
     if (isAuthenticated && user && (user as any).role === 'HOSPITAL_ADMIN') {
-      loadAndApplyDefaultTheme().catch(() => {});
+      loadAndApplyDefaultTheme().catch(() => { });
     }
   }, [isAuthenticated, user, loadAndApplyDefaultTheme]);
 

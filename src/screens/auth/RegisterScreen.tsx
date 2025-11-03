@@ -14,6 +14,7 @@ import {
   TouchableWithoutFeedback,
   Image,
   Dimensions,
+  Animated,
 } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { useNavigation } from '@react-navigation/native';
@@ -24,6 +25,7 @@ import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
 import ApiService from '../../services/api';
 import Responsive from '../../utils/responsive';
+import { RegisterRequest } from '../../types';
 
 const { width, height } = Dimensions.get('window');
 
@@ -574,6 +576,12 @@ const RegisterScreen: React.FC = () => {
   
   // Success modal state
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const modalSlideAnim = useRef(new Animated.Value(height)).current;
+  const sparkleScale1 = useRef(new Animated.Value(0)).current;
+  const sparkleScale2 = useRef(new Animated.Value(0)).current;
+  const sparkleScale3 = useRef(new Animated.Value(0)).current;
+  const sparkleScale4 = useRef(new Animated.Value(0)).current;
+  const checkmarkScale = useRef(new Animated.Value(0)).current;
 
   // Medical specialties for department dropdown
   const medicalSpecialties = [
@@ -841,6 +849,79 @@ const RegisterScreen: React.FC = () => {
     loadHospitals();
   }, [loadHospitals]);
 
+  // Animate success modal when it appears
+  useEffect(() => {
+    if (showSuccessModal) {
+      // Slide modal up from bottom
+      Animated.spring(modalSlideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 8,
+      }).start();
+
+      // Animate checkmark with bounce
+      setTimeout(() => {
+        Animated.sequence([
+          Animated.spring(checkmarkScale, {
+            toValue: 1.3,
+            useNativeDriver: true,
+            tension: 100,
+            friction: 3,
+          }),
+          Animated.spring(checkmarkScale, {
+            toValue: 1,
+            useNativeDriver: true,
+            tension: 50,
+            friction: 3,
+          }),
+        ]).start();
+      }, 100);
+
+      // Animate sparkles
+      setTimeout(() => {
+        Animated.parallel([
+          Animated.spring(sparkleScale1, {
+            toValue: 1,
+            useNativeDriver: true,
+            tension: 100,
+            friction: 5,
+            delay: 0,
+          }),
+          Animated.spring(sparkleScale2, {
+            toValue: 1,
+            useNativeDriver: true,
+            tension: 100,
+            friction: 5,
+            delay: 100,
+          }),
+          Animated.spring(sparkleScale3, {
+            toValue: 1,
+            useNativeDriver: true,
+            tension: 100,
+            friction: 5,
+            delay: 200,
+          }),
+          Animated.spring(sparkleScale4, {
+            toValue: 1,
+            useNativeDriver: true,
+            tension: 100,
+            friction: 5,
+            delay: 300,
+          }),
+        ]).start();
+      }, 200);
+    } else {
+      // Reset animations when modal closes
+      modalSlideAnim.setValue(height);
+      checkmarkScale.setValue(0);
+      sparkleScale1.setValue(0);
+      sparkleScale2.setValue(0);
+      sparkleScale3.setValue(0);
+      sparkleScale4.setValue(0);
+    }
+  }, [showSuccessModal]);
+
 
   const validateForm = () => {
     // Validate all fields and collect errors
@@ -855,19 +936,29 @@ const RegisterScreen: React.FC = () => {
     errors.location = validateLocation(formData.location);
     errors.phone = validatePhone(formData.phone);
     
+    // License number is required for both DOCTOR and NURSE
+    errors.licenseNumber = validateLicenseNumber(formData.licenseNumber);
+    
     if (formData.role === 'DOCTOR') {
       errors.specialization = validateSpecialization(formData.specialization, formData.role);
-      errors.licenseNumber = validateLicenseNumber(formData.licenseNumber);
     }
     
-    errors.emergencyContactName = validateEmergencyContact(formData.emergencyContactName, 'Contact Name');
-    errors.emergencyContactPhone = validateEmergencyContact(formData.emergencyContactPhone, 'Contact Phone');
-    errors.emergencyContactRelationship = validateEmergencyContact(formData.emergencyContactRelationship, 'Relationship');
+    // Emergency Contact and Address fields are now optional
+    // Only validate if any field in the section is filled
+    const hasEmergencyContact = formData.emergencyContactName || formData.emergencyContactPhone || formData.emergencyContactRelationship;
+    if (hasEmergencyContact) {
+      if (formData.emergencyContactName) errors.emergencyContactName = validateEmergencyContact(formData.emergencyContactName, 'Contact Name');
+      if (formData.emergencyContactPhone) errors.emergencyContactPhone = validateEmergencyContact(formData.emergencyContactPhone, 'Contact Phone');
+      if (formData.emergencyContactRelationship) errors.emergencyContactRelationship = validateEmergencyContact(formData.emergencyContactRelationship, 'Relationship');
+    }
     
-    errors.street = validateAddress(formData.street, 'Street Address');
-    errors.city = validateAddress(formData.city, 'City');
-    errors.state = validateAddress(formData.state, 'State');
-    errors.zipCode = validateZipCode(formData.zipCode);
+    const hasAddress = formData.street || formData.city || formData.state || formData.zipCode;
+    if (hasAddress) {
+      if (formData.street) errors.street = validateAddress(formData.street, 'Street Address');
+      if (formData.city) errors.city = validateAddress(formData.city, 'City');
+      if (formData.state) errors.state = validateAddress(formData.state, 'State');
+      if (formData.zipCode) errors.zipCode = validateZipCode(formData.zipCode);
+    }
     
     errors.hospitalAssignment = validateHospitalAssignment(formData.hospitalId, formData.unitCode);
     errors.unitCode = validateUnitCode(formData.unitCode, formData.hospitalId);
@@ -891,7 +982,25 @@ const RegisterScreen: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const registerData = {
+      // Only include emergency contact if any field is provided
+      const hasEmergencyContact = formData.emergencyContactName || formData.emergencyContactPhone || formData.emergencyContactRelationship;
+      const emergencyContact = hasEmergencyContact ? {
+        name: formData.emergencyContactName,
+        phone: formData.emergencyContactPhone,
+        relationship: formData.emergencyContactRelationship,
+      } : undefined;
+
+      // Only include address if any field is provided
+      const hasAddress = formData.street || formData.city || formData.state || formData.zipCode;
+      const address = hasAddress ? {
+        street: formData.street,
+        city: formData.city,
+        state: formData.state,
+        zipCode: formData.zipCode,
+        country: formData.country,
+      } : undefined;
+
+      const registerData: RegisterRequest = {
         email: formData.email,
         password: formData.password,
         confirmPassword: formData.confirmPassword,
@@ -903,21 +1012,11 @@ const RegisterScreen: React.FC = () => {
         specialization: formData.specialization || undefined,
         licenseNumber: formData.licenseNumber || undefined,
         phone: formData.phone,
-        emergencyContact: {
-          name: formData.emergencyContactName,
-          phone: formData.emergencyContactPhone,
-          relationship: formData.emergencyContactRelationship,
-        },
-        address: {
-          street: formData.street,
-          city: formData.city,
-          state: formData.state,
-          zipCode: formData.zipCode,
-          country: formData.country,
-        },
+        ...(emergencyContact && { emergencyContact }),
+        ...(address && { address }),
         hospitalId: formData.hospitalId ? parseInt(formData.hospitalId) : undefined,
         unitCode: formData.unitCode || undefined,
-      };
+      } as RegisterRequest;
       console.log('🔐 Register data:', registerData);
       await ApiService.register(registerData);
 
@@ -947,23 +1046,85 @@ const RegisterScreen: React.FC = () => {
   // Success Modal Component
   const SuccessModal = () => (
     <View style={styles.modalOverlay}>
-      <View style={styles.modalContainer}>
-
-      <View style={styles.modalIconContainer}>
-          <FontAwesomeIcon icon="check-circle" size={Responsive.iconSize(60)} color="#4CAF50" />
+      <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={handleSuccessDone} />
+      <Animated.View 
+        style={[
+          styles.modalContainer,
+          {
+            transform: [{ translateY: modalSlideAnim }]
+          }
+        ]}
+      >
+        <View style={styles.modalIconContainer}>
+          {/* Sparkles around checkmark */}
+          <Animated.View 
+            style={[
+              styles.sparkle,
+              styles.sparkle1,
+              {
+                transform: [{ scale: sparkleScale1 }]
+              }
+            ]}
+          >
+            <FontAwesomeIcon icon="star" size={20} color="#FFD700" />
+          </Animated.View>
+          
+          <Animated.View 
+            style={[
+              styles.sparkle,
+              styles.sparkle2,
+              {
+                transform: [{ scale: sparkleScale2 }]
+              }
+            ]}
+          >
+            <FontAwesomeIcon icon="star" size={18} color="#C0C0C0" />
+          </Animated.View>
+          
+          <Animated.View 
+            style={[
+              styles.sparkle,
+              styles.sparkle3,
+              {
+                transform: [{ scale: sparkleScale3 }]
+              }
+            ]}
+          >
+            <FontAwesomeIcon icon="star" size={18} color="#FFB6C1" />
+          </Animated.View>
+          
+          <Animated.View 
+            style={[
+              styles.sparkle,
+              styles.sparkle4,
+              {
+                transform: [{ scale: sparkleScale4 }]
+              }
+            ]}
+          >
+            <FontAwesomeIcon icon="star" size={16} color="#87CEEB" />
+          </Animated.View>
+          
+          {/* Checkmark */}
+          <Animated.View
+            style={{
+              transform: [{ scale: checkmarkScale }]
+            }}
+          >
+            <FontAwesomeIcon icon="check-circle" size={Responsive.iconSize(64)} color="#4CAF50" />
+          </Animated.View>
         </View>
-        <Text style={styles.modalTitle}>Congratulations!</Text>
-      
+        
+        <Text style={styles.modalTitle}>You Have Successfully Registered</Text>
+        
         <Text style={styles.modalMessage}>
           Your account has been successfully created. You can now sign in with your credentials.
         </Text>
+        
         <TouchableOpacity style={styles.modalDoneButton} onPress={handleSuccessDone}>
           <Text style={styles.modalDoneButtonText}>Done</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.modalEditLink} onPress={handleSuccessDone}>
-          
-        </TouchableOpacity>
-      </View>
+      </Animated.View>
     </View>
   );
 
@@ -1117,7 +1278,6 @@ const RegisterScreen: React.FC = () => {
           />
 
           {formData.role === 'DOCTOR' && (
-            <>
               <SpecializationDropdown 
                 open={specializationDropdownOpen}
                 setOpen={(open) => {
@@ -1141,16 +1301,16 @@ const RegisterScreen: React.FC = () => {
                 styles={styles}
                 error={validationErrors.specialization}
               />
+          )}
+
               <InputField
                 label="License Number"
                 value={formData.licenseNumber}
                 onChangeText={handleLicenseNumberChange}
-                placeholder="Medical license number"
+            placeholder={formData.role === 'DOCTOR' ? 'Medical license number' : 'Nursing license number'}
                 icon="file-medical"
                 error={validationErrors.licenseNumber}
               />
-            </>
-          )}
 
           <InputField
             label="Phone Number"
@@ -1656,55 +1816,86 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(128, 128, 128, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'flex-end',
     zIndex: 9999,
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContainer: {
     backgroundColor: Colors.white,
-    borderRadius: Responsive.scale(16),
-    padding: Responsive.scale(32),
-    marginHorizontal: Responsive.scale(24),
+    borderTopLeftRadius: Responsive.scale(24),
+    borderTopRightRadius: Responsive.scale(24),
+    padding: Responsive.scale(28),
+    paddingTop: Responsive.scale(24),
+    paddingBottom: Responsive.scale(28),
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: Responsive.verticalScale(2),
+      height: Responsive.verticalScale(-2),
     },
-    shadowOpacity: 0.1,
-    shadowRadius: Responsive.scale(4),
-    elevation: 4,
-    maxWidth: Responsive.scale(320),
+    shadowOpacity: 0.25,
+    shadowRadius: Responsive.scale(20),
+    elevation: 8,
+    width: '100%',
   },
   modalTitle: {
-    fontSize: Responsive.fontSize(28),
+    fontSize: Responsive.fontSize(24),
     fontFamily: Typography.fontFamily.bold,
     color: '#333333',
-    marginBottom: Responsive.verticalScale(20),
+    marginBottom: Responsive.verticalScale(12),
     textAlign: 'center',
   },
   modalIconContainer: {
-    marginBottom: Responsive.verticalScale(20),
+    marginBottom: Responsive.verticalScale(12),
     alignItems: 'center',
+    justifyContent: 'center',
+    width: Responsive.scale(100),
+    height: Responsive.scale(100),
+    position: 'relative',
+  },
+  sparkle: {
+    position: 'absolute',
+  },
+  sparkle1: {
+    top: Responsive.verticalScale(10),
+    left: Responsive.scale(10),
+  },
+  sparkle2: {
+    bottom: Responsive.verticalScale(15),
+    left: Responsive.scale(8),
+  },
+  sparkle3: {
+    top: Responsive.verticalScale(15),
+    right: Responsive.scale(8),
+  },
+  sparkle4: {
+    bottom: Responsive.verticalScale(10),
+    right: Responsive.scale(10),
   },
   modalMessage: {
-    fontSize: Responsive.fontSize(16),
+    fontSize: Responsive.fontSize(15),
     fontFamily: Typography.fontFamily.regular,
     color: '#666666',
     textAlign: 'center',
-    lineHeight: Responsive.verticalScale(22),
-    marginBottom: Responsive.verticalScale(32),
-    paddingHorizontal: Responsive.scale(8),
+    lineHeight: Responsive.verticalScale(20),
+    marginBottom: Responsive.verticalScale(24),
+    paddingHorizontal: Responsive.scale(4),
   },
   modalDoneButton: {
     backgroundColor: '#1a1a1a',
     borderRadius: Responsive.scale(8),
-    paddingVertical: Responsive.verticalScale(16),
+    paddingVertical: Responsive.verticalScale(14),
     paddingHorizontal: Responsive.scale(48),
     alignItems: 'center',
     minWidth: Responsive.scale(140),
-    marginBottom: Responsive.verticalScale(16),
+    marginBottom: Responsive.verticalScale(0),
   },
   modalDoneButtonText: {
     fontSize: Responsive.fontSize(16),

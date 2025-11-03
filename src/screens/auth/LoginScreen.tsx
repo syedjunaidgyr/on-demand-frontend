@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Responsive.wp('5%'),
   },
   topSpacer: {
-    flex: 0.3,
+    flex: 0.4,
   },
   bottomSpacer: {
     flex: 0.4,
@@ -288,6 +288,7 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     marginBottom: Responsive.verticalScale(height * 0.05),
+    marginTop: Responsive.verticalScale(20),
   },
   logoPlaceholder: {
     alignItems: 'center',
@@ -295,9 +296,9 @@ const styles = StyleSheet.create({
     padding: Responsive.scale(10),
   },
   logoWrapper: {
-    width: Responsive.scale(90),
-    height: Responsive.verticalScale(90),
-    borderRadius: Responsive.scale(45),
+    width: Responsive.scale(70),
+    height: Responsive.verticalScale(70),
+    borderRadius: Responsive.scale(35),
     overflow: 'hidden',
     backgroundColor: Colors.white,
     shadowColor: '#000',
@@ -310,8 +311,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: '100%',
-    height: '100%',
+    width: '85%',
+    height: '85%',
+    resizeMode: 'contain',
   },
   logoText: {
     fontSize: Responsive.fontSize(width * 0.07),

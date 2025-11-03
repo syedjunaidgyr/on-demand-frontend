@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, RefreshControl, ActivityIndicator, TouchableOpacity, Modal } from 'react-native';
 import { useAuth } from '../../navigation/AppNavigator';
 import ApiService from '../../services/api';
 import { Typography } from '../../constants/typography';
@@ -16,6 +16,9 @@ const AgencyNursesScreen: React.FC = () => {
   const [nurses, setNurses] = useState<any[]>([]);
   const [pool, setPool] = useState<any[]>([]);
   const [agencyId, setAgencyId] = useState<string | number | null>(null);
+  const [detailsVisible, setDetailsVisible] = useState(false);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsUser, setDetailsUser] = useState<any>(null);
 
   const load = async () => {
     try {
@@ -188,13 +191,58 @@ const AgencyNursesScreen: React.FC = () => {
                   <Text style={styles.name}>{nurse.firstName} {nurse.lastName}</Text>
                   <Text style={styles.sub}>{nurse.email}</Text>
                 </View>
-                <TouchableOpacity style={styles.actionBtn}>
+                <TouchableOpacity
+                  style={styles.actionBtn}
+                  onPress={async () => {
+                    try {
+                      setDetailsLoading(true);
+                      setDetailsVisible(true);
+                      const res = await ApiService.getUserById(String(nurse.id));
+                      setDetailsUser((res as any)?.user || res);
+                    } finally {
+                      setDetailsLoading(false);
+                    }
+                  }}
+                >
                   <Text style={styles.actionTxt}>View</Text>
                 </TouchableOpacity>
               </View>
             ))
           )}
         </View>
+        {/* Nurse Details Modal */}
+        <Modal
+          visible={detailsVisible}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setDetailsVisible(false)}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalCard}>
+              {detailsLoading ? (
+                <View style={styles.modalCenter}>
+                  <ActivityIndicator size="large" color="#6366F1" />
+                  <Text style={styles.loadingText}>Loading…</Text>
+                </View>
+              ) : (
+                <>
+                  <Text style={styles.modalTitle}>{detailsUser?.firstName} {detailsUser?.lastName}</Text>
+                  <View style={styles.row}><Text style={styles.label}>Email</Text><Text style={styles.value}>{detailsUser?.email || '-'}</Text></View>
+                  <View style={styles.row}><Text style={styles.label}>Phone</Text><Text style={styles.value}>{detailsUser?.phone || '-'}</Text></View>
+                  <View style={styles.row}><Text style={styles.label}>Role</Text><Text style={styles.value}>{detailsUser?.role || '-'}</Text></View>
+                  <View style={styles.row}><Text style={styles.label}>Department</Text><Text style={styles.value}>{detailsUser?.department || '-'}</Text></View>
+                  <View style={styles.row}><Text style={styles.label}>Location</Text><Text style={styles.value}>{detailsUser?.location || '-'}</Text></View>
+                  <View style={styles.row}><Text style={styles.label}>License</Text><Text style={styles.value}>{detailsUser?.licenseNumber || '-'}</Text></View>
+                  <View style={styles.modalButtons}>
+                    <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#111827' }]} onPress={() => setDetailsVisible(false)}>
+                      <Text style={styles.actionTxt}>Close</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+            </View>
+          </View>
+        </Modal>
       </ScrollView>
     </SafeAreaView>
   );
@@ -241,6 +289,14 @@ const styles = StyleSheet.create({
   actionTxt: { color: '#FFFFFF', fontFamily: Typography.fontFamily.medium },
   actionBtnOutline: { borderWidth: 1, borderColor: '#EF4444', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
   actionTxtOutline: { color: '#EF4444', fontFamily: Typography.fontFamily.bold, fontSize: 12 },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  modalCard: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 16, maxHeight: '80%' },
+  modalCenter: { alignItems: 'center' },
+  modalTitle: { fontSize: 18, fontFamily: Typography.fontFamily.bold, color: '#111827', marginBottom: 10 },
+  modalButtons: { marginTop: 12, flexDirection: 'row', justifyContent: 'flex-end' },
+  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  label: { color: '#6B7280', fontFamily: Typography.fontFamily.medium },
+  value: { color: '#111827', fontFamily: Typography.fontFamily.medium, maxWidth: '60%' },
 });
 
 export default AgencyNursesScreen;

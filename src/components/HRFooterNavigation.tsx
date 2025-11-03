@@ -29,26 +29,24 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, sc
   const handleNavigation = (target: 'home' | 'jobs' | 'users') => {
     // Map routes based on role
     const isAgency = user?.role === 'AGENCY';
-    const isHospitalAdmin = user?.role === 'HOSPITAL_ADMIN';
+    const isHealthcare = user?.role === 'DOCTOR' || user?.role === 'NURSE';
     let routeName = '';
-    if (target === 'home') {
-      routeName = isAgency
-        ? 'AgencyDashboard'
-        : isHospitalAdmin
-        ? 'HospitalAdminDashboard'
-        : 'HRDashboard';
-    } else if (target === 'jobs') {
-      routeName = isAgency
-        ? 'AgencyJobs'
-        : isHospitalAdmin
-        ? 'HRJobs'
-        : 'HRJobs';
+    
+    if (isHealthcare) {
+      // Healthcare provider routes
+      if (target === 'home') routeName = 'HealthcareProviderDashboard';
+      else if (target === 'jobs') routeName = 'Assignments';
+      else routeName = 'MyAssignments';
+    } else if (isAgency) {
+      // Agency routes
+      if (target === 'home') routeName = 'AgencyDashboard';
+      else if (target === 'jobs') routeName = 'AgencyJobs';
+      else routeName = 'AgencyNurses';
     } else {
-      routeName = isAgency
-        ? 'AgencyNurses'
-        : isHospitalAdmin
-        ? 'HospitalAdminStaff'
-        : 'HRUsers';
+      // HR routes
+      if (target === 'home') routeName = 'HRDashboard';
+      else if (target === 'jobs') routeName = 'HRJobs';
+      else routeName = 'HRUsers';
     }
     (navigation as any).navigate(routeName as never);
   };
@@ -91,7 +89,7 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, sc
     <Animated.View style={[styles.floatingContainer, { transform: [{ translateY }] }]}>
       <View style={styles.footerWrapper}>
         <View style={styles.footerRow}>
-          {/* Home - Left */}
+          {/* Dashboard/Home - Left */}
           <TouchableOpacity
             style={styles.footerButton}
             onPress={() => handleNavigation('home')}
@@ -99,15 +97,15 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, sc
           >
             <View style={styles.iconWrapper}>
               <FontAwesomeIcon
-                icon="home"
+                icon={(user?.role === 'DOCTOR' || user?.role === 'NURSE') ? "user-md" : "home"}
                 size={Responsive.iconSize(24)}
                 color="#FFFFFF"
               />
-              <Text style={styles.label}>Home</Text>
+              <Text style={styles.label}>{(user?.role === 'DOCTOR' || user?.role === 'NURSE') ? 'Dashboard' : 'Home'}</Text>
             </View>
           </TouchableOpacity>
 
-          {/* Jobs - Center */}
+          {/* Job Assignments/Jobs - Center */}
           <TouchableOpacity
             style={styles.footerButton}
             onPress={() => handleNavigation('jobs')}
@@ -115,7 +113,7 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, sc
           >
             <View style={styles.iconWrapper}>
               <FontAwesomeIcon
-                icon="briefcase"
+                icon={(user?.role === 'DOCTOR' || user?.role === 'NURSE') ? "calendar-check" : "briefcase"}
                 size={Responsive.iconSize(24)}
                 color="#FFFFFF"
               />
@@ -124,11 +122,11 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, sc
                   <Text style={styles.badgeText}>{todaysJobsCount}</Text>
                 </View>
               )}
-              <Text style={styles.label}>Jobs</Text>
+              <Text style={styles.label}>{(user?.role === 'DOCTOR' || user?.role === 'NURSE') ? 'Job Assignments' : 'Jobs'}</Text>
             </View>
           </TouchableOpacity>
 
-          {/* Users - Right */}
+          {/* My Jobs/Users - Right */}
           <TouchableOpacity
             style={styles.footerButton}
             onPress={() => handleNavigation('users')}
@@ -136,11 +134,19 @@ const HRFooterNavigation: React.FC<HRFooterNavigationProps> = ({ activeRoute, sc
           >
             <View style={styles.iconWrapper}>
               <FontAwesomeIcon
-                icon="users"
+                icon={(user?.role === 'DOCTOR' || user?.role === 'NURSE') ? "clipboard-list" : (user?.role === 'AGENCY' ? "users" : "users")}
                 size={Responsive.iconSize(24)}
                 color="#FFFFFF"
               />
-              <Text style={styles.label}>{user?.role === 'AGENCY' ? 'Nurses' : user?.role === 'HOSPITAL_ADMIN' ? 'Staff' : 'Users'}</Text>
+              <Text style={styles.label}>
+                {(user?.role === 'DOCTOR' || user?.role === 'NURSE')
+                  ? 'My Jobs'
+                  : (user?.role === 'AGENCY')
+                    ? 'Nurses'
+                    : (user?.role === 'HOSPITAL_ADMIN')
+                      ? 'Staff'
+                      : 'Users'}
+              </Text>
             </View>
           </TouchableOpacity>
         </View>

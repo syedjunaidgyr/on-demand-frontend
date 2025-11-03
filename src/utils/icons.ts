@@ -104,6 +104,7 @@ import { faFileAlt } from '@fortawesome/free-solid-svg-icons/faFileAlt';
 import { faFile } from '@fortawesome/free-solid-svg-icons/faFile';
 import { faFilePdf } from '@fortawesome/free-solid-svg-icons/faFilePdf';
 import { faFileExcel } from '@fortawesome/free-solid-svg-icons/faFileExcel';
+import { faFileExport } from '@fortawesome/free-solid-svg-icons/faFileExport';
 import { faDatabase } from '@fortawesome/free-solid-svg-icons/faDatabase';
 
 // Add all icons to the library
@@ -210,6 +211,7 @@ library.add(
   faFile as any,
   faFilePdf as any,
   faFileExcel as any,
+  faFileExport as any,
   faDatabase as any,
 );
 

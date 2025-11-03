@@ -28,6 +28,7 @@ import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import { Job } from '../../types';
 import ApiService from '../../services/api';
 import Responsive from '../../utils/responsive';
+import { SkeletonJobCard, SkeletonSearchBar } from '../../components/SkeletonComponents';
 
 const HRJobsScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -156,22 +157,6 @@ const HRJobsScreen: React.FC = () => {
     return `${displayHour}:${mins} ${ampm}`;
   };
 
-  const handleJobPress = async (job: Job) => {
-    try {
-      setSelectedJob(job);
-      setAssignVisible(true);
-      setLoadingAssignments(true);
-      const allAssignmentsResponse = await ApiService.getJobAssignments(job.id.toString());
-      const allAssignments = allAssignmentsResponse.assignments || allAssignmentsResponse.data || allAssignmentsResponse || [];
-      setAssignments(Array.isArray(allAssignments) ? allAssignments : []);
-    } catch (error) {
-      console.error('❌ Failed to load assignments:', error);
-      Alert.alert('Error', 'Failed to load candidate details. Please try again.');
-    } finally {
-      setLoadingAssignments(false);
-    }
-  };
-
   const handleCreateJob = () => {
     (navigation as any).navigate('CreateJob');
   };
@@ -203,48 +188,17 @@ const HRJobsScreen: React.FC = () => {
 
   const handleReviewCandidates = async (job: Job) => {
     try {
-      console.log('🔍 HR reviewing candidates for job:', job.id, job.title);
-      console.log('📊 Job assignments count:', job.assignments?.length || 0);
-      console.log('📊 Job assignments:', job.assignments);
-      
-      // Get ALL assignments for this job and filter for accepted ones
-      console.log('🔍 Getting ALL assignments for job:', job.id);
+      setSelectedJob(job);
+      setAssignVisible(true);
+      setLoadingAssignments(true);
       const allAssignmentsResponse = await ApiService.getJobAssignments(job.id.toString());
-      console.log('📦 All assignments response:', allAssignmentsResponse);
-      
-      // Filter for accepted assignments
       const allAssignments = allAssignmentsResponse.assignments || allAssignmentsResponse.data || allAssignmentsResponse || [];
-      console.log('📋 All assignments array:', allAssignments);
-      
-      const acceptedAssignments = allAssignments.filter((assignment: any) => assignment.status === 'ACCEPTED');
-      console.log('📋 Filtered accepted assignments:', acceptedAssignments);
-      console.log('📋 Accepted assignments count:', acceptedAssignments?.length || 0);
-      
-      if (!acceptedAssignments || acceptedAssignments.length === 0) {
-        Alert.alert(
-          'No Accepted Candidates', 
-          `No staff members have accepted this job yet.\n\nCurrent assignments:\n${allAssignments.map((a: any) => `- ${a.user?.firstName || 'Unknown'} ${a.user?.lastName || ''}: ${a.status}`).join('\n')}\n\nYou need staff to accept assignments first.`,
-          [
-            { text: 'OK' },
-            { 
-              text: 'Assign Job to Staff', 
-              onPress: () => {
-                console.log('Navigate to assign job to staff');
-              }
-            }
-          ]
-        );
-        return;
-      }
-      
-      (navigation as any).navigate('JobAssignment', { 
-        jobId: job.id, 
-        acceptedAssignments: acceptedAssignments 
-      });
+      setAssignments(Array.isArray(allAssignments) ? allAssignments : []);
     } catch (error) {
-      console.error('❌ Failed to load accepted assignments:', error);
-      console.error('❌ Job details:', job);
-      Alert.alert('Error', `Failed to load accepted assignments: ${error.message}`);
+      console.error('❌ Failed to load assignments:', error);
+      Alert.alert('Error', 'Failed to load candidate details. Please try again.');
+    } finally {
+      setLoadingAssignments(false);
     }
   };
 
@@ -261,11 +215,17 @@ const HRJobsScreen: React.FC = () => {
     const subtitleRight = timeRange;
     
     return (
-      <TouchableOpacity style={styles.jobCard} onPress={() => handleJobPress(job)}>
+      <TouchableOpacity 
+        style={styles.jobCard}
+        onPress={() => handleReviewCandidates(job)}
+        activeOpacity={0.8}
+      >
         {/* Date header with edit button */}
         <View style={styles.cardTopRow}>
           <Text style={styles.cardTimeText}>{dateRange}</Text>
-          <TouchableOpacity style={styles.editTopButton} onPress={() => handleJobPress(job)}>
+          <TouchableOpacity 
+            style={styles.editTopButton}
+            disabled={true}>
             <FontAwesomeIcon icon="edit" size={Responsive.iconSize(16)} color={Colors.textSecondary} />
           </TouchableOpacity>
         </View>
@@ -289,11 +249,11 @@ const HRJobsScreen: React.FC = () => {
 
             {/* Progress / Stat / Charge row (3 columns) */}
             <View style={styles.assignmentRow}>
-              <View style={styles.infoCol}>
+              <View style={[styles.infoCol, { marginHorizontal: 6 }]}>
                 <Text style={styles.infoLabel}>Progress</Text>
                 <Text style={styles.infoValue}>Accepted: {acceptedAssignments}</Text>
               </View>
-              <View style={styles.infoCol}>
+              <View style={[styles.infoCol, { marginHorizontal: 6 }]}>
                 <Text style={styles.infoLabel}>Stat</Text>
                 <View style={[styles.priorityPill, { backgroundColor: getPriorityColor(job.priority) + '1A' }]}>
                   <Text style={[styles.priorityPillText, { color: getPriorityColor(job.priority) }]} numberOfLines={1}>
@@ -301,15 +261,19 @@ const HRJobsScreen: React.FC = () => {
                   </Text>
                 </View>
               </View>
-              <View style={styles.infoCol}>
+              <View style={[styles.infoCol, { marginHorizontal: 6 }]}>
                 <Text style={styles.infoLabel}>Charge</Text>
                 <Text style={styles.infoValue}>₹{job.hourlyRate}/hr</Text>
               </View>
             </View>
-          </View>
-        </View>
 
-        
+            {/* Department row */}
+            <View style={styles.departmentRow}>
+              <Text style={styles.infoLabel}>Department</Text>
+              <Text style={styles.infoValue}>{job.department || '—'}</Text>
+            </View>
+            </View>
+          </View>
       </TouchableOpacity>
     );
   };
@@ -323,16 +287,6 @@ const HRJobsScreen: React.FC = () => {
     );
   };
 
-  if (isLoading && jobs.length === 0) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>Loading jobs...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   // Compute filtered jobs for display
   const displayJobs = jobs.filter((j) => {
@@ -386,6 +340,9 @@ const HRJobsScreen: React.FC = () => {
       />
 
       {/* Search Bar */}
+      {isLoading && jobs.length === 0 ? (
+        <SkeletonSearchBar />
+      ) : (
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <FontAwesomeIcon icon="search" size={16} color={Colors.textSecondary} />
@@ -403,8 +360,18 @@ const HRJobsScreen: React.FC = () => {
           )}
         </View>
       </View>
+      )}
 
       {/* Jobs List */}
+      {isLoading && jobs.length === 0 ? (
+        <ScrollView
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}>
+          {[...Array(5)].map((_, i) => (
+            <SkeletonJobCard key={i} />
+          ))}
+        </ScrollView>
+      ) : (
       <FlatList
         data={displayJobs}
         keyExtractor={(item) => item.id}
@@ -423,6 +390,7 @@ const HRJobsScreen: React.FC = () => {
         )}
         scrollEventThrottle={16}
       />
+      )}
 
       {/* Floating Action Button */}
       <TouchableOpacity style={styles.fab} onPress={handleCreateJob}>
@@ -511,6 +479,36 @@ const AssignBottomSheet = ({
     return `${displayHour}:${mins} ${ampm}`;
   };
 
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'URGENT':
+        return Colors.urgent;
+      case 'HIGH':
+        return Colors.high;
+      case 'MEDIUM':
+        return Colors.medium;
+      case 'LOW':
+        return Colors.low;
+      default:
+        return Colors.primary;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'ACTIVE':
+        return Colors.success;
+      case 'CANCELLED':
+        return Colors.error;
+      case 'COMPLETED':
+        return Colors.info;
+      case 'FILLED':
+        return Colors.warning;
+      default:
+        return Colors.textTertiary;
+    }
+  };
+
   const accepted = (assignments || []).filter(a => a?.status === 'ACCEPTED');
   const [isSelecting, setIsSelecting] = React.useState(false);
   const [confirmVisible, setConfirmVisible] = React.useState(false);
@@ -558,85 +556,208 @@ const AssignBottomSheet = ({
         <Pressable style={styles.sheetBackdropTouchable} onPress={onClose} />
         <View style={styles.sheetContainer}>
           <View style={styles.sheetHandle} />
-          <Text style={styles.sheetTitle}>Review Candidates</Text>
-          {/* <Text style={styles.sheetSubtitle} numberOfLines={2}>
-            {job ? job.title : ''}
-          </Text> */}
-          <View style={styles.sheetDivider} />
+          
           {loading ? (
-            <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+            <View style={{ paddingVertical: 40, alignItems: 'center' }}>
               <ActivityIndicator size="small" color={Colors.primary} />
             </View>
           ) : (
-            <ScrollView contentContainerStyle={styles.sheetContent}>
-              {/* Job details card */}
+            <ScrollView 
+              contentContainerStyle={styles.sheetContent}
+              showsVerticalScrollIndicator={false}>
+              
+              {/* Header Section */}
               {job && (
                 <>
-                  <Text style={styles.sheetSectionTitle}>Job Details</Text>
-                  <View style={styles.jobDetailCard}>
-                  <Text style={styles.jobDetailTitle} numberOfLines={2}>{job.title || '—'}</Text>
-                  {!!job.description && (
-                    <Text style={styles.jobDetailDescription} numberOfLines={3}>{job.description}</Text>
-                  )}
-                  <View style={styles.jobDetailGrid}>
-                    {!!job.facilityName && (
-                      <View style={styles.jobDetailItemRow}>
-                        <Text style={styles.jobDetailLabel}>Facility</Text>
-                        <Text style={styles.jobDetailValue} numberOfLines={1}>{job.facilityName}</Text>
-                      </View>
-                    )}
-                    {!!job.location && (
-                      <View style={styles.jobDetailItemRow}>
-                        <Text style={styles.jobDetailLabel}>Location</Text>
-                        <Text style={styles.jobDetailValue} numberOfLines={1}>{job.location}</Text>
-                      </View>
-                    )}
-                    {!!job.department && (
-                      <View style={styles.jobDetailItemRow}>
-                        <Text style={styles.jobDetailLabel}>Department</Text>
-                        <Text style={styles.jobDetailValue} numberOfLines={1}>{job.department}</Text>
-                      </View>
-                    )}
-                    {!!job.specialization && (
-                      <View style={styles.jobDetailItemRow}>
-                        <Text style={styles.jobDetailLabel}>Specialization</Text>
-                        <Text style={styles.jobDetailValue} numberOfLines={1}>{job.specialization}</Text>
-                      </View>
-                    )}
-                    <View style={styles.jobDetailItemRow}>
-                      <Text style={styles.jobDetailLabel}>Dates</Text>
-                      <Text style={styles.jobDetailValue} numberOfLines={1}>
-                        {`${(job.startDate ? localFormatDate(job.startDate as any) : '—')} - ${(job.endDate ? localFormatDate(job.endDate as any) : '—')}`}
+                  <View style={styles.modalHeader}>
+                    <View style={styles.modalHeaderTop}>
+                      <Text style={styles.modalTitle} numberOfLines={2}>
+                        {job.title || 'Job Details'}
                       </Text>
-                    </View>
-                    <View style={styles.jobDetailItemRow}>
-                      <Text style={styles.jobDetailLabel}>Time</Text>
-                      <Text style={styles.jobDetailValue} numberOfLines={1}>
-                        {`${(job.startTime ? localFormatTime(job.startTime as any) : '—')} - ${(job.endTime ? localFormatTime(job.endTime as any) : '—')} • ${(job.status || '—')}`}
-                      </Text>
-                    </View>
-                    
-                    <View style={styles.jobDetailItemRow}>
-                      <Text style={styles.jobDetailLabel}>Progress</Text>
-                      <Text style={styles.jobDetailValue} numberOfLines={1}>
-                        {`Accepted: ${(accepted.length || 0)} • ${job.hourlyRate ? `₹${job.hourlyRate}/hr` : '—'}`}
-                      </Text>
-                    </View>
-                    <View style={styles.jobDetailItemRow}>
-                      <Text style={styles.jobDetailLabel}>Priority</Text>
-                      <Text style={styles.jobDetailValue}>{job.priority || '—'}</Text>
-                    </View>
-                    
-                  </View>
-                </View>
-                </>
-              )}
+                      <TouchableOpacity onPress={onClose} style={styles.modalCloseIcon}>
+                        <FontAwesomeIcon icon="times" size={20} color={Colors.textSecondary} />
+                      </TouchableOpacity>
+                      </View>
+                    {/* <Text style={styles.modalSubtitle}>
+                      {`${localFormatDate(job.startDate as any)} - ${localFormatTime(job.startTime as any)}`}
+                    </Text> */}
+                      </View>
 
-              <View style={{ marginBottom: 12 }}>
-                {accepted.length === 0 ? (
-                  <Text style={styles.sheetInfoText}>No accepted candidates yet.</Text>
-                ) : (
-                  accepted.map((a, idx) => {
+                  {/* Time Details Section */}
+                  <View style={styles.modalSection}>
+                    <View style={styles.modalInfoRow}>
+                      <FontAwesomeIcon icon="clock" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                      <View style={styles.modalInfoContent}>
+                        <Text style={styles.modalInfoLabel}>Start Date</Text>
+                        <Text style={styles.modalInfoValue}>
+                          {job.startDate ? localFormatDate(job.startDate as any) : '—'}, {job.startTime ? localFormatTime(job.startTime as any) : '—'}
+                      </Text>
+                    </View>
+                      <View style={[styles.modalInfoContent, { marginLeft: 20 }]}>
+                        <Text style={styles.modalInfoLabel}>End Date</Text>
+                        <Text style={styles.modalInfoValue}>
+                          {job.endDate ? localFormatDate(job.endDate as any) : '—'}, {job.endTime ? localFormatTime(job.endTime as any) : '—'}
+                      </Text>
+                    </View>
+                    </View>
+                    {/* Duration & Location in same row */}
+                    <View style={styles.modalTwoColRow}>
+                      <View style={styles.modalCol}>
+                        <View style={styles.modalInfoRow}>
+                          <FontAwesomeIcon icon="clock" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                          <View style={styles.modalInfoContent}>
+                            <Text style={styles.modalInfoLabel}>Duration</Text>
+                            <Text style={styles.modalInfoValue} numberOfLines={1}>
+                              {job.startTime && job.endTime ? 
+                                (() => {
+                                  const start = new Date(`2000-01-01 ${job.startTime}`);
+                                  const end = new Date(`2000-01-01 ${job.endTime}`);
+                                  const diff = end.getTime() - start.getTime();
+                                  const hours = Math.floor(diff / (1000 * 60 * 60));
+                                  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                                  return `${hours} hr, ${minutes} min`;
+                                })() : '—'}
+                      </Text>
+                    </View>
+                    </View>
+                  </View>
+                      {job.location && (
+                        <View style={styles.modalCol}>
+                          <View style={styles.modalInfoRow}>
+                            <FontAwesomeIcon icon="map-marker-alt" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                            <View style={styles.modalInfoContent}>
+                              <Text style={styles.modalInfoLabel}>Location</Text>
+                              <Text style={styles.modalInfoValue} numberOfLines={1}>{job.location}</Text>
+                </View>
+                          </View>
+                        </View>
+                      )}
+                        </View>
+                        </View>
+
+                  {/* Facility & Department (two columns) */}
+                  {(job.facilityName || job.department) && (
+                    <View style={styles.modalSection}>
+                      <View style={styles.modalTwoColRow}>
+                        {job.facilityName && (
+                          <View style={styles.modalCol}>
+                            <View style={styles.modalInfoRow}>
+                              <FontAwesomeIcon icon="hospital" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                              <View style={styles.modalInfoContent}>
+                                <Text style={styles.modalInfoLabel}>Facility</Text>
+                                <Text style={styles.modalInfoValue} numberOfLines={1}>{job.facilityName}</Text>
+                        </View>
+                          </View>
+                      </View>
+                        )}
+                        {job.department && (
+                          <View style={styles.modalCol}>
+                            <View style={styles.modalInfoRow}>
+                              <FontAwesomeIcon icon="building" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                              <View style={styles.modalInfoContent}>
+                                <Text style={styles.modalInfoLabel}>Department</Text>
+                                <Text style={styles.modalInfoValue} numberOfLines={1}>{job.department}</Text>
+              </View>
+            </View>
+          </View>
+        )}
+      </View>
+                    </View>
+                  )}
+
+                  {/* Role & Candidates (two columns) */}
+                  {(job.requiredRole) && (
+                    <View style={styles.modalSection}>
+                      <View style={styles.modalTwoColRow}>
+                        <View style={styles.modalCol}>
+                          <View style={styles.modalInfoRow}>
+                            <FontAwesomeIcon icon="user-md" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                            <View style={styles.modalInfoContent}>
+                              <Text style={styles.modalInfoLabel}>Role</Text>
+                              <Text style={styles.modalInfoValue} numberOfLines={1}>{job.requiredRole}</Text>
+              </View>
+                </View>
+              </View>
+                        <View style={styles.modalCol}>
+                          <View style={styles.modalInfoRow}>
+                            <FontAwesomeIcon icon="users" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                            <View style={styles.modalInfoContent}>
+                              <Text style={styles.modalInfoLabel}>Candidates</Text>
+                              <Text style={styles.modalInfoValue} numberOfLines={1}>{accepted.length || 0}</Text>
+                </View>
+              </View>
+              </View>
+            </View>
+                    </View>
+                  )}
+
+                  {/* Rate & Status (two columns) */}
+                  <View style={styles.modalSection}>
+                    <View style={styles.modalTwoColRow}>
+                      <View style={styles.modalCol}>
+                        <View style={styles.modalInfoRow}>
+                          <FontAwesomeIcon icon="rupee-sign" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                          <View style={styles.modalInfoContent}>
+                            <Text style={styles.modalInfoLabel}>Rate</Text>
+                            <Text style={styles.modalInfoValue}>₹{job.hourlyRate || '—'}/hr</Text>
+              </View>
+              </View>
+              </View>
+                      <View style={styles.modalCol}>
+                        <View style={styles.modalInfoRow}>
+                          <FontAwesomeIcon icon="info-circle" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                          <View style={styles.modalInfoContent}>
+                            <Text style={styles.modalInfoLabel}>Status</Text>
+                            <View style={[styles.modalStatusBadge, { backgroundColor: getStatusColor(job.status || '') + '1A' }]}> 
+                              <Text style={[styles.modalStatusBadgeText, { color: getStatusColor(job.status || '') }]}>
+                                {job.status || '—'}
+                              </Text>
+              </View>
+            </View>
+              </View>
+                      </View>
+              </View>
+            </View>
+
+                  {/* Priority */}
+                  {job.priority && (
+                    <View style={styles.modalSection}>
+                      <View style={styles.modalInfoRow}>
+                        <FontAwesomeIcon icon="exclamation-triangle" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                        <View style={styles.modalInfoContent}>
+                          <Text style={styles.modalInfoLabel}>Priority</Text>
+                          <View style={[styles.modalPriorityBadge, { backgroundColor: getPriorityColor(job.priority) + '1A' }]}> 
+                            <Text style={[styles.modalPriorityBadgeText, { color: getPriorityColor(job.priority) }]}>
+                              {job.priority}
+                            </Text>
+              </View>
+              </View>
+            </View>
+                    </View>
+                  )}
+
+                  {/* Description LAST */}
+                  {job.description && (
+                    <View style={styles.modalSection}>
+                      <View style={styles.modalInfoRow}>
+                        <FontAwesomeIcon icon="file-alt" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                        <View style={styles.modalInfoContent}>
+                          <Text style={styles.modalInfoLabel}>Description</Text>
+                          <Text style={styles.modalInfoValue}>{job.description}</Text>
+                    </View>
+                    </View>
+                    </View>
+                  )}
+
+                  {/* Candidates Section */}
+                  <View style={styles.modalCandidatesSection}>
+                    <Text style={styles.modalCandidatesTitle}>Candidates</Text>
+                    {accepted.length === 0 ? (
+                      <View style={styles.modalEmptyCandidates}>
+                        <Text style={styles.sheetInfoText}>No accepted candidates yet.</Text>
+                    </View>
+                    ) : (
+                      accepted.map((a, idx) => {
                     const firstName = a?.user?.firstName || 'Unknown';
                     const lastName = a?.user?.lastName || '';
                     const fullName = `${firstName} ${lastName}`.trim();
@@ -647,50 +768,83 @@ const AssignBottomSheet = ({
                     const displayRole = specialization ? `${role} • ${specialization}` : role;
                     const acceptedAt = a?.updatedAt || a?.acceptedAt || a?.createdAt || undefined;
                     return (
-                      <View key={`acc-${idx}`} style={styles.candidateCard}>
-                        <View style={styles.candidateHeader}>
-                          <Text style={styles.candidateName} numberOfLines={1}>{fullName}</Text>
-                          <Text style={[styles.assignmentStatus, { color: Colors.success }]}>ACCEPTED</Text>
-                        </View>
-                        <Text style={styles.candidateRole} numberOfLines={1}>{displayRole}</Text>
-                        <View style={styles.candidateInfoRow}>
-                          <Text style={styles.candidateInfoLabel}>Phone:</Text>
-                          <Text style={styles.candidateInfoValue} numberOfLines={1}>{phone}</Text>
-                        </View>
-                        <View style={styles.candidateInfoRow}>
-                          <Text style={styles.candidateInfoLabel}>Email:</Text>
-                          <Text style={styles.candidateInfoValue} numberOfLines={1}>{email}</Text>
-                        </View>
-                        {acceptedAt && (
-                          <View style={styles.candidateInfoRow}>
-                            <Text style={styles.candidateInfoLabel}>Accepted:</Text>
-                            <Text style={styles.candidateInfoValue}>{new Date(acceptedAt).toLocaleString()}</Text>
+                        <View key={`acc-${idx}`} style={styles.modalCandidateCard}>
+                          <View style={styles.modalCandidateHeader}>
+                            <View style={styles.modalCandidateInfo}>
+                              <FontAwesomeIcon icon="user" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                              <View style={styles.modalInfoContent}>
+                                <Text style={styles.modalInfoLabel}>Candidate</Text>
+                                <Text style={styles.modalInfoValue} numberOfLines={1}>{fullName}</Text>
+                    </View>
+                    </View>
+                            <Text style={[styles.assignmentStatus, { color: Colors.success }]}>ACCEPTED</Text>
+                    </View>
+                          
+                          <View style={styles.modalCandidateDetails}>
+                            <View style={styles.modalInfoRow}>
+                              <FontAwesomeIcon icon="briefcase" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                              <View style={styles.modalInfoContent}>
+                                <Text style={styles.modalInfoLabel}>Role</Text>
+                                <Text style={styles.modalInfoValue} numberOfLines={1}>{displayRole}</Text>
+                </View>
+                            </View>
+                            
+                            <View style={styles.modalInfoRow}>
+                              <FontAwesomeIcon icon="phone" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                              <View style={styles.modalInfoContent}>
+                                <Text style={styles.modalInfoLabel}>Phone</Text>
+                                <Text style={styles.modalInfoValue} numberOfLines={1}>{phone}</Text>
+                    </View>
+                </View>
+                            
+                            <View style={styles.modalInfoRow}>
+                              <FontAwesomeIcon icon="envelope" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                              <View style={styles.modalInfoContent}>
+                                <Text style={styles.modalInfoLabel}>Email</Text>
+                                <Text style={styles.modalInfoValue} numberOfLines={1}>{email}</Text>
+                    </View>
+                    </View>
+                            
+                            {acceptedAt && (
+                              <View style={styles.modalInfoRow}>
+                                <FontAwesomeIcon icon="calendar-check" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                                <View style={styles.modalInfoContent}>
+                                  <Text style={styles.modalInfoLabel}>Accepted</Text>
+                                  <Text style={styles.modalInfoValue}>{new Date(acceptedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
+                </View>
+                              </View>
+                            )}
                           </View>
-                        )}
-                        <TouchableOpacity 
-                          style={styles.selectButton}
-                          onPress={() => handleSelectCandidate(a)}
-                          disabled={isSelecting}
-                        >
-                          {isSelecting ? (
-                            <ActivityIndicator size="small" color={Colors.white} />
-                          ) : (
-                            <>
-                              <FontAwesomeIcon icon="check" size={16} color={Colors.white} />
-                              <Text style={styles.selectButtonText}>Select Candidate</Text>
-                            </>
-                          )}
-                        </TouchableOpacity>
-                      </View>
+                          
+                          <TouchableOpacity 
+                            style={styles.modalSelectButton}
+                            onPress={() => handleSelectCandidate(a)}
+                            disabled={isSelecting}
+                          >
+                            {isSelecting ? (
+                              <ActivityIndicator size="small" color={Colors.white} />
+                            ) : (
+                              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <FontAwesomeIcon icon="check" size={16} color={Colors.white} style={{ marginRight: 8 }} />
+                                <Text style={styles.modalSelectButtonText}>Select Candidate</Text>
+                </View>
+              )}
+                          </TouchableOpacity>
+                </View>
                     );
-                  })
-                )}
-              </View>
-            </ScrollView>
+                      })
+              )}
+            </View>
+                </>
+              )}
+          </ScrollView>
           )}
+
+          {!loading && (
           <TouchableOpacity style={styles.sheetCloseButton} onPress={onClose}>
             <Text style={styles.sheetCloseText}>Close</Text>
           </TouchableOpacity>
+          )}
         </View>
         {/* Centered confirmation popup */}
         {confirmVisible && (
@@ -706,6 +860,7 @@ const AssignBottomSheet = ({
     </Modal>
   );
 };
+
 
 const FilterBottomSheet = ({
   visible,
@@ -858,7 +1013,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Responsive.scale(Spacing.md),
     paddingBottom: Responsive.verticalScale(Spacing.xs),
     backgroundColor: Colors.background,
-    marginTop: Responsive.verticalScale(Spacing.xs),
+    marginTop: Responsive.verticalScale(Spacing.md),
   },
   searchBar: {
     flexDirection: 'row',
@@ -1091,7 +1246,7 @@ const styles = StyleSheet.create({
   assignmentRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    marginHorizontal: -6,
   },
   infoCol: {
     flex: 1,
@@ -1118,6 +1273,46 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.xs,
     fontFamily: Typography.fontFamily.bold,
     textTransform: 'capitalize',
+  },
+  departmentRow: {
+    marginTop: Spacing.sm,
+  },
+  cardActionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: Spacing.md,
+  },
+  assignButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primary,
+    borderRadius: BorderRadius.md,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  assignButtonText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.white,
+  },
+  jobDetailsButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.md,
+    paddingVertical: 12,
+    gap: 8,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+  },
+  jobDetailsButtonText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.primary,
   },
   // removed action button variants
   fab: {
@@ -1178,7 +1373,146 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
   sheetContent: {
+    paddingBottom: 24,
+  },
+  modalHeader: {
+    marginBottom: 24,
     paddingBottom: 16,
+  },
+  modalHeaderTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  modalTitle: {
+    flex: 1,
+    fontSize: Typography.fontSize.xl,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+    marginRight: 12,
+  },
+  modalSubtitle: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.textSecondary,
+    marginTop: 4,
+  },
+  modalCloseIcon: {
+    padding: 4,
+  },
+  modalSection: {
+    marginBottom: 24,
+  },
+  modalInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  modalIcon: {
+    marginRight: 12,
+    marginTop: 2,
+    width: 20,
+  },
+  modalInfoContent: {
+    flex: 1,
+  },
+  modalInfoLabel: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textTertiary,
+    marginBottom: 4,
+  },
+  modalInfoValue: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+    lineHeight: 22,
+  },
+  modalCandidatesSection: {
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  modalCandidatesTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+    marginBottom: 16,
+  },
+  modalEmptyCandidates: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  modalCandidateCard: {
+    backgroundColor: Colors.background,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+  },
+  modalCandidateHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalCandidateInfo: {
+    flexDirection: 'row',
+    flex: 1,
+    alignItems: 'flex-start',
+  },
+  modalCandidateDetails: {
+    marginBottom: 16,
+  },
+  modalSelectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.success,
+    borderRadius: BorderRadius.md,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginTop: 8,
+  },
+  modalSelectButtonText: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.white,
+  },
+  modalTwoColRow: {
+    flexDirection: 'row',
+    marginHorizontal: -8,
+  },
+  modalCol: {
+    flex: 1,
+    marginHorizontal: 8,
+  },
+  modalStatusBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  modalStatusBadgeText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  modalPriorityBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  modalPriorityBadgeText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   jobDetailCard: {
     backgroundColor: Colors.white,
@@ -1253,6 +1587,7 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.regular,
     color: Colors.textPrimary,
     backgroundColor: Colors.white,
+    marginHorizontal: 4,
   },
   chipsRow: {
     flexDirection: 'row',
@@ -1266,6 +1601,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.borderLight,
     backgroundColor: Colors.background,
+    marginRight: 8,
+    marginTop: 4,
   },
   chipText: {
     fontSize: Typography.fontSize.xs,
@@ -1285,6 +1622,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.borderLight,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 5,
   },
   clearButtonText: {
     fontSize: Typography.fontSize.base,
@@ -1298,6 +1636,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    marginLeft: 5,
   },
   applyButtonText: {
     fontSize: Typography.fontSize.base,
@@ -1491,3 +1830,4 @@ const styles = StyleSheet.create({
 });
 
 export default HRJobsScreen;
+

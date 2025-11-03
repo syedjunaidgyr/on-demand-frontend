@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  Modal,
   Alert,
   ActivityIndicator,
   FlatList,
@@ -151,6 +152,127 @@ const ReportsScreen: React.FC = () => {
   const [loadingAssignmentDetails, setLoadingAssignmentDetails] = useState(false);
   const [exportingJobId, setExportingJobId] = useState<number | null>(null);
   const [exportingAssignmentId, setExportingAssignmentId] = useState<number | null>(null);
+  const [showJobsExportMenu, setShowJobsExportMenu] = useState(false);
+  const [showJobExportMenuForId, setShowJobExportMenuForId] = useState<number | null>(null);
+  const [showAssignmentExportMenuForId, setShowAssignmentExportMenuForId] = useState<number | null>(null);
+  const [showJobsFilterModal, setShowJobsFilterModal] = useState(false);
+  const [jobsFilterTitle, setJobsFilterTitle] = useState('');
+  const [jobsFilterStatus, setJobsFilterStatus] = useState('');
+  const [jobsFilterStartDate, setJobsFilterStartDate] = useState('');
+  const [jobsFilterEndDate, setJobsFilterEndDate] = useState('');
+  const [jobsFilterDepartment, setJobsFilterDepartment] = useState('');
+  const [jobsDeptDropdownOpen, setJobsDeptDropdownOpen] = useState(false);
+  const [showAssignmentsExportMenu, setShowAssignmentsExportMenu] = useState(false);
+  const [showAssignmentsFilterModal, setShowAssignmentsFilterModal] = useState(false);
+  const [assignmentsFilterTitle, setAssignmentsFilterTitle] = useState('');
+  const [assignmentsFilterStatus, setAssignmentsFilterStatus] = useState('');
+  const [assignmentsFilterStartDate, setAssignmentsFilterStartDate] = useState('');
+  const [assignmentsFilterEndDate, setAssignmentsFilterEndDate] = useState('');
+  const [assignmentsFilterDepartment, setAssignmentsFilterDepartment] = useState('');
+  const [assignmentsDeptDropdownOpen, setAssignmentsDeptDropdownOpen] = useState(false);
+  const [showSearchBar, setShowSearchBar] = useState(false);
+  const [showJobsStartPicker, setShowJobsStartPicker] = useState(false);
+  const [showJobsEndPicker, setShowJobsEndPicker] = useState(false);
+  const [showAssignmentsStartPicker, setShowAssignmentsStartPicker] = useState(false);
+  const [showAssignmentsEndPicker, setShowAssignmentsEndPicker] = useState(false);
+  
+  // Check-In/Out filter states
+  const [checkinFilterTitle, setCheckinFilterTitle] = useState('');
+  const [checkinFilterStatus, setCheckinFilterStatus] = useState('');
+  const [checkinFilterStartDate, setCheckinFilterStartDate] = useState('');
+  const [checkinFilterEndDate, setCheckinFilterEndDate] = useState('');
+  const [checkinFilterDepartment, setCheckinFilterDepartment] = useState('');
+  const [checkinDeptDropdownOpen, setCheckinDeptDropdownOpen] = useState(false);
+  const [showCheckinExportMenu, setShowCheckinExportMenu] = useState(false);
+  const [showCheckinExportMenuForId, setShowCheckinExportMenuForId] = useState<string | null>(null);
+  const [showCheckinFilterModal, setShowCheckinFilterModal] = useState(false);
+  const [showCheckinStartPicker, setShowCheckinStartPicker] = useState(false);
+  const [showCheckinEndPicker, setShowCheckinEndPicker] = useState(false);
+  
+
+  // Helper: current filtered jobs (Title + Department)
+  const getFilteredJobs = () => {
+    const titleQuery = jobsFilterTitle.trim().toLowerCase();
+    const statusFilter = jobsFilterStatus.trim();
+    const startFilter = jobsFilterStartDate.trim();
+    const endFilter = jobsFilterEndDate.trim();
+    const deptFilter = jobsFilterDepartment.trim();
+    return jobs.filter((j) => {
+      const byTitle = titleQuery.length === 0 || (j.title || '').toLowerCase().includes(titleQuery);
+      const byStatus = statusFilter.length === 0 || (j.status || '') === statusFilter;
+      const jobStart = (j.startDate || '').split('T')[0];
+      const jobEnd = (j.endDate || '').split('T')[0];
+      const byStart = startFilter.length === 0 || (jobStart && jobStart >= startFilter);
+      const byEnd = endFilter.length === 0 || (jobEnd && jobEnd <= endFilter);
+      const byDept = deptFilter.length === 0 || (j.department || '') === deptFilter;
+      return byTitle && byStatus && byStart && byEnd && byDept;
+    });
+  };
+
+  // Helper: current filtered assignments (Job Title + Department)
+  const getFilteredAssignments = () => {
+    const titleQuery = assignmentsFilterTitle.trim().toLowerCase();
+    const statusFilter = assignmentsFilterStatus.trim();
+    const startFilter = assignmentsFilterStartDate.trim();
+    const endFilter = assignmentsFilterEndDate.trim();
+    const deptFilter = assignmentsFilterDepartment.trim();
+    return assignments.filter((a) => {
+      const jobTitle = (a.job?.title || '').toLowerCase();
+      const jobStart = (a.job?.startDate || '').split('T')[0];
+      const jobEnd = (a.job?.endDate || '').split('T')[0];
+      const jobDept = a.job?.department || '';
+      const byTitle = titleQuery.length === 0 || jobTitle.includes(titleQuery);
+      const byStatus = statusFilter.length === 0 || (a.status || '') === statusFilter;
+      const byStart = startFilter.length === 0 || (jobStart && jobStart >= startFilter);
+      const byEnd = endFilter.length === 0 || (jobEnd && jobEnd <= endFilter);
+      const byDept = deptFilter.length === 0 || jobDept === deptFilter;
+      return byTitle && byStatus && byStart && byEnd && byDept;
+    });
+  };
+
+  // Helper: current filtered check-ins
+  const getFilteredCheckIns = () => {
+    const allCheckIns = [
+      ...(realtimeData?.activeStaffDetails || []).map((item: any) => ({ ...item, isActive: true })),
+      ...attendanceData
+    ];
+    
+    const titleQuery = checkinFilterTitle.trim().toLowerCase();
+    const statusFilter = checkinFilterStatus.trim();
+    const startFilter = checkinFilterStartDate.trim();
+    const endFilter = checkinFilterEndDate.trim();
+    const deptFilter = checkinFilterDepartment.trim();
+    
+    return allCheckIns.filter((item) => {
+      const userName = item.isActive 
+        ? (item.userName || '').toLowerCase()
+        : (item.user ? `${item.user.firstName} ${item.user.lastName}` : '').toLowerCase();
+      const byTitle = titleQuery.length === 0 || userName.includes(titleQuery);
+      
+      const itemStatus = item.status || 'CHECKED_IN';
+      const byStatus = statusFilter.length === 0 || itemStatus === statusFilter;
+      
+      const checkInDate = new Date(item.checkInTime).toISOString().split('T')[0];
+      const byStart = startFilter.length === 0 || checkInDate >= startFilter;
+      const byEnd = endFilter.length === 0 || checkInDate <= endFilter;
+      
+      const dept = item.isActive 
+        ? (item.department || item.jobDepartment || '')
+        : (item.job?.department || '');
+      const byDept = deptFilter.length === 0 || dept === deptFilter;
+      
+      return byTitle && byStatus && byStart && byEnd && byDept;
+    });
+  };
+
+  
+
+  const formatDateShort = (dateString?: string) => {
+    if (!dateString) return '—';
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
 
   // Check-In/Out state
   const [realtimeData, setRealtimeData] = useState<any>(null);
@@ -167,20 +289,61 @@ const ReportsScreen: React.FC = () => {
     department: '',
   });
 
+  // Payout tab state
+  const [payoutFilters, setPayoutFilters] = useState<{ startDate: string; endDate: string; userId?: string; jobId?: string }>(
+    {
+      startDate: '',
+      endDate: '',
+      userId: '',
+      jobId: '',
+    }
+  );
+  const [payoutData, setPayoutData] = useState<{ lines: any[]; totals: { byUser: any[]; grandTotal: number }; period?: any }>(
+    { lines: [], totals: { byUser: [], grandTotal: 0 } }
+  );
+  const [loadingPayout, setLoadingPayout] = useState(false);
+  const [showPayoutStartPicker, setShowPayoutStartPicker] = useState(false);
+  const [showPayoutEndPicker, setShowPayoutEndPicker] = useState(false);
+
   const buildPdfUrlForJob = (jobId: number) => `${getFinalApiUrl()}/reports/jobs/${jobId}.pdf`;
   const buildPdfUrlForAssignment = (assignmentId: number) => `${getFinalApiUrl()}/reports/assignments/${assignmentId}.pdf`;
   const buildPdfUrlForAllJobs = () => `${getFinalApiUrl()}/reports/jobs.pdf`;
   const buildPdfUrlForAllAssignments = () => `${getFinalApiUrl()}/reports/assignments.pdf`;
 
   const reportTypes = [
-    { key: 'job-lists', label: 'Job Lists', icon: 'list' },
-    { key: 'assignment-lists', label: 'Assignment Lists', icon: 'users' },
+    { key: 'job-lists', label: 'Jobs', icon: 'list' },
+    { key: 'assigned', label: 'Assigned', icon: 'users' },
     { key: 'checkin-out', label: 'Check-In/Out', icon: 'clock' },
+    { key: 'payout', label: 'Check-In/Out Payout', icon: 'dollar-sign' },
     // { key: 'job-postings', label: 'Job Postings', icon: 'briefcase' },
     // { key: 'assignments', label: 'Assignments', icon: 'users' },
     // { key: 'attendance', label: 'Attendance', icon: 'clock' },
     // { key: 'no-shows', label: 'No-Shows', icon: 'times-circle' },
     // { key: 'financial', label: 'Financial', icon: 'dollar-sign' },
+  ];
+
+  // Hardcoded departments used in registration page
+  const hardcodedDepartments = [
+    'Emergency Medicine',
+    'General Medicine',
+    'General Surgery',
+    'Obstetrics & Gynecology',
+    'Pediatrics',
+    'Orthopedics',
+    'Cardiology',
+    'Neurology',
+    'Urology',
+    'Nephrology',
+    'Gastroenterology',
+    'Oncology',
+    'ENT',
+    'Ophthalmology',
+    'Dermatology',
+    'Psychiatry',
+    'Radiology',
+    'Pathology',
+    'Anesthesiology',
+    'Physiotherapy',
   ];
 
   const statusOptions = [
@@ -211,6 +374,35 @@ const ReportsScreen: React.FC = () => {
       } catch {}
     }
   }, [selectedReportType]);
+
+  const fetchPayoutWith = async (startDate: string, endDate: string, userId?: string, jobId?: string) => {
+    try {
+      setLoadingPayout(true);
+      const resp = await ApiService.getPayoutReport({
+        startDate,
+        endDate,
+        userId: userId || undefined,
+        jobId: jobId || undefined,
+      });
+      const data = (resp as any)?.data || resp;
+      setPayoutData({
+        lines: data?.lines || [],
+        totals: data?.totals || { byUser: [], grandTotal: 0 },
+        period: data?.period,
+      });
+    } catch (e: any) {
+      console.log('Failed to load payout report:', e?.message || e);
+      setPayoutData({ lines: [], totals: { byUser: [], grandTotal: 0 } });
+    } finally {
+      setLoadingPayout(false);
+    }
+  };
+  const fetchPayout = async () => {
+    const today = formatDate(new Date());
+    const start = payoutFilters.startDate || today;
+    const end = payoutFilters.endDate || today;
+    await fetchPayoutWith(start, end, payoutFilters.userId, payoutFilters.jobId);
+  };
 
   const loadRealtimeData = async () => {
     try {
@@ -739,8 +931,15 @@ const ReportsScreen: React.FC = () => {
       setIsGenerating(true);
       const fileName = `All_Jobs_${new Date().getTime()}`;
 
+      // Apply current Title/Department filters to exported dataset
+      const filtered = getFilteredJobs();
+      if (!filtered || filtered.length === 0) {
+        Alert.alert('Nothing to export', 'No jobs match the current filters');
+        return;
+      }
+
       if (format === 'pdf') {
-        const rows = jobs.map(job => ({
+        const rows = filtered.map(job => ({
           id: job.id,
           title: job.title,
           department: job.department,
@@ -752,7 +951,7 @@ const ReportsScreen: React.FC = () => {
         }));
         await ExportUtils.generateAndSavePDF(rows, fileName, ['id', 'title', 'department', 'location', 'startDate', 'endDate', 'status', 'specialization'], 'All Jobs');
       } else if (format === 'excel') {
-        const jobsData = jobs.map(job => ({
+        const jobsData = filtered.map(job => ({
           id: job.id,
           title: job.title,
           department: job.department,
@@ -777,9 +976,14 @@ const ReportsScreen: React.FC = () => {
     try {
       setIsGenerating(true);
       const fileName = `All_Assignments_${new Date().getTime()}`;
+      const filtered = getFilteredAssignments();
+      if (!filtered || filtered.length === 0) {
+        Alert.alert('Nothing to export', 'No assignments match the current filters');
+        return;
+      }
 
       if (format === 'pdf') {
-        const rows = assignments.map(a => ({
+        const rows = filtered.map(a => ({
           id: a.id,
           jobTitle: a.job?.title || 'N/A',
           userName: a.user ? `${a.user.firstName} ${a.user.lastName}` : 'Unknown',
@@ -791,7 +995,7 @@ const ReportsScreen: React.FC = () => {
         }));
         await ExportUtils.generateAndSavePDF(rows, fileName, ['id', 'jobTitle', 'userName', 'status', 'totalHours', 'totalPayment', 'hourlyRate', 'createdAt'], 'All Assignments');
       } else if (format === 'excel') {
-        const assignmentsData = assignments.map(a => ({
+        const assignmentsData = filtered.map(a => ({
           id: a.id,
           jobTitle: a.job?.title || 'N/A',
           userName: a.user ? `${a.user.firstName} ${a.user.lastName}` : 'Unknown',
@@ -828,6 +1032,72 @@ const ReportsScreen: React.FC = () => {
     } catch (error) {
       console.error('Export error:', error);
       Alert.alert('Export Failed', 'Failed to export check-in/out data');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Export payout data
+  const handleExportPayout = async (format: 'pdf' | 'excel') => {
+    try {
+      if (!payoutData.lines || payoutData.lines.length === 0) {
+        Alert.alert('Nothing to export', 'Generate payout first');
+        return;
+      }
+      setIsGenerating(true);
+      const rows = payoutData.lines.map((r: any) => ({
+        jobId: r.jobId,
+        jobTitle: r.jobTitle,
+        assignmentId: r.assignmentId,
+        userId: r.userId,
+        staffName: r.staffName,
+        shiftDates: (r.shiftDates || []).join(', '),
+        minutesWorked: r.minutesWorked,
+        hoursWorked: r.hoursWorked,
+        hourlyRate: r.hourlyRate,
+        amount: r.amount,
+      }));
+      const headers = ['jobId','jobTitle','assignmentId','userId','staffName','shiftDates','minutesWorked','hoursWorked','hourlyRate','amount'];
+      const fileBase = `Payout_${payoutFilters.startDate || ''}_${payoutFilters.endDate || ''}`;
+      if (format === 'pdf') {
+        await ExportUtils.generateAndSavePDF(rows, fileBase, headers, 'Check-In/Out Payout');
+      } else {
+        await ExportUtils.exportToXLSXFile(rows, fileBase, headers);
+      }
+    } catch (error) {
+      console.error('Export payout failed:', error);
+      Alert.alert('Export Failed', 'Could not export payout report');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Export single payout line
+  const handleExportSinglePayout = async (item: any, format: 'pdf' | 'excel') => {
+    try {
+      setIsGenerating(true);
+      const row = {
+        jobId: item.jobId,
+        jobTitle: item.jobTitle,
+        assignmentId: item.assignmentId,
+        userId: item.userId,
+        staffName: item.staffName,
+        shiftDates: (item.shiftDates || []).join(', '),
+        minutesWorked: item.minutesWorked,
+        hoursWorked: item.hoursWorked,
+        hourlyRate: item.hourlyRate,
+        amount: item.amount,
+      };
+      const headers = ['jobId','jobTitle','assignmentId','userId','staffName','shiftDates','minutesWorked','hoursWorked','hourlyRate','amount'];
+      const fileBase = `Payout_${item.assignmentId || ''}_${new Date().getTime()}`;
+      if (format === 'pdf') {
+        await ExportUtils.generateAndSavePDF([row], fileBase, headers, 'Payout Line');
+      } else {
+        await ExportUtils.exportToXLSXFile([row], fileBase, headers);
+      }
+    } catch (error) {
+      console.error('Export single payout failed:', error);
+      Alert.alert('Export Failed', 'Could not export payout line');
     } finally {
       setIsGenerating(false);
     }
@@ -899,24 +1169,26 @@ const ReportsScreen: React.FC = () => {
     <View style={styles.container}>
       <GlobalHeader
         title="Reports"
-        backgroundColor={Colors.primary}
+        backgroundColor="#FFFFFF"
+        titleColor="#111827"
+        headerStyle={{ paddingTop: 10, paddingHorizontal: 20, paddingBottom: 16 }}
         onBackPress={() => navigation.goBack()}
         rightComponent={
-          <TouchableOpacity style={styles.filterButton}>
-            <FontAwesomeIcon icon="filter" size={Responsive.iconSize(20)} color={Colors.white} />
+          <TouchableOpacity style={styles.headerIconButton} onPress={() => setShowSearchBar(v => !v)}>
+            <FontAwesomeIcon icon="search" size={Responsive.iconSize(16)} color="#111827" />
           </TouchableOpacity>
         }
       />
 
       <ScrollView ref={scrollRef} style={[styles.scrollView, { paddingHorizontal: dynamicHorizontalGutter }]} showsVerticalScrollIndicator={false}>
         {/* Report Type Tabs */}
-        <View style={[styles.tabsContainer, { marginHorizontal: -dynamicHorizontalGutter }]}>
+        <View style={[styles.tabsContainer, { marginHorizontal: 0 }]}>
           <FlatList
             ref={tabsListRef}
             data={reportTypes}
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={[styles.tabsInnerContent, { paddingLeft: dynamicTabsStartPadding, paddingRight: dynamicTabsEndPadding }]}
+            contentContainerStyle={[styles.tabsInnerContent, { paddingLeft: 0, paddingRight: Spacing.lg }]}
             onScrollToIndexFailed={(e) => {
               // Fallback to approximate offset when RN can't compute index position yet
               const offset = (e.averageItemLength || 100) * e.index;
@@ -947,7 +1219,7 @@ const ReportsScreen: React.FC = () => {
                   color={
                     selectedReportType === type.key
                       ? Colors.white
-                      : Colors.textSecondary
+                      : '#1C2A3A'
                   }
                 />
                 <Text
@@ -964,34 +1236,69 @@ const ReportsScreen: React.FC = () => {
           />
         </View>
 
+        {showSearchBar && (
+          <View style={{ marginBottom: Spacing.sm }}>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Search by title"
+              value={
+                selectedReportType === 'assigned' ? assignmentsFilterTitle :
+                selectedReportType === 'checkin-out' ? checkinFilterTitle :
+                jobsFilterTitle
+              }
+              onChangeText={(t) => 
+                selectedReportType === 'assigned' ? setAssignmentsFilterTitle(t) :
+                selectedReportType === 'checkin-out' ? setCheckinFilterTitle(t) :
+                setJobsFilterTitle(t)
+              }
+            />
+          </View>
+        )}
+
         {/* Job Lists View */}
         {selectedReportType === 'job-lists' ? (
           <View style={styles.jobListsContainer}>
             <View style={styles.exportHeaderContainer}>
               <Text style={styles.sectionTitle}>All Jobs</Text>
-              <View style={styles.globalExportButtons}>
+              <View style={styles.headerActionsRow}>
                 <TouchableOpacity
-                  style={[styles.exportButtonSmall, styles.pdfButton]}
-                  onPress={() => handleExportAllJobs('pdf')}
-                  disabled={isGenerating || jobs.length === 0}
+                  style={styles.exportDropdownButton}
+                  onPress={() => setShowJobsExportMenu(v => !v)}
+                  disabled={isGenerating || getFilteredJobs().length === 0}
                 >
-                  {isGenerating ? (
-                    <ActivityIndicator size="small" color={Colors.white} />
-                  ) : (
-                    <FontAwesomeIcon icon="file-pdf" size={Responsive.iconSize(18)} color={Colors.white} />
-                  )}
+                  <FontAwesomeIcon icon="file-export" size={Responsive.iconSize(16)} color={Colors.white} />
+                  <Text style={styles.exportDropdownText}>Export All</Text>
+                  <FontAwesomeIcon icon={showJobsExportMenu ? 'chevron-up' : 'chevron-down'} size={12} color={Colors.white} />
                 </TouchableOpacity>
+
+                {showJobsExportMenu && (
+                  <View style={styles.exportDropdownMenu}>
+                    <TouchableOpacity
+                      style={styles.exportDropdownItem}
+                      onPress={() => { setShowJobsExportMenu(false); handleExportAllJobs('pdf'); }}
+                    >
+                      <FontAwesomeIcon icon="file-pdf" size={14} color={Colors.error} />
+                      <Text style={styles.exportDropdownItemText}>PDF</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.exportDropdownItem}
+                      onPress={() => { setShowJobsExportMenu(false); handleExportAllJobs('excel'); }}
+                    >
+                      <FontAwesomeIcon icon="file-excel" size={14} color={Colors.success} />
+                      <Text style={styles.exportDropdownItemText}>Excel</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
                 <TouchableOpacity
-                  style={[styles.exportButtonSmall, styles.excelButton]}
-                  onPress={() => handleExportAllJobs('excel')}
-                  disabled={isGenerating || jobs.length === 0}
+                  style={styles.filterOutlineButton}
+                  onPress={() => setShowJobsFilterModal(true)}
                 >
-                  {isGenerating ? (
-                    <ActivityIndicator size="small" color={Colors.white} />
-                  ) : (
-                    <FontAwesomeIcon icon="file-excel" size={Responsive.iconSize(18)} color={Colors.white} />
-                  )}
+                  <FontAwesomeIcon icon="filter" size={14} color={Colors.textPrimary} />
+                  <Text style={styles.filterOutlineText}>Filter</Text>
                 </TouchableOpacity>
+
+                {/* Filter button removed as requested */}
               </View>
             </View>
             {jobs.length === 0 ? (
@@ -1004,87 +1311,161 @@ const ReportsScreen: React.FC = () => {
               </View>
             ) : (
               <FlatList
-                data={jobs}
-                renderItem={({ item }) => (
-                  <View style={styles.jobCardContainer}>
-                    <View style={styles.jobCard}>
-                      <TouchableOpacity onPress={() => handleJobClick(item.id)}>
-                        <View style={styles.jobCardHeader}>
-                          <View style={styles.jobCardTitleSection}>
-                            <Text style={styles.jobCardTitle} numberOfLines={2}>{item.title}</Text>
-                            <View style={[
-                              styles.statusBadge,
-                              { backgroundColor: getStatusColor(item.status || 'ACTIVE') }
-                            ]}>
-                              <Text style={styles.statusText}>{item.status || 'ACTIVE'}</Text>
-                            </View>
+                data={getFilteredJobs()}
+                renderItem={({ item }) => {
+                  const dateRange = `${formatDateShort(item.startDate)} - ${formatDateShort(item.endDate)}`;
+                  const statusBg = getStatusColor(item.status || 'ACTIVE');
+                  return (
+                    <View style={styles.jobCardContainer}>
+                      <View style={[styles.jobCard, showJobExportMenuForId === item.id && { zIndex: 2000, elevation: 16 }]}> 
+                        {/* Top row date + hourly rate */}
+                        <View style={styles.cardTopRow}>
+                          <Text style={styles.cardTimeText}>{dateRange}</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <TouchableOpacity
+                              style={styles.inlineIconButton}
+                              onPress={() => setShowJobExportMenuForId(prev => prev === item.id ? null : item.id)}
+                              disabled={exportingJobId === item.id}
+                            >
+                              {exportingJobId === item.id ? (
+                                <ActivityIndicator size="small" color={Colors.primary} />
+                              ) : (
+                                <FontAwesomeIcon icon="file-export" size={22} color={Colors.primary} />
+                              )}
+                            </TouchableOpacity>
                           </View>
                         </View>
-                        <Text style={styles.jobCardDepartment}>{item.department}</Text>
-                        <Text style={styles.jobCardLocation}>{item.location}</Text>
-                        <Text style={styles.jobCardDates}>
-                          {item.startDate.split('T')[0]} to {item.endDate.split('T')[0]}
-                        </Text>
-                      </TouchableOpacity>
-                      <View style={styles.jobCardExportButtonsInside}>
-                        <TouchableOpacity
-                          style={[styles.cardExportBtn, { backgroundColor: Colors.error }]}
-                          onPress={() => handleExportJob(item.id, 'pdf')}
-                          disabled={exportingJobId === item.id}
-                        >
-                          {exportingJobId === item.id ? (
-                            <ActivityIndicator size="small" color={Colors.white} />
-                          ) : (
-                            <FontAwesomeIcon icon="file-pdf" size={Responsive.iconSize(16)} color={Colors.white} />
-                          )}
+                        <View style={styles.cardDivider} />
+
+                        {/* Tap upper content to open details */}
+                        <TouchableOpacity onPress={() => handleJobClick(item.id)} activeOpacity={0.8}>
+                          {/* Profile/content row like HRJobsScreen */}
+                          <View style={styles.profileRow}>
+                            <View style={styles.profileContent}>
+                              <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
+                              <View style={styles.subtitleRow}>
+                                {!!item.location && (
+                                  <Text style={styles.subtitleText} numberOfLines={1}>{item.location}</Text>
+                                )}
+                                {(item.location && (item.department || item.specialization)) ? (
+                                  <Text style={styles.subtitleDot}> • </Text>
+                                ) : null}
+                                {!!(item.department || item.specialization) && (
+                                  <Text style={styles.subtitleText} numberOfLines={1}>
+                                    {item.department || item.specialization}
+                                  </Text>
+                                )}
+                                {!!(item.department || item.specialization) && !!item.status ? (
+                                  <Text style={styles.subtitleDot}> • </Text>
+                                ) : null}
+                                {!!item.status && (
+                                  <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor(item.status || 'ACTIVE') }]}> 
+                                    <Text style={[styles.inlineStatusText, { color: Colors.white }]}>
+                                      {formatStatusLabel(item.status || 'ACTIVE')}
+                                    </Text>
+                                  </View>
+                                )}
+                              </View>
+
+                              {/* 2-col info row (removed Dates to avoid duplication) */}
+                              <View style={styles.assignmentRow}>
+                                <View style={styles.infoCol}>
+                                  <Text style={styles.infoLabel}>Job ID</Text>
+                                  <Text style={styles.infoValue}>{item.id}</Text>
+                                </View>
+                                <View style={styles.infoCol}>
+                                  <Text style={styles.infoLabel}>Specialization</Text>
+                                  <Text style={styles.infoValue} numberOfLines={1}>{item.specialization || '—'}</Text>
+                                </View>
+                                <View style={styles.infoCol}>
+                                  <Text style={styles.infoLabel}>Charges</Text>
+                                  <Text style={styles.infoValue} numberOfLines={1}>{(item as any)?.hourlyRate ? `₹${(item as any).hourlyRate}/hr` : '—'}</Text>
+                                </View>
+                              </View>
+
+                              {/* Optional description */}
+                              {!!(item as any)?.description && (
+                                <Text style={styles.descriptionText} numberOfLines={2}>
+                                  {(item as any).description}
+                                </Text>
+                              )}
+                            </View>
+                          </View>
                         </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.cardExportBtn, { backgroundColor: Colors.success }]}
-                          onPress={() => handleExportJob(item.id, 'excel')}
-                          disabled={exportingJobId === item.id}
-                        >
-                          {exportingJobId === item.id ? (
-                            <ActivityIndicator size="small" color={Colors.white} />
-                          ) : (
-                            <FontAwesomeIcon icon="file-excel" size={Responsive.iconSize(16)} color={Colors.white} />
-                          )}
-                        </TouchableOpacity>
+
+                        {/* Inline export dropdown anchor */}
+                        {showJobExportMenuForId === item.id && (
+                          <View style={[styles.exportDropdownMenu, { right: 8, top: 36, position: 'absolute' }]}>
+                            <TouchableOpacity
+                              style={styles.exportDropdownItem}
+                              onPress={() => { setShowJobExportMenuForId(null); handleExportJob(item.id, 'pdf'); }}
+                            >
+                              <FontAwesomeIcon icon="file-pdf" size={14} color={Colors.error} />
+                              <Text style={styles.exportDropdownItemText}>PDF</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.exportDropdownItem}
+                              onPress={() => { setShowJobExportMenuForId(null); handleExportJob(item.id, 'excel'); }}
+                            >
+                              <FontAwesomeIcon icon="file-excel" size={14} color={Colors.success} />
+                              <Text style={styles.exportDropdownItemText}>Excel</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+
+                        
                       </View>
                     </View>
-                  </View>
-                )}
+                  );
+                }}
                 keyExtractor={(item) => item.id.toString()}
                 scrollEnabled={false}
               />
             )}
           </View>
-        ) : selectedReportType === 'assignment-lists' ? (
+        ) : selectedReportType === 'assigned' ? (
           <View style={styles.jobListsContainer}>
             <View style={styles.exportHeaderContainer}>
-              <Text style={styles.sectionTitle}>All Assignments</Text>
-              <View style={styles.globalExportButtons}>
+              <Text style={styles.sectionTitle}>Assigned Jobs</Text>
+              <View style={styles.headerActionsRow}>
                 <TouchableOpacity
-                  style={[styles.exportButtonSmall, styles.pdfButton]}
-                  onPress={() => handleExportAllAssignments('pdf')}
-                  disabled={isGenerating || assignments.length === 0}
+                  style={styles.exportDropdownButton}
+                  onPress={() => setShowAssignmentsExportMenu(v => !v)}
+                  disabled={isGenerating || getFilteredAssignments().length === 0}
                 >
-                  {isGenerating ? (
-                    <ActivityIndicator size="small" color={Colors.white} />
-                  ) : (
-                    <FontAwesomeIcon icon="file-pdf" size={16} color={Colors.white} />
-                  )}
+                  <FontAwesomeIcon icon="file-export" size={Responsive.iconSize(16)} color={Colors.white} />
+                  <Text style={styles.exportDropdownText}>Export All</Text>
+                  <FontAwesomeIcon icon={showAssignmentsExportMenu ? 'chevron-up' : 'chevron-down'} size={12} color={Colors.white} />
                 </TouchableOpacity>
+
+                {showAssignmentsExportMenu && (
+                  <View style={styles.exportDropdownMenu}>
+                    <TouchableOpacity
+                      style={styles.exportDropdownItem}
+                      onPress={() => { setShowAssignmentsExportMenu(false); handleExportAllAssignments('pdf'); }}
+                    >
+                      <FontAwesomeIcon icon="file-pdf" size={14} color={Colors.error} />
+                      <Text style={styles.exportDropdownItemText}>PDF</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.exportDropdownItem}
+                      onPress={() => { setShowAssignmentsExportMenu(false); handleExportAllAssignments('excel'); }}
+                    >
+                      <FontAwesomeIcon icon="file-excel" size={14} color={Colors.success} />
+                      <Text style={styles.exportDropdownItemText}>Excel</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
                 <TouchableOpacity
-                  style={[styles.exportButtonSmall, styles.excelButton]}
-                  onPress={() => handleExportAllAssignments('excel')}
-                  disabled={isGenerating || assignments.length === 0}
+                  style={styles.filterOutlineButton}
+                  onPress={() => setShowAssignmentsFilterModal(true)}
                 >
-                  {isGenerating ? (
-                    <ActivityIndicator size="small" color={Colors.white} />
-                  ) : (
-                    <FontAwesomeIcon icon="file-excel" size={16} color={Colors.white} />
-                  )}
+                  <FontAwesomeIcon icon="filter" size={14} color={Colors.textPrimary} />
+                  <Text style={styles.filterOutlineText}>Filter</Text>
                 </TouchableOpacity>
+
+                {/* Filter button removed as requested */}
               </View>
             </View>
             {assignments.length === 0 ? (
@@ -1097,61 +1478,105 @@ const ReportsScreen: React.FC = () => {
               </View>
             ) : (
               <FlatList
-                data={assignments}
-                renderItem={({ item }) => (
-                  <View style={styles.jobCardContainer}>
-                    <View style={styles.jobCard}>
-                      <TouchableOpacity onPress={() => handleAssignmentClick(item.id)}>
-                        <View style={styles.jobCardHeader}>
-                          <View style={styles.jobCardTitleSection}>
-                            <Text style={styles.jobCardTitle} numberOfLines={2}>
-                              {item.job?.title || `Assignment #${item.id}`}
-                            </Text>
-                            <View style={[
-                              styles.statusBadge,
-                              { backgroundColor: getStatusColor(item.status) }
-                            ]}>
-                              <Text style={styles.statusText}>{item.status}</Text>
-                            </View>
+                data={getFilteredAssignments()}
+                renderItem={({ item }) => {
+                  const dateRange = `${formatDateShort(item.job?.startDate)} - ${formatDateShort(item.job?.endDate)}`;
+                  const statusBg = getStatusColor(item.status || 'ASSIGNED');
+                  return (
+                    <View style={styles.jobCardContainer}>
+                      <View style={[styles.jobCard, showAssignmentExportMenuForId === item.id && { zIndex: 2000, elevation: 16 }]}> 
+                        <View style={styles.cardTopRow}>
+                          <Text style={styles.cardTimeText}>{dateRange}</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <TouchableOpacity
+                              style={styles.inlineIconButton}
+                              onPress={() => setShowAssignmentExportMenuForId(prev => prev === item.id ? null : item.id)}
+                              disabled={exportingAssignmentId === item.id}
+                            >
+                              {exportingAssignmentId === item.id ? (
+                                <ActivityIndicator size="small" color={Colors.primary} />
+                              ) : (
+                                <FontAwesomeIcon icon="file-export" size={22} color={Colors.primary} />
+                              )}
+                            </TouchableOpacity>
                           </View>
                         </View>
-                        <Text style={styles.jobCardDepartment}>
-                          {item.user ? `${item.user.firstName} ${item.user.lastName}` : 'Unknown User'}
-                        </Text>
-                        <Text style={styles.jobCardLocation}>
-                          {item.job?.department || 'N/A'} • {item.job?.location || 'N/A'}
-                        </Text>
-                        <Text style={styles.jobCardDates}>
-                          Created: {new Date(item.createdAt).toLocaleDateString()}
-                        </Text>
-                      </TouchableOpacity>
-                      <View style={styles.jobCardExportButtonsInside}>
-                        <TouchableOpacity
-                          style={[styles.cardExportBtn, { backgroundColor: Colors.error }]}
-                          onPress={() => handleExportAssignment(item.id, 'pdf')}
-                          disabled={exportingAssignmentId === item.id}
-                        >
-                          {exportingAssignmentId === item.id ? (
-                            <ActivityIndicator size="small" color={Colors.white} />
-                          ) : (
-                            <FontAwesomeIcon icon="file-pdf" size={Responsive.iconSize(16)} color={Colors.white} />
-                          )}
+                        <View style={styles.cardDivider} />
+
+                        <TouchableOpacity onPress={() => handleAssignmentClick(item.id)} activeOpacity={0.8}>
+                          <View style={styles.profileRow}>
+                            <View style={styles.profileContent}>
+                              <Text style={styles.cardTitle} numberOfLines={1}>{item.job?.title || `Assignment #${item.id}`}</Text>
+                              <View style={styles.subtitleRow}>
+                                {!!item.job?.location && (
+                                  <Text style={styles.subtitleText} numberOfLines={1}>{item.job.location}</Text>
+                                )}
+                                {(item.job?.location && (item.job?.department || item.job?.specialization)) ? (
+                                  <Text style={styles.subtitleDot}> • </Text>
+                                ) : null}
+                                {!!(item.job?.department || item.job?.specialization) && (
+                                  <Text style={styles.subtitleText} numberOfLines={1}>
+                                    {item.job?.department || item.job?.specialization}
+                                  </Text>
+                                )}
+                                {!!(item.job?.department || item.job?.specialization) && !!item.status ? (
+                                  <Text style={styles.subtitleDot}> • </Text>
+                                ) : null}
+                                {!!item.status && (
+                                  <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor(item.status) }]}> 
+                                    <Text style={[styles.inlineStatusText, { color: Colors.white }]}> {formatStatusLabel(item.status)} </Text>
+                                  </View>
+                                )}
+                              </View>
+
+                              <View style={styles.assignmentRow}>
+                                <View style={styles.infoCol}>
+                                  <Text style={styles.infoLabel}>Assignment ID</Text>
+                                  <Text style={styles.infoValue}>{item.id}</Text>
+                                </View>
+                                <View style={styles.infoCol}>
+                                  <Text style={styles.infoLabel}>Staff</Text>
+                                  <Text style={styles.infoValue} numberOfLines={1}>{item.user ? `${item.user.firstName} ${item.user.lastName}` : 'Unknown'}</Text>
+                                </View>
+                                <View style={styles.infoCol}>
+                                  <Text style={styles.infoLabel}>Charges</Text>
+                                  <Text style={styles.infoValue} numberOfLines={1}>{item.hourlyRate ? `₹${item.hourlyRate}/hr` : '—'}</Text>
+                                </View>
+                              </View>
+
+                              {item.notes ? (
+                                <Text style={styles.descriptionText} numberOfLines={2}>
+                                  {item.notes}
+                                </Text>
+                              ) : null}
+                            </View>
+                          </View>
                         </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.cardExportBtn, { backgroundColor: Colors.success }]}
-                          onPress={() => handleExportAssignment(item.id, 'excel')}
-                          disabled={exportingAssignmentId === item.id}
-                        >
-                          {exportingAssignmentId === item.id ? (
-                            <ActivityIndicator size="small" color={Colors.white} />
-                          ) : (
-                            <FontAwesomeIcon icon="file-excel" size={Responsive.iconSize(16)} color={Colors.white} />
-                          )}
-                        </TouchableOpacity>
+
+                        {showAssignmentExportMenuForId === item.id && (
+                          <View style={[styles.exportDropdownMenu, { right: 8, top: 36, position: 'absolute' }]}>
+                            <TouchableOpacity
+                              style={styles.exportDropdownItem}
+                              onPress={() => { setShowAssignmentExportMenuForId(null); handleExportAssignment(item.id, 'pdf'); }}
+                            >
+                              <FontAwesomeIcon icon="file-pdf" size={14} color={Colors.error} />
+                              <Text style={styles.exportDropdownItemText}>PDF</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.exportDropdownItem}
+                              onPress={() => { setShowAssignmentExportMenuForId(null); handleExportAssignment(item.id, 'excel'); }}
+                            >
+                              <FontAwesomeIcon icon="file-excel" size={14} color={Colors.success} />
+                              <Text style={styles.exportDropdownItemText}>Excel</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+
+                        
                       </View>
                     </View>
-                  </View>
-                )}
+                  );
+                }}
                 keyExtractor={(item) => item.id.toString()}
                 scrollEnabled={false}
               />
@@ -1160,29 +1585,43 @@ const ReportsScreen: React.FC = () => {
         ) : selectedReportType === 'checkin-out' ? (
           <View style={styles.jobListsContainer}>
             <View style={styles.exportHeaderContainer}>
-              <Text style={styles.sectionTitle}>Check-In/Out Lists</Text>
-              <View style={styles.globalExportButtons}>
+              <Text style={styles.sectionTitle}>Check-In/Out</Text>
+              <View style={styles.headerActionsRow}>
                 <TouchableOpacity
-                  style={[styles.exportButtonSmall, styles.pdfButton]}
-                  onPress={() => handleExportAllCheckIns('pdf')}
-                  disabled={isGenerating || (attendanceData.length === 0 && (realtimeData?.activeStaffDetails?.length || 0) === 0)}
+                  style={styles.exportDropdownButton}
+                  onPress={() => setShowCheckinExportMenu(v => !v)}
+                  disabled={isGenerating || getFilteredCheckIns().length === 0}
                 >
-                  {isGenerating ? (
-                    <ActivityIndicator size="small" color={Colors.white} />
-                  ) : (
-                    <FontAwesomeIcon icon="file-pdf" size={Responsive.iconSize(18)} color={Colors.white} />
-                  )}
+                  <FontAwesomeIcon icon="file-export" size={Responsive.iconSize(16)} color={Colors.white} />
+                  <Text style={styles.exportDropdownText}>Export All</Text>
+                  <FontAwesomeIcon icon={showCheckinExportMenu ? 'chevron-up' : 'chevron-down'} size={12} color={Colors.white} />
                 </TouchableOpacity>
+
+                {showCheckinExportMenu && (
+                  <View style={styles.exportDropdownMenu}>
+                    <TouchableOpacity
+                      style={styles.exportDropdownItem}
+                      onPress={() => { setShowCheckinExportMenu(false); handleExportAllCheckIns('pdf'); }}
+                    >
+                      <FontAwesomeIcon icon="file-pdf" size={14} color={Colors.error} />
+                      <Text style={styles.exportDropdownItemText}>PDF</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.exportDropdownItem}
+                      onPress={() => { setShowCheckinExportMenu(false); handleExportAllCheckIns('excel'); }}
+                    >
+                      <FontAwesomeIcon icon="file-excel" size={14} color={Colors.success} />
+                      <Text style={styles.exportDropdownItemText}>Excel</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
                 <TouchableOpacity
-                  style={[styles.exportButtonSmall, styles.excelButton]}
-                  onPress={() => handleExportAllCheckIns('excel')}
-                  disabled={isGenerating || (attendanceData.length === 0 && (realtimeData?.activeStaffDetails?.length || 0) === 0)}
+                  style={styles.filterOutlineButton}
+                  onPress={() => setShowCheckinFilterModal(true)}
                 >
-                  {isGenerating ? (
-                    <ActivityIndicator size="small" color={Colors.white} />
-                  ) : (
-                    <FontAwesomeIcon icon="file-excel" size={Responsive.iconSize(18)} color={Colors.white} />
-                  )}
+                  <FontAwesomeIcon icon="filter" size={14} color={Colors.textPrimary} />
+                  <Text style={styles.filterOutlineText}>Filter</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -1190,65 +1629,108 @@ const ReportsScreen: React.FC = () => {
               <ActivityIndicator size="small" color={Colors.primary} />
             ) : (attendanceData.length > 0 || (realtimeData?.activeStaffDetails?.length || 0) > 0) ? (
               <FlatList
-                data={[
-                  ...(realtimeData?.activeStaffDetails || []).map((item: any) => ({ ...item, isActive: true })),
-                  ...attendanceData
-                ]}
-                renderItem={({ item }) => (
-                  <View style={styles.jobCardContainer}>
-                    <View style={styles.jobCard}>
-                      <TouchableOpacity onPress={() => item.isActive ? openRealtimeCheckInModalFromActive(item) : openRealtimeCheckInModal(item)}>
-                        <View style={styles.jobCardHeader}>
-                          <View style={styles.jobCardTitleSection}>
-                            <Text style={styles.jobCardTitle} numberOfLines={2}>
-                              {item.isActive ? item.userName : (item.user ? `${item.user.firstName} ${item.user.lastName}` : 'Unknown')}
-                            </Text>
-                            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status || 'CHECKED_IN') }]}>
-                              <Text style={styles.statusText}>{item.status || 'CHECKED_IN'}</Text>
-                            </View>
+                data={getFilteredCheckIns()}
+                renderItem={({ item }) => {
+                  const uniqueId = item.isActive ? `active-${item.userId}-${item.checkInTime}` : String(item.id);
+                  return (
+                    <View style={styles.jobCardContainer}>
+                      <View style={[styles.jobCard, showCheckinExportMenuForId === uniqueId && { zIndex: 2000, elevation: 16 }]}> 
+                        <View style={styles.cardTopRow}>
+                          <Text style={styles.cardTimeText}>
+                            {item.isActive 
+                              ? `Checked in: ${formatDateShort(item.checkInTime)} • Elapsed ${formatElapsedMinutes(item.workTimeMinutes)}`
+                              : `${formatDateShort(item.checkInTime)} - ${item.checkOutTime ? formatDateShort(item.checkOutTime) : 'In Progress'}`
+                            }
+                          </Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <TouchableOpacity
+                              style={styles.inlineIconButton}
+                              onPress={() => setShowCheckinExportMenuForId(prev => prev === uniqueId ? null : uniqueId)}
+                            >
+                              <FontAwesomeIcon icon="file-export" size={22} color={Colors.primary} />
+                            </TouchableOpacity>
                           </View>
                         </View>
-                        <Text style={styles.jobCardDepartment}>
-                          {item.isActive ? (item.jobTitle || 'N/A') : (item.job?.title || 'N/A')}
-                        </Text>
-                        <Text style={styles.jobCardLocation}>
-                          {item.isActive 
-                            ? `${(item.department || item.jobDepartment) || 'N/A'} • ${item.facilityName || 'N/A'}`
-                            : `${item.job?.department || 'N/A'} • ${item.job?.location || 'N/A'}`
-                          }
-                        </Text>
-                        <Text style={styles.jobCardDates}>
-                          {item.isActive 
-                            ? `Checked in: ${new Date(item.checkInTime).toLocaleString()} • Elapsed ${formatElapsedMinutes(item.workTimeMinutes)}`
-                            : `${new Date(item.checkInTime).toLocaleString()} ${item.checkOutTime ? `→ ${new Date(item.checkOutTime).toLocaleString()}` : ''}`
-                          }
-                        </Text>
-                        {!item.isActive && (
-                          <Text style={styles.jobCardLocation}>
-                            Work: {item.totalWorkTime ?? 'N/A'}m • Break: {item.totalBreakTime ?? 0}m
-                          </Text>
-                        )}
-                        {!item.isActive && item.notes && (
-                          <Text style={styles.jobCardLocation}>Notes: {item.notes}</Text>
-                        )}
-                      </TouchableOpacity>
-                      <View style={styles.jobCardExportButtonsInside}>
-                        <TouchableOpacity
-                          style={[styles.cardExportBtn, { backgroundColor: Colors.error }]}
-                          onPress={() => handleExportTimesheet(item.isActive ? mapActiveToTimesheet(item) : mapCheckInToTimesheet(item), 'pdf')}
-                        >
-                          <FontAwesomeIcon icon="file-pdf" size={16} color={Colors.white} />
+                        <View style={styles.cardDivider} />
+
+                        <TouchableOpacity onPress={() => item.isActive ? openRealtimeCheckInModalFromActive(item) : openRealtimeCheckInModal(item)} activeOpacity={0.8}>
+                          <View style={styles.profileRow}>
+                            <View style={styles.profileContent}>
+                              <Text style={styles.cardTitle} numberOfLines={1}>
+                                {item.isActive ? item.userName : (item.user ? `${item.user.firstName} ${item.user.lastName}` : 'Unknown')}
+                              </Text>
+                              <View style={styles.subtitleRow}>
+                                {!!(item.isActive ? item.jobTitle : item.job?.title) && (
+                                  <Text style={styles.subtitleText} numberOfLines={1}>
+                                    {item.isActive ? item.jobTitle : item.job?.title}
+                                  </Text>
+                                )}
+                                {!!(item.isActive ? item.jobTitle : item.job?.title) && !!(item.isActive ? (item.department || item.jobDepartment) : item.job?.department) && (
+                                  <Text style={styles.subtitleDot}> • </Text>
+                                )}
+                                {!!(item.isActive ? (item.department || item.jobDepartment) : item.job?.department) && (
+                                  <Text style={styles.subtitleText} numberOfLines={1}>
+                                    {item.isActive ? (item.department || item.jobDepartment) : item.job?.department}
+                                  </Text>
+                                )}
+                              </View>
+
+                              <View style={styles.assignmentRow}>
+                                <View style={styles.infoCol}>
+                                  <Text style={styles.infoLabel}>Status</Text>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor(item.status) }]}> 
+                                      <Text style={[styles.inlineStatusText, { color: Colors.white }]}>
+                                        {formatStatusLabel(item.status)}
+                                      </Text>
+                                    </View>
+                                  </View>
+                                </View>
+                                {!item.isActive && (
+                                  <>
+                                    <View style={styles.infoCol}>
+                                      <Text style={styles.infoLabel}>Work Time</Text>
+                                      <Text style={styles.infoValue}>{item.totalWorkTime ? `${item.totalWorkTime}m` : '—'}</Text>
+                                    </View>
+                                    <View style={styles.infoCol}>
+                                      <Text style={styles.infoLabel}>Break Time</Text>
+                                      <Text style={styles.infoValue}>{item.totalBreakTime ? `${item.totalBreakTime}m` : '—'}</Text>
+                                    </View>
+                                  </>
+                                )}
+                              </View>
+
+                              {!item.isActive && item.notes && (
+                                <Text style={styles.descriptionText} numberOfLines={2}>
+                                  {item.notes}
+                                </Text>
+                              )}
+                            </View>
+                          </View>
                         </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.cardExportBtn, { backgroundColor: Colors.success }]}
-                          onPress={() => handleExportTimesheet(item.isActive ? mapActiveToTimesheet(item) : mapCheckInToTimesheet(item), 'excel')}
-                        >
-                          <FontAwesomeIcon icon="file-excel" size={16} color={Colors.white} />
-                        </TouchableOpacity>
+
+                        {showCheckinExportMenuForId === uniqueId && (
+                          <View style={[styles.exportDropdownMenu, { right: 8, top: 36, position: 'absolute' }]}>
+                            <TouchableOpacity
+                              style={styles.exportDropdownItem}
+                              onPress={() => { setShowCheckinExportMenuForId(null); handleExportTimesheet(item.isActive ? mapActiveToTimesheet(item) : mapCheckInToTimesheet(item), 'pdf'); }}
+                            >
+                              <FontAwesomeIcon icon="file-pdf" size={14} color={Colors.error} />
+                              <Text style={styles.exportDropdownItemText}>PDF</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.exportDropdownItem}
+                              onPress={() => { setShowCheckinExportMenuForId(null); handleExportTimesheet(item.isActive ? mapActiveToTimesheet(item) : mapCheckInToTimesheet(item), 'excel'); }}
+                            >
+                              <FontAwesomeIcon icon="file-excel" size={14} color={Colors.success} />
+                              <Text style={styles.exportDropdownItemText}>Excel</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
                       </View>
                     </View>
-                  </View>
-                )}
+                  );
+                }}
                 keyExtractor={(item, index) => item.isActive ? `active-${index}` : String(item.id)}
                 scrollEnabled={false}
               />
@@ -1259,6 +1741,111 @@ const ReportsScreen: React.FC = () => {
                 <Text style={styles.emptyStateSubtext}>
                   Check-ins will appear here when staff check in/out
                 </Text>
+              </View>
+            )}
+          </View>
+        ) : selectedReportType === 'payout' ? (
+          <View style={styles.jobListsContainer}>
+            <View style={styles.exportHeaderContainer}>
+              <Text style={styles.sectionTitle}>Check-In/Out Payout</Text>
+              <View style={styles.globalExportButtons}>
+                <Text style={styles.grandTotalText}>Total: ₹{(payoutData.totals?.grandTotal || 0).toLocaleString()}</Text>
+                <TouchableOpacity
+                  style={[styles.exportButtonSmall, styles.pdfButton, { marginLeft: Spacing.sm }]}
+                  onPress={() => handleExportPayout('pdf')}
+                  disabled={isGenerating || (payoutData.lines?.length || 0) === 0}
+                >
+                  {isGenerating ? (
+                    <ActivityIndicator size="small" color={Colors.white} />
+                  ) : (
+                    <FontAwesomeIcon icon="file-pdf" size={Responsive.iconSize(18)} color={Colors.white} />
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.exportButtonSmall, styles.excelButton, { marginLeft: Spacing.sm }]}
+                  onPress={() => handleExportPayout('excel')}
+                  disabled={isGenerating || (payoutData.lines?.length || 0) === 0}
+                >
+                  {isGenerating ? (
+                    <ActivityIndicator size="small" color={Colors.white} />
+                  ) : (
+                    <FontAwesomeIcon icon="file-excel" size={Responsive.iconSize(18)} color={Colors.white} />
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Filters removed per request; auto-loading with default dates */}
+
+            {/* List */}
+            {loadingPayout ? (
+              <ActivityIndicator size="small" color={Colors.primary} />
+            ) : payoutData.lines.length === 0 ? (
+              <View style={styles.emptyState}>
+                <FontAwesomeIcon icon="dollar-sign" size={Responsive.iconSize(48)} color={Colors.textTertiary} />
+                <Text style={styles.emptyStateText}>
+                  {payoutFilters.startDate && payoutFilters.endDate ? 'No payout lines in this range' : 'Select both dates to generate'}
+                </Text>
+              </View>
+            ) : (
+              <FlatList
+                data={payoutData.lines}
+                keyExtractor={(item, idx) => String(item.assignmentId || idx)}
+                renderItem={({ item }) => (
+                  <View style={styles.jobCardContainer}>
+                    <View style={styles.jobCard}>
+                      <View style={styles.jobCardHeader}>
+                        <View style={styles.jobCardTitleSection}>
+                          <Text style={styles.jobCardTitle} numberOfLines={2}>
+                            {item.staffName} • {item.jobTitle}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={styles.jobCardDepartment}>
+                        Assignment #{item.assignmentId} • Job #{item.jobId}
+                      </Text>
+                      <Text style={styles.jobCardLocation}>
+                        Dates: {(item.shiftDates || []).join(', ')}
+                      </Text>
+                      <Text style={styles.jobCardDates}>
+                        Worked: {item.minutesWorked}m ({Number(item.hoursWorked || 0).toFixed(2)}h)
+                      </Text>
+                      <Text style={styles.jobCardLocation}>
+                        Rate: ₹{item.hourlyRate} • Amount: <Text style={{ fontFamily: Typography.fontFamily.bold, color: Colors.primary }}>₹{item.amount}</Text>
+                      </Text>
+                      <View style={styles.jobCardExportButtonsInside}>
+                        <TouchableOpacity
+                          style={[styles.cardExportBtn, { backgroundColor: Colors.error }]}
+                          onPress={() => handleExportSinglePayout(item, 'pdf')}
+                        >
+                          <FontAwesomeIcon icon="file-pdf" size={16} color={Colors.white} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.cardExportBtn, { backgroundColor: Colors.success }]}
+                          onPress={() => handleExportSinglePayout(item, 'excel')}
+                        >
+                          <FontAwesomeIcon icon="file-excel" size={16} color={Colors.white} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                )}
+                scrollEnabled={false}
+              />
+            )}
+
+            {/* Optional totals by user */}
+            {payoutData.totals?.byUser && payoutData.totals.byUser.length > 0 && (
+              <View style={[styles.jobCardContainer, { marginTop: Spacing.md }]}> 
+                <View style={styles.jobCard}>
+                  <Text style={styles.jobCardTitle} numberOfLines={1}>Totals by User</Text>
+                  {payoutData.totals.byUser.map((u: any, i: number) => (
+                    <View key={`u-${i}`} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 }}>
+                      <Text style={styles.jobCardDepartment} numberOfLines={1}>{u.staffName}</Text>
+                      <Text style={[styles.jobCardDepartment, { fontFamily: Typography.fontFamily.bold }]}>₹{(u.amount || 0).toLocaleString()}</Text>
+                    </View>
+                  ))}
+                </View>
               </View>
             )}
           </View>
@@ -1486,6 +2073,347 @@ const ReportsScreen: React.FC = () => {
           </>
         )}
       </ScrollView>
+
+      {/* Job Selector Modal */}
+      {/* All Jobs Filter Bottom Sheet */}
+      {showJobsFilterModal && (
+        <View style={styles.sheetBackdrop}>
+          <TouchableOpacity style={styles.sheetBackdropTouchable} onPress={() => setShowJobsFilterModal(false)} />
+          <View style={styles.sheetContainer}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Filter Jobs</Text>
+            <View style={styles.sheetDivider} />
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Status</Text>
+              <View style={styles.statusChipsRow}>
+                {statusOptions.map((option) => (
+                  <TouchableOpacity
+                    key={`js-${option.value}`}
+                    style={[styles.statusChip, jobsFilterStatus === option.value && styles.statusChipActive]}
+                    onPress={() => setJobsFilterStatus(option.value)}
+                  >
+                    <Text style={[styles.statusChipText, jobsFilterStatus === option.value && styles.statusChipTextActive]}>
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Start Date</Text>
+              <TouchableOpacity style={styles.dateButton} onPress={() => setShowJobsStartPicker(true)}>
+                <Text style={styles.dateButtonText} numberOfLines={1}>{jobsFilterStartDate || 'Select start date'}</Text>
+                <FontAwesomeIcon icon="calendar" size={14} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>End Date</Text>
+              <TouchableOpacity style={styles.dateButton} onPress={() => setShowJobsEndPicker(true)}>
+                <Text style={styles.dateButtonText} numberOfLines={1}>{jobsFilterEndDate || 'Select end date'}</Text>
+                <FontAwesomeIcon icon="calendar" size={14} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Department</Text>
+              <TouchableOpacity
+                style={styles.dropdownButton}
+                onPress={() => setJobsDeptDropdownOpen(v => !v)}
+              >
+                <Text style={styles.dropdownButtonText} numberOfLines={1}>
+                  {jobsFilterDepartment || 'Select department'}
+                </Text>
+                <FontAwesomeIcon icon={jobsDeptDropdownOpen ? 'chevron-up' : 'chevron-down'} size={14} color={Colors.textSecondary} />
+              </TouchableOpacity>
+              {jobsDeptDropdownOpen && (
+                <ScrollView style={styles.dropdownMenu} nestedScrollEnabled={true} keyboardShouldPersistTaps="handled">
+                  <TouchableOpacity
+                    style={styles.dropdownItem}
+                    onPress={() => { setJobsFilterDepartment(''); setJobsDeptDropdownOpen(false); }}
+                  >
+                    <Text style={styles.dropdownItemText}>All Departments</Text>
+                  </TouchableOpacity>
+                  {(((departments as string[]) || []).length > 0 ? (departments as string[]) : hardcodedDepartments).map((dept) => (
+                    <TouchableOpacity
+                      key={`dept-${dept}`}
+                      style={styles.dropdownItem}
+                      onPress={() => { setJobsFilterDepartment(dept); setJobsDeptDropdownOpen(false); }}
+                    >
+                      <Text style={styles.dropdownItemText}>{dept}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+
+            <View style={styles.filterActionsRow}>
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={() => { setJobsFilterStatus(''); setJobsFilterStartDate(''); setJobsFilterEndDate(''); setJobsFilterDepartment(''); }}
+              >
+                <Text style={styles.clearButtonText}>Clear</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.applyButton}
+                onPress={() => setShowJobsFilterModal(false)}
+              >
+                <Text style={styles.applyButtonText}>Apply</Text>
+              </TouchableOpacity>
+            </View>
+
+          </View>
+          {showJobsStartPicker && (
+            <DateTimePicker
+              value={jobsFilterStartDate ? parseDateString(jobsFilterStartDate) : new Date()}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(e, d) => { if (Platform.OS === 'android') setShowJobsStartPicker(false); if (d) setJobsFilterStartDate(formatDate(d)); }}
+              maximumDate={jobsFilterEndDate ? parseDateString(jobsFilterEndDate) : undefined}
+            />
+          )}
+          {showJobsEndPicker && (
+            <DateTimePicker
+              value={jobsFilterEndDate ? parseDateString(jobsFilterEndDate) : new Date()}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(e, d) => { if (Platform.OS === 'android') setShowJobsEndPicker(false); if (d) setJobsFilterEndDate(formatDate(d)); }}
+              minimumDate={jobsFilterStartDate ? parseDateString(jobsFilterStartDate) : undefined}
+            />
+          )}
+        </View>
+      )}
+
+      {/* All Assignments Filter Bottom Sheet */}
+      {showAssignmentsFilterModal && (
+        <View style={styles.sheetBackdrop}>
+          <TouchableOpacity style={styles.sheetBackdropTouchable} onPress={() => setShowAssignmentsFilterModal(false)} />
+          <View style={styles.sheetContainer}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Filter Assignments</Text>
+            <View style={styles.sheetDivider} />
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Status</Text>
+              <View style={styles.statusChipsRow}>
+                {statusOptions.map((option) => (
+                  <TouchableOpacity
+                    key={`as-${option.value}`}
+                    style={[styles.statusChip, assignmentsFilterStatus === option.value && styles.statusChipActive]}
+                    onPress={() => setAssignmentsFilterStatus(option.value)}
+                  >
+                    <Text style={[styles.statusChipText, assignmentsFilterStatus === option.value && styles.statusChipTextActive]}>
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Start Date</Text>
+              <TouchableOpacity style={styles.dateButton} onPress={() => setShowAssignmentsStartPicker(true)}>
+                <Text style={styles.dateButtonText} numberOfLines={1}>{assignmentsFilterStartDate || 'Select start date'}</Text>
+                <FontAwesomeIcon icon="calendar" size={14} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>End Date</Text>
+              <TouchableOpacity style={styles.dateButton} onPress={() => setShowAssignmentsEndPicker(true)}>
+                <Text style={styles.dateButtonText} numberOfLines={1}>{assignmentsFilterEndDate || 'Select end date'}</Text>
+                <FontAwesomeIcon icon="calendar" size={14} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Department</Text>
+              <TouchableOpacity
+                style={styles.dropdownButton}
+                onPress={() => setAssignmentsDeptDropdownOpen(v => !v)}
+              >
+                <Text style={styles.dropdownButtonText} numberOfLines={1}>
+                  {assignmentsFilterDepartment || 'Select department'}
+                </Text>
+                <FontAwesomeIcon icon={assignmentsDeptDropdownOpen ? 'chevron-up' : 'chevron-down'} size={14} color={Colors.textSecondary} />
+              </TouchableOpacity>
+              {assignmentsDeptDropdownOpen && (
+                <ScrollView style={styles.dropdownMenu} nestedScrollEnabled={true} keyboardShouldPersistTaps="handled">
+                  <TouchableOpacity
+                    style={styles.dropdownItem}
+                    onPress={() => { setAssignmentsFilterDepartment(''); setAssignmentsDeptDropdownOpen(false); }}
+                  >
+                    <Text style={styles.dropdownItemText}>All Departments</Text>
+                  </TouchableOpacity>
+                  {(((departments as string[]) || []).length > 0 ? (departments as string[]) : hardcodedDepartments).map((dept) => (
+                    <TouchableOpacity
+                      key={`adept-${dept}`}
+                      style={styles.dropdownItem}
+                      onPress={() => { setAssignmentsFilterDepartment(dept); setAssignmentsDeptDropdownOpen(false); }}
+                    >
+                      <Text style={styles.dropdownItemText}>{dept}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+
+            <View style={styles.filterActionsRow}>
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={() => { setAssignmentsFilterStatus(''); setAssignmentsFilterStartDate(''); setAssignmentsFilterEndDate(''); setAssignmentsFilterDepartment(''); }}
+              >
+                <Text style={styles.clearButtonText}>Clear</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.applyButton}
+                onPress={() => setShowAssignmentsFilterModal(false)}
+              >
+                <Text style={styles.applyButtonText}>Apply</Text>
+              </TouchableOpacity>
+            </View>
+
+          </View>
+          {showAssignmentsStartPicker && (
+            <DateTimePicker
+              value={assignmentsFilterStartDate ? parseDateString(assignmentsFilterStartDate) : new Date()}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(e, d) => { if (Platform.OS === 'android') setShowAssignmentsStartPicker(false); if (d) setAssignmentsFilterStartDate(formatDate(d)); }}
+              maximumDate={assignmentsFilterEndDate ? parseDateString(assignmentsFilterEndDate) : undefined}
+            />
+          )}
+          {showAssignmentsEndPicker && (
+            <DateTimePicker
+              value={assignmentsFilterEndDate ? parseDateString(assignmentsFilterEndDate) : new Date()}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(e, d) => { if (Platform.OS === 'android') setShowAssignmentsEndPicker(false); if (d) setAssignmentsFilterEndDate(formatDate(d)); }}
+              minimumDate={assignmentsFilterStartDate ? parseDateString(assignmentsFilterStartDate) : undefined}
+            />
+          )}
+        </View>
+      )}
+
+      {/* All Check-In/Out Filter Bottom Sheet */}
+      {showCheckinFilterModal && (
+        <View style={styles.sheetBackdrop}>
+          <TouchableOpacity style={styles.sheetBackdropTouchable} onPress={() => setShowCheckinFilterModal(false)} />
+          <View style={styles.sheetContainer}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Filter Check-Ins</Text>
+            <View style={styles.sheetDivider} />
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Status</Text>
+              <View style={styles.statusChipsRow}>
+                <TouchableOpacity
+                  style={[styles.statusChip, checkinFilterStatus === '' && styles.statusChipActive]}
+                  onPress={() => setCheckinFilterStatus('')}
+                >
+                  <Text style={[styles.statusChipText, checkinFilterStatus === '' && styles.statusChipTextActive]}>All Status</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.statusChip, checkinFilterStatus === 'CHECKED_IN' && styles.statusChipActive]}
+                  onPress={() => setCheckinFilterStatus('CHECKED_IN')}
+                >
+                  <Text style={[styles.statusChipText, checkinFilterStatus === 'CHECKED_IN' && styles.statusChipTextActive]}>Checked In</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.statusChip, checkinFilterStatus === 'CHECKED_OUT' && styles.statusChipActive]}
+                  onPress={() => setCheckinFilterStatus('CHECKED_OUT')}
+                >
+                  <Text style={[styles.statusChipText, checkinFilterStatus === 'CHECKED_OUT' && styles.statusChipTextActive]}>Checked Out</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Start Date</Text>
+              <TouchableOpacity style={styles.dateButton} onPress={() => setShowCheckinStartPicker(true)}>
+                <Text style={styles.dateButtonText} numberOfLines={1}>{checkinFilterStartDate || 'Select start date'}</Text>
+                <FontAwesomeIcon icon="calendar" size={14} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>End Date</Text>
+              <TouchableOpacity style={styles.dateButton} onPress={() => setShowCheckinEndPicker(true)}>
+                <Text style={styles.dateButtonText} numberOfLines={1}>{checkinFilterEndDate || 'Select end date'}</Text>
+                <FontAwesomeIcon icon="calendar" size={14} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Department</Text>
+              <TouchableOpacity
+                style={styles.dropdownButton}
+                onPress={() => setCheckinDeptDropdownOpen(v => !v)}
+              >
+                <Text style={styles.dropdownButtonText} numberOfLines={1}>
+                  {checkinFilterDepartment || 'Select department'}
+                </Text>
+                <FontAwesomeIcon icon={checkinDeptDropdownOpen ? 'chevron-up' : 'chevron-down'} size={14} color={Colors.textSecondary} />
+              </TouchableOpacity>
+              {checkinDeptDropdownOpen && (
+                <ScrollView style={styles.dropdownMenu} nestedScrollEnabled={true} keyboardShouldPersistTaps="handled">
+                  <TouchableOpacity
+                    style={styles.dropdownItem}
+                    onPress={() => { setCheckinFilterDepartment(''); setCheckinDeptDropdownOpen(false); }}
+                  >
+                    <Text style={styles.dropdownItemText}>All Departments</Text>
+                  </TouchableOpacity>
+                  {(((departments as string[]) || []).length > 0 ? (departments as string[]) : hardcodedDepartments).map((dept) => (
+                    <TouchableOpacity
+                      key={`checkin-dept-${dept}`}
+                      style={styles.dropdownItem}
+                      onPress={() => { setCheckinFilterDepartment(dept); setCheckinDeptDropdownOpen(false); }}
+                    >
+                      <Text style={styles.dropdownItemText}>{dept}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+
+            <View style={styles.filterActionsRow}>
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={() => { setCheckinFilterStatus(''); setCheckinFilterStartDate(''); setCheckinFilterEndDate(''); setCheckinFilterDepartment(''); }}
+              >
+                <Text style={styles.clearButtonText}>Clear</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.applyButton}
+                onPress={() => setShowCheckinFilterModal(false)}
+              >
+                <Text style={styles.applyButtonText}>Apply</Text>
+              </TouchableOpacity>
+            </View>
+
+          </View>
+          {showCheckinStartPicker && (
+            <DateTimePicker
+              value={checkinFilterStartDate ? parseDateString(checkinFilterStartDate) : new Date()}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(e, d) => { if (Platform.OS === 'android') setShowCheckinStartPicker(false); if (d) setCheckinFilterStartDate(formatDate(d)); }}
+              maximumDate={checkinFilterEndDate ? parseDateString(checkinFilterEndDate) : undefined}
+            />
+          )}
+          {showCheckinEndPicker && (
+            <DateTimePicker
+              value={checkinFilterEndDate ? parseDateString(checkinFilterEndDate) : new Date()}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(e, d) => { if (Platform.OS === 'android') setShowCheckinEndPicker(false); if (d) setCheckinFilterEndDate(formatDate(d)); }}
+              minimumDate={checkinFilterStartDate ? parseDateString(checkinFilterStartDate) : undefined}
+            />
+          )}
+        </View>
+      )}
 
       {/* Job Selector Modal */}
       {showJobSelector && (
@@ -2375,27 +3303,6 @@ const ReportsScreen: React.FC = () => {
                     <Text style={styles.jobDetailValue}>{selectedTimesheet.earlyCheckoutMinutes || '0'}</Text>
                   </View>
                 </View>
-
-                {/* Export Actions */}
-                <View style={styles.jobDetailSection}>
-                  <Text style={styles.jobDetailSectionTitle}>Export Timesheet</Text>
-                  <View style={styles.exportActionsContainer}>
-                    <TouchableOpacity
-                      style={[styles.exportActionButton, { backgroundColor: Colors.error }]}
-                      onPress={() => handleExportTimesheet(selectedTimesheet, 'pdf')}
-                    >
-                      <FontAwesomeIcon icon="file-pdf" size={16} color={Colors.white} />
-                      <Text style={styles.exportActionText}>Export PDF</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.exportActionButton, { backgroundColor: Colors.success }]}
-                      onPress={() => handleExportTimesheet(selectedTimesheet, 'excel')}
-                    >
-                      <FontAwesomeIcon icon="file-excel" size={16} color={Colors.white} />
-                      <Text style={styles.exportActionText}>Export Excel</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
               </ScrollView>
             ) : (
               <Text style={styles.emptyStateText}>No timesheet data available</Text>
@@ -2421,16 +3328,26 @@ const styles = StyleSheet.create({
   filterButton: {
     padding: Spacing.sm,
   },
+  headerIconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   tabsContainer: {
     backgroundColor: Colors.background,
-    marginVertical: Spacing.lg,
-    // Cancel outer ScrollView horizontal padding so tabs can scroll to the true edges
-    marginHorizontal: -horizontalGutter,
+    marginVertical: Spacing.md,
+    // Keep tabs aligned with main content gutter
+    marginHorizontal: 0,
   },
   tabsInnerContent: {
-    // Re-introduce controlled inset; bias left a bit so first pill hugs the edge nicely
-    paddingLeft: tabsStartPadding,
-    paddingRight: tabsEndPadding,
+    // Align with the ScrollView's horizontal padding so first pill starts at the same left as content
+    paddingLeft: 0,
+    paddingRight: Spacing.xs, // small right inset so last pill doesn't clip when scrolled to end
   },
   tab: {
     flexDirection: 'row',
@@ -2438,18 +3355,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     marginRight: Spacing.sm,
-    backgroundColor: Colors.backgroundSecondary,
-    borderRadius: BorderRadius.lg,
+    backgroundColor: Colors.white,
+    borderWidth: 1.5,
+    borderColor: '#1C2A3A',
+    borderRadius: 999,
     gap: Spacing.xs,
   },
   tabActive: {
-    backgroundColor: Colors.primary,
+    backgroundColor: '#1C2A3A',
+    borderColor: '#1C2A3A',
   },
   tabText: {
-    fontSize: Typography.fontSize.sm,
+    fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.medium,
     fontWeight: Typography.fontWeight.medium,
-    color: Colors.textSecondary,
+    color: '#1C2A3A',
   },
   tabTextActive: {
     color: Colors.white,
@@ -2488,6 +3408,10 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.regular,
     color: Colors.textPrimary,
     backgroundColor: Colors.white,
+  },
+  // Generic small spacing around inputs
+  inputGroup: {
+    marginBottom: Spacing.md,
   },
   dateContainer: {
     flexDirection: 'row',
@@ -2579,7 +3503,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing['2xl'],
   },
   sectionTitle: {
-    fontSize: Typography.fontSize.xl,
+    fontSize: Typography.fontSize.lg,
     fontFamily: Typography.fontFamily.bold,
     fontWeight: Typography.fontWeight.bold,
     color: Colors.textPrimary,
@@ -2725,6 +3649,16 @@ const styles = StyleSheet.create({
     maxHeight: '80%',
     ...Shadow.xl,
   },
+  // Generic filter modal container for simple forms
+  filterModal: {
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.lg,
+    width: width * 0.9,
+    maxHeight: '80%',
+    ...Shadow.xl,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+  },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2740,6 +3674,14 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.medium,
     color: Colors.textPrimary,
     flex: 1,
+  },
+  // Title text inside simple filter modal
+  filterTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.medium,
+    fontWeight: Typography.fontWeight.medium,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.md,
   },
   modalCloseButton: {
     width: 40,
@@ -2782,6 +3724,7 @@ const styles = StyleSheet.create({
   },
   // Job Lists Styles
   jobListsContainer: {
+    marginTop: 0,
     marginBottom: Spacing['2xl'],
   },
   jobCard: {
@@ -2792,12 +3735,138 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     ...Shadow.sm,
+    overflow: 'visible',
+  },
+  // HRJobsScreen-style card structure
+  cardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cardTimeText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textTertiary,
+    marginBottom: Spacing.xs,
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
+  editTopButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  profileContent: {
+    flex: 1,
+  },
+  cardTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+    marginBottom: 4,
+    flexShrink: 1,
+  },
+  subtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    flexWrap: 'nowrap',
+  },
+  subtitleText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.textSecondary,
+    flexShrink: 1,
+    maxWidth: '45%',
+  },
+  subtitleDot: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+    marginHorizontal: 6,
+  },
+  inlineStatusPill: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  inlineStatusText: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.medium,
+    textTransform: 'capitalize',
+  },
+  inlineIconButton: {
+    marginLeft: 6,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rateText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+  },
+  assignmentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  infoCol: {
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textTertiary,
+  },
+  infoValue: {
+    marginTop: 2,
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+  },
+  descriptionText: {
+    marginTop: 8,
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.textSecondary,
   },
   jobCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: Spacing.xs,
+  },
+  jobCardDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginVertical: Spacing.xs,
+  },
+  jobMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginBottom: Spacing.xs,
+  },
+  jobMetaText: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.textSecondary,
+  },
+  jobMetaValue: {
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textPrimary,
   },
   jobCardTitle: {
     fontSize: Typography.fontSize.base,
@@ -3032,9 +4101,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    paddingVertical: Spacing.xs,
+    borderBottomWidth: 0,
+    borderBottomColor: 'transparent',
   },
   jobCardTitleSection: {
     flexDirection: 'row',
@@ -3072,6 +4141,56 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.md,
   },
+  headerActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  exportDropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary,
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    height: 32,
+    gap: Spacing.xs,
+  },
+  exportDropdownText: {
+    color: Colors.white,
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+  },
+  exportDropdownMenu: {
+    position: 'absolute',
+    top: 36,
+    right: 0,
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...Shadow.sm,
+    zIndex: 1000,
+    elevation: 12,
+  },
+  exportDropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 10,
+    gap: Spacing.sm,
+    minWidth: 140,
+  },
+  exportDropdownItemText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textPrimary,
+  },
+  grandTotalText: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+  },
   globalExportButtons: {
     flexDirection: 'row',
     gap: Spacing.sm,
@@ -3106,6 +4225,175 @@ const styles = StyleSheet.create({
   },
   excelButton: {
     backgroundColor: Colors.success,
+  },
+  filterOutlineButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    height: 32,
+    gap: Spacing.xs,
+  },
+  filterOutlineText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textPrimary,
+  },
+  // Chips for status selection in filters
+  statusChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  statusChip: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+  },
+  statusChipActive: {
+    backgroundColor: Colors.primary + '15',
+    borderColor: Colors.primary,
+  },
+  statusChipText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textPrimary,
+  },
+  statusChipTextActive: {
+    color: Colors.primary,
+  },
+  // Modal footer actions
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  modalButton: {
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+  },
+  modalButtonText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+  },
+  // Bottom sheet styles (reuse semantics similar to HRJobs)
+  sheetBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+    zIndex: 50,
+  },
+  sheetBackdropTouchable: {
+    flex: 1,
+  },
+  sheetContainer: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: BorderRadius.lg,
+    borderTopRightRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing['2xl'],
+    maxHeight: '85%',
+  },
+  sheetHandle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.border,
+    marginBottom: Spacing.sm,
+  },
+  sheetTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+  },
+  sheetDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginVertical: Spacing.sm,
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.white,
+    minHeight: 48,
+    justifyContent: 'space-between',
+  },
+  dropdownButtonText: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.textPrimary,
+    flex: 1,
+    marginRight: Spacing.sm,
+  },
+  dropdownMenu: {
+    marginTop: 6,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.white,
+    overflow: 'hidden',
+    maxHeight: 220,
+  },
+  dropdownItem: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 12,
+  },
+  dropdownItemText: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.textPrimary,
+  },
+  filterActionsRow: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginTop: Spacing.md,
+  },
+  clearButton: {
+    flex: 1,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
+  },
+  clearButtonText: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textPrimary,
+  },
+  applyButton: {
+    flex: 1,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  applyButtonText: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.white,
   },
   
   // Check-In/Out styles
