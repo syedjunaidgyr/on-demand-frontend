@@ -35,6 +35,7 @@ import ChangePasswordScreen from '../screens/common/ChangePasswordScreen';
 import JobDetailsCommonScreen from '../screens/common/JobDetailsCommonScreen';
 import PDFViewerScreen from '../screens/common/PDFViewerScreen';
 import NotificationsScreen from '../screens/common/NotificationsScreen';
+import PermissionManagementScreen from '../screens/common/PermissionManagementScreen';
 
 // Agency Screens
 import AgencyDashboardScreen from '../screens/agency/AgencyDashboardScreen';
@@ -44,6 +45,15 @@ import AgencyAssignNurseScreen from '../screens/agency/AgencyAssignNurseScreen';
 import AgencyOnboardNursesScreen from '../screens/agency/AgencyOnboardNursesScreen';
 import AgencyNurseDetailsScreen from '../screens/agency/AgencyNurseDetailsScreen';
 
+// Hospital Admin Screens
+import HospitalAdminDashboardScreen from '../screens/hospitalAdmin/HospitalAdminDashboardScreen';
+import HospitalAdminJobsScreen from '../screens/hospitalAdmin/HospitalAdminJobsScreen';
+import HospitalAdminStaffScreen from '../screens/hospitalAdmin/HospitalAdminStaffScreen';
+import HospitalAdminUploadLogoScreen from '../screens/hospitalAdmin/HospitalAdminUploadLogoScreen';
+import HospitalAdminThemeManageScreen from '../screens/hospitalAdmin/HospitalAdminThemeManageScreen';
+import HospitalAdminUnitsScreen from '../screens/hospitalAdmin/HospitalAdminUnitsScreen';
+import HospitalAdminAgencyBlacklistScreen from '../screens/hospitalAdmin/HospitalAdminAgencyBlacklistScreen';
+
 // Test Components
 import GeolocationTest from '../components/GeolocationTest';
 
@@ -51,6 +61,7 @@ import { Colors } from '../constants/colors';
 import { User, Job, JobAssignment } from '../types';
 import { setGlobalLogoutHandler } from '../services/api';
 import { NotificationProvider, setGlobalRefreshNotifications } from '../contexts/NotificationContext';
+import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 
 // Authentication Context
 interface AuthContextType {
@@ -95,6 +106,11 @@ export type RootStackParamList = {
   AgencyOnboardNurses: undefined;
   AgencyNurseDetails: { userId: number };
   AgencyAssignNurse: { jobId: string; hourlyRate?: number; mode?: 'FULL' | 'PARTIAL' };
+  HospitalAdminUploadLogo: undefined;
+  HospitalAdminThemes: undefined;
+  HospitalAdminUnits: undefined;
+  PermissionManagement: undefined;
+  AgencyBlacklist: undefined;
 };
 
 export type AuthStackParamList = {
@@ -112,6 +128,9 @@ export type MainTabParamList = {
   AgencyDashboard: undefined;
   AgencyJobs: undefined;
   AgencyNurses: undefined;
+  HospitalAdminDashboard: undefined;
+  HospitalAdminJobs: undefined;
+  HospitalAdminStaff: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -242,12 +261,51 @@ const AgencyTabNavigator = () => {
   );
 };
 
+const HospitalAdminTabNavigator = () => {
+  return (
+    <MainTab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName: string;
+
+          switch (route.name) {
+            case 'HospitalAdminDashboard':
+              iconName = 'home';
+              break;
+            case 'HospitalAdminJobs':
+              iconName = 'briefcase';
+              break;
+            case 'HospitalAdminStaff':
+              iconName = 'users';
+              break;
+            default:
+              iconName = 'question';
+          }
+
+          return <FontAwesomeIcon icon={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: Colors.textTertiary,
+        tabBarStyle: {
+          display: 'none',
+        },
+        headerShown: false,
+      })}>
+      <MainTab.Screen name="HospitalAdminDashboard" component={HospitalAdminDashboardScreen} options={{ title: 'Dashboard' }} />
+      <MainTab.Screen name="HospitalAdminJobs" component={HRJobsScreen as any} options={{ title: 'Jobs' }} />
+      <MainTab.Screen name="HospitalAdminStaff" component={HospitalAdminStaffScreen} options={{ title: 'Staff' }} />
+    </MainTab.Navigator>
+  );
+};
+
 const MainNavigator = ({ user }: { user: User }) => {
   const getTabNavigator = () => {
     switch (user.role) {
       case 'HR':
       case 'ADMIN':
         return <HRTabNavigator />;
+      case 'HOSPITAL_ADMIN':
+        return <HospitalAdminTabNavigator />;
       case 'AGENCY':
         return <AgencyTabNavigator />;
       case 'DOCTOR':
@@ -270,43 +328,43 @@ const MainNavigator = ({ user }: { user: User }) => {
         cardStyle: { backgroundColor: Colors.background },
       }}>
       <Stack.Screen name="Main" component={MainScreen} />
-      <Stack.Screen 
-        name="Profile" 
+      <Stack.Screen
+        name="Profile"
         component={ProfileScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="ProfileSettings" 
+      <Stack.Screen
+        name="ProfileSettings"
         component={ProfileSettingsScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="EditProfile" 
+      <Stack.Screen
+        name="EditProfile"
         component={EditProfileScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="ChangePassword" 
+      <Stack.Screen
+        name="ChangePassword"
         component={ChangePasswordScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="Notifications" 
+      <Stack.Screen
+        name="Notifications"
         component={NotificationsScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="JobDetails" 
+      <Stack.Screen
+        name="JobDetails"
         component={JobDetailsCommonScreen}
         options={{
           headerShown: true,
@@ -315,15 +373,15 @@ const MainNavigator = ({ user }: { user: User }) => {
           headerTintColor: Colors.white,
         }}
       />
-      <Stack.Screen 
-        name="CreateJob" 
+      <Stack.Screen
+        name="CreateJob"
         component={CreateJobScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="CheckInOut" 
+      <Stack.Screen
+        name="CheckInOut"
         component={CheckInOutScreen}
         options={{
           headerShown: true,
@@ -332,15 +390,15 @@ const MainNavigator = ({ user }: { user: User }) => {
           headerTintColor: Colors.white,
         }}
       />
-      <Stack.Screen 
-        name="JobAssignment" 
+      <Stack.Screen
+        name="JobAssignment"
         component={JobAssignmentScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="AssignmentDetails" 
+      <Stack.Screen
+        name="AssignmentDetails"
         component={AssignmentDetailsScreen}
         options={{
           headerShown: true,
@@ -349,52 +407,52 @@ const MainNavigator = ({ user }: { user: User }) => {
           headerTintColor: Colors.white,
         }}
       />
-      <Stack.Screen 
-        name="QRScanner" 
+      <Stack.Screen
+        name="QRScanner"
         component={QRScannerScreen}
         options={{
           headerShown: false, // We handle our own header in the scanner
           title: 'QR Scanner',
         }}
       />
-      <Stack.Screen 
-        name="QRCodeDisplay" 
+      <Stack.Screen
+        name="QRCodeDisplay"
         component={QRCodeDisplayScreen}
         options={{
           headerShown: false, // We handle our own header
           title: 'QR Code Display',
         }}
       />
-      <Stack.Screen 
-        name="Reports" 
+      <Stack.Screen
+        name="Reports"
         component={ReportsScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="AgencyAssignNurse" 
+      <Stack.Screen
+        name="AgencyAssignNurse"
         component={AgencyAssignNurseScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="ReportDetails" 
+      <Stack.Screen
+        name="ReportDetails"
         component={ReportDetailsScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="PDFViewer" 
+      <Stack.Screen
+        name="PDFViewer"
         component={PDFViewerScreen}
         options={{
           headerShown: false,
         }}
       />
-      <Stack.Screen 
-        name="GeolocationTest" 
+      <Stack.Screen
+        name="GeolocationTest"
         component={GeolocationTest}
         options={{
           headerShown: true,
@@ -403,8 +461,8 @@ const MainNavigator = ({ user }: { user: User }) => {
           headerTintColor: Colors.white,
         }}
       />
-      <Stack.Screen 
-        name="AgencyOnboardNurses" 
+      <Stack.Screen
+        name="AgencyOnboardNurses"
         component={AgencyOnboardNursesScreen}
         options={{
           headerShown: true,
@@ -413,14 +471,60 @@ const MainNavigator = ({ user }: { user: User }) => {
           headerTintColor: Colors.white,
         }}
       />
-      <Stack.Screen 
-        name="AgencyNurseDetails" 
+      <Stack.Screen
+        name="AgencyNurseDetails"
         component={AgencyNurseDetailsScreen}
         options={{
           headerShown: true,
           title: 'Nurse Details',
           headerStyle: { backgroundColor: Colors.primary },
           headerTintColor: Colors.white,
+        }}
+      />
+
+      <Stack.Screen
+        name="HospitalAdminUploadLogo"
+        component={HospitalAdminUploadLogoScreen}
+        options={{
+          headerShown: true,
+          title: 'Upload Hospital Logo',
+          headerStyle: { backgroundColor: Colors.primary },
+          headerTintColor: Colors.white,
+        }}
+      />
+
+      <Stack.Screen
+        name="HospitalAdminThemes"
+        component={HospitalAdminThemeManageScreen}
+        options={{
+          headerShown: true,
+          title: 'Manage Themes',
+          headerStyle: { backgroundColor: Colors.primary },
+          headerTintColor: Colors.white,
+        }}
+      />
+
+      <Stack.Screen
+        name="HospitalAdminUnits"
+        component={HospitalAdminUnitsScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+
+      <Stack.Screen
+        name="PermissionManagement"
+        component={PermissionManagementScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+
+      <Stack.Screen
+        name="AgencyBlacklist"
+        component={HospitalAdminAgencyBlacklistScreen}
+        options={{
+          headerShown: false,
         }}
       />
     </Stack.Navigator>
@@ -435,10 +539,10 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
   useEffect(() => {
     checkAuthStatus();
-    
+
     // Register global logout handler for API service
     setGlobalLogoutHandler(logout);
-    
+
     // Cleanup function
     return () => {
       setGlobalLogoutHandler(() => Promise.resolve());
@@ -464,7 +568,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       // Check if user is logged in
       const token = await AsyncStorage.getItem('jwt_token');
       const userData = await AsyncStorage.getItem('user_data');
-      
+
       if (token && userData) {
         setUser(JSON.parse(userData));
         setIsAuthenticated(true);
@@ -509,6 +613,13 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
 const AppNavigator = () => {
   const { isAuthenticated, user, isLoading } = useAuth();
+  const { loadAndApplyDefaultTheme } = useTheme();
+
+  React.useEffect(() => {
+    if (isAuthenticated && user && (user as any).role === 'HOSPITAL_ADMIN') {
+      loadAndApplyDefaultTheme().catch(() => { });
+    }
+  }, [isAuthenticated, user, loadAndApplyDefaultTheme]);
 
   return (
     <NavigationContainer>
@@ -528,7 +639,9 @@ const AppNavigator = () => {
 const AppNavigatorWithAuth = () => (
   <AuthProvider>
     <NotificationProvider>
-      <AppNavigator />
+      <ThemeProvider>
+        <AppNavigator />
+      </ThemeProvider>
     </NotificationProvider>
   </AuthProvider>
 );
