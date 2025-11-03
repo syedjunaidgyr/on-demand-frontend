@@ -14,6 +14,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useGlobalStyles } from '../../theme/globalStyles';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -69,6 +70,7 @@ interface DashboardStats {
 
 const HRDashboardScreen: React.FC = () => {
   const navigation = useNavigation();
+  const g = useGlobalStyles();
   const { unreadCount } = useNotifications();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -288,7 +290,7 @@ const HRDashboardScreen: React.FC = () => {
      MAIN RENDER
   -------------------------------------------------------------- */
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={g.appBackground}>
       {/* STATUS BAR – PERFECT MATCH */}
       <StatusBar
         backgroundColor="#FFFFFF"

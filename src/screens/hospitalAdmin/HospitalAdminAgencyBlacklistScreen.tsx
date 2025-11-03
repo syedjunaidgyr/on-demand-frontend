@@ -53,6 +53,8 @@ const HospitalAdminAgencyBlacklistScreen: React.FC = () => {
   const navigation = useNavigation();
   const { user } = useAuth();
   const [blacklisted, setBlacklisted] = useState<BlacklistedAgency[]>([]);
+  const [agencies, setAgencies] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'all'|'blacklisted'>('blacklisted');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -85,7 +87,10 @@ const HospitalAdminAgencyBlacklistScreen: React.FC = () => {
       await loadHospitalId();
       return;
     }
-    await loadBlacklisted(hospitalId);
+    await Promise.all([
+      loadAllAgencies(hospitalId),
+      loadBlacklisted(hospitalId),
+    ]);
   }, [hospitalId]);
 
   const loadBlacklisted = async (hid: number) => {
@@ -103,9 +108,36 @@ const HospitalAdminAgencyBlacklistScreen: React.FC = () => {
     }
   };
 
+  const loadAllAgencies = async (hid: number) => {
+    try {
+      setLoading(true);
+      const params: any = {};
+      if (searchQuery) params.q = searchQuery;
+      const res = await HospitalAdminApi.listHospitalAgencies(hid, params);
+      const list = res?.agencies || res || [];
+      setAgencies(list);
+    } catch (e: any) {
+      console.error('Failed to load agencies:', e);
+      // Non-fatal: keep list empty
+      setAgencies([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (hospitalId) {
-      loadBlacklisted(hospitalId);
+      if (activeTab === 'blacklisted') loadBlacklisted(hospitalId);
+      else loadAllAgencies(hospitalId);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (hospitalId) {
+      Promise.all([
+        loadAllAgencies(hospitalId),
+        loadBlacklisted(hospitalId),
+      ]).catch(() => {});
     }
   }, [hospitalId]);
 
@@ -131,7 +163,10 @@ const HospitalAdminAgencyBlacklistScreen: React.FC = () => {
       await HospitalAdminApi.blacklistAgency(selectedAgencyId, hospitalId, form);
       Alert.alert('Success', 'Agency blacklisted successfully');
       setShowModal(false);
-      await load();
+      await Promise.all([
+        loadAllAgencies(hospitalId),
+        loadBlacklisted(hospitalId),
+      ]);
     } catch (e: any) {
       Alert.alert('Error', e?.response?.data?.message || e?.message || 'Failed to blacklist agency');
     }
@@ -207,7 +242,8 @@ const HospitalAdminAgencyBlacklistScreen: React.FC = () => {
           onChangeText={(text) => {
             setSearchQuery(text);
             if (hospitalId) {
-              loadBlacklisted(hospitalId);
+              if (activeTab === 'blacklisted') loadBlacklisted(hospitalId);
+              else loadAllAgencies(hospitalId);
             }
           }}
           placeholderTextColor={Colors.textSecondary}
@@ -215,25 +251,68 @@ const HospitalAdminAgencyBlacklistScreen: React.FC = () => {
         <FontAwesomeIcon icon="search" size={Responsive.iconSize(18)} color={Colors.textSecondary} style={styles.searchIcon} />
       </View>
 
+      {/* Tabs */}
+      <View style={{ flexDirection: 'row', paddingHorizontal: 20, marginTop: 8 }}>
+        <TouchableOpacity onPress={() => setActiveTab('blacklisted')} style={{ marginRight: 16 }}>
+          <Text style={{ color: activeTab==='blacklisted' ? Colors.primary : Colors.textSecondary, fontFamily: Typography.fontFamily.medium }}>Blacklisted</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setActiveTab('all')}>
+          <Text style={{ color: activeTab==='all' ? Colors.primary : Colors.textSecondary, fontFamily: Typography.fontFamily.medium }}>All Agencies</Text>
+        </TouchableOpacity>
+      </View>
+
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors.primary} />
         </View>
       ) : (
-        <FlatList
-          data={blacklisted}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={renderAgency}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <FontAwesomeIcon icon="ban" size={Responsive.iconSize(48)} color="#D1D5DB" />
-              <Text style={styles.emptyText}>No blacklisted agencies</Text>
-              <Text style={styles.emptySubtext}>Agencies that are blacklisted will appear here</Text>
-            </View>
-          }
-        />
+        activeTab==='blacklisted' ? (
+          <FlatList
+            data={blacklisted}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={renderAgency}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <FontAwesomeIcon icon="ban" size={Responsive.iconSize(48)} color="#D1D5DB" />
+                <Text style={styles.emptyText}>No blacklisted agencies</Text>
+                <Text style={styles.emptySubtext}>Agencies that are blacklisted will appear here</Text>
+              </View>
+            }
+          />
+        ) : (
+          <FlatList
+            data={agencies}
+            keyExtractor={(item, idx) => String(item.id || item.agencyId || idx)}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+            contentContainerStyle={styles.listContent}
+            renderItem={({ item }) => (
+              <View style={styles.agencyCard}>
+                <View style={styles.agencyInfo}>
+                  <Text style={styles.agencyName}>{item.firstName || item.name || 'Agency'} {item.lastName || ''}</Text>
+                  {item.email ? <Text style={styles.agencyEmail}>{item.email}</Text> : null}
+                </View>
+                {item.status === 'REVOKED' ? (
+                  <TouchableOpacity style={styles.restoreButton} onPress={() => item.agencyId && hospitalId && HospitalAdminApi.restoreAgency(item.agencyId, hospitalId).then(() => loadAllAgencies(hospitalId)).then(() => loadBlacklisted(hospitalId)).catch((e) => Alert.alert('Error', e?.response?.data?.message || e?.message || 'Failed to restore'))}>
+                    <Text style={styles.restoreButtonText}>Restore</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity style={[styles.restoreButton, { backgroundColor: '#EF4444' }]} onPress={() => { setSelectedAgencyId(item.id || item.agencyId); setShowModal(true); }}>
+                    <Text style={styles.restoreButtonText}>Blacklist</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <FontAwesomeIcon icon="users" size={Responsive.iconSize(48)} color="#D1D5DB" />
+                <Text style={styles.emptyText}>No agencies found</Text>
+                <Text style={styles.emptySubtext}>Agencies assigned to your hospital will appear here</Text>
+              </View>
+            }
+          />
+        )
       )}
 
       <Modal visible={showModal} animationType="slide" transparent={true}>

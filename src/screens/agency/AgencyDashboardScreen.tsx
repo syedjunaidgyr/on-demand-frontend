@@ -18,6 +18,7 @@ import { FontAwesomeIcon } from '../../utils/icons';
 import { Typography } from '../../constants/typography';
 import { Colors } from '../../constants/colors';
 import Responsive from '../../utils/responsive';
+import { useGlobalStyles } from '../../theme/globalStyles';
 import HRFooterNavigation from '../../components/HRFooterNavigation';
 import ApiService from '../../services/api';
 import { useNotifications } from '../../contexts/NotificationContext';
@@ -32,6 +33,7 @@ interface AgencyDashboardData {
 
 const AgencyDashboardScreen: React.FC = () => {
   const navigation = useNavigation();
+  const g = useGlobalStyles();
   const { unreadCount } = useNotifications();
   const [data, setData] = useState<AgencyDashboardData | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -102,7 +104,7 @@ const AgencyDashboardScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={g.appBackground}>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" translucent={false} />
       <View style={styles.innerContainer}>
         {/* Header */}

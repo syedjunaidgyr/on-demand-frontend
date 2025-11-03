@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme as NavDefaultTheme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { FontAwesomeIcon } from '../utils/icons';
@@ -62,6 +62,7 @@ import { User, Job, JobAssignment } from '../types';
 import { setGlobalLogoutHandler } from '../services/api';
 import { NotificationProvider, setGlobalRefreshNotifications } from '../contexts/NotificationContext';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
+import { useAppColors } from '../hooks/useAppColors';
 
 // Authentication Context
 interface AuthContextType {
@@ -138,11 +139,12 @@ const AuthStack = createStackNavigator<AuthStackParamList>();
 const MainTab = createBottomTabNavigator<MainTabParamList>();
 
 const AuthNavigator = () => {
+  const appColors = useAppColors();
   return (
     <AuthStack.Navigator
       screenOptions={{
         headerShown: false,
-        cardStyle: { backgroundColor: Colors.background },
+        cardStyle: { backgroundColor: appColors.background },
       }}>
       <AuthStack.Screen name="Login" component={LoginScreen} />
       <AuthStack.Screen name="Register" component={RegisterScreen} />
@@ -321,11 +323,12 @@ const MainNavigator = ({ user }: { user: User }) => {
     return getTabNavigator();
   };
 
+  const appColors = useAppColors();
   return (
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        cardStyle: { backgroundColor: Colors.background },
+        cardStyle: { backgroundColor: appColors.background },
       }}>
       <Stack.Screen name="Main" component={MainScreen} />
       <Stack.Screen
@@ -614,6 +617,19 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 const AppNavigator = () => {
   const { isAuthenticated, user, isLoading } = useAuth();
   const { loadAndApplyDefaultTheme } = useTheme();
+  const appColors = useAppColors();
+  const navTheme = {
+    ...NavDefaultTheme,
+    colors: {
+      ...NavDefaultTheme.colors,
+      primary: appColors.primary,
+      background: appColors.background,
+      card: '#FFFFFF',
+      text: appColors.textPrimary,
+      border: appColors.border,
+      notification: appColors.primary,
+    },
+  } as const;
 
   React.useEffect(() => {
     if (isAuthenticated && user && (user as any).role === 'HOSPITAL_ADMIN') {
@@ -622,7 +638,7 @@ const AppNavigator = () => {
   }, [isAuthenticated, user, loadAndApplyDefaultTheme]);
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navTheme}>
       {isLoading ? (
         // You can add a loading screen here
         null

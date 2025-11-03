@@ -122,7 +122,7 @@ class HospitalAdminApiService {
     return response.data;
   }
 
-  async updateUnit(unitCode: string, data: Partial<{ unitCode: string; unitName: string }>): Promise<any> {
+  async updateUnit(unitCode: string, data: Partial<{ unitCode: string; unitName: string; isActive: boolean }>): Promise<any> {
     const response: AxiosResponse<any> = await this.api.put(`/hospital-admin/units/${unitCode}`, data);
     return response.data;
   }
@@ -145,6 +145,18 @@ class HospitalAdminApiService {
   async restoreAgency(agencyId: number, hospitalId: number): Promise<any> {
     const response: AxiosResponse<any> = await this.api.post(`/agency/${agencyId}/hospitals/${hospitalId}/restore`);
     return response.data;
+  }
+
+  // List all agencies linked to a hospital (approved/blacklisted). If backend differs, adjust path accordingly.
+  async listHospitalAgencies(hospitalId: number, params?: { q?: string }): Promise<any> {
+    try {
+      const response: AxiosResponse<any> = await this.api.get(`/agency/hospitals/${hospitalId}/agencies`, { params });
+      return response.data;
+    } catch (e) {
+      // Fallback: return blacklisted list only if generic list endpoint not available
+      const fallback = await this.listBlacklistedAgencies(hospitalId, params);
+      return { agencies: (fallback.links || []).map((l: any) => ({ ...l.agency, status: l.status, linkId: l.id })) };
+    }
   }
 }
 

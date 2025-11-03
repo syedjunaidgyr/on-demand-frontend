@@ -31,9 +31,11 @@ import {
   SkeletonStatCard,
   SkeletonHeader,
 } from '../../components/SkeletonComponents';
+import { useGlobalStyles } from '../../theme/globalStyles';
 
 const HealthcareProviderDashboardScreen: React.FC = () => {
   const navigation = useNavigation();
+  const g = useGlobalStyles();
   const { unreadCount } = useNotifications();
   const [availableJobs, setAvailableJobs] = useState<Job[]>([]);
   const [upcomingJobs, setUpcomingJobs] = useState<Job[]>([]);
@@ -554,7 +556,7 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
   const roleConfig = getRoleConfig();
 
   return (
-    <View style={styles.container}>
+    <View style={g.appBackground}>
       <SafeAreaView style={styles.safeAreaTop} edges={['top']}>
         {/* STATUS BAR */}
         <StatusBar

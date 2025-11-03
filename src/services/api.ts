@@ -784,6 +784,19 @@ class ApiService {
     return response.data;
   }
 
+  async createPermission(data: {
+    name: string;
+    code: string;
+    description?: string;
+    category: string;
+    resource: string;
+    action: string;
+    scope: string;
+  }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post('/permissions', data);
+    return response.data;
+  }
+
   async getUserPermissions(userId: number, params?: { hospitalId?: number; unitCode?: string }): Promise<any> {
     const response: AxiosResponse<any> = await this.api.get(`/permissions/users/${userId}`, { params });
     return response.data;

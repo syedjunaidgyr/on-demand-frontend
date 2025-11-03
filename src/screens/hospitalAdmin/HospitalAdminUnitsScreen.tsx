@@ -94,20 +94,20 @@ const HospitalAdminUnitsScreen: React.FC = () => {
 
   const handleDelete = (unit: Unit) => {
     Alert.alert(
-      'Delete Unit',
-      `Are you sure you want to delete ${unit.unitName}?`,
+      'Deactivate Unit',
+      `Mark ${unit.unitName} as inactive? You can reactivate it later.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Delete',
+          text: 'Deactivate',
           style: 'destructive',
           onPress: async () => {
             try {
-              await HospitalAdminApi.deleteUnit(unit.unitCode);
-              Alert.alert('Success', 'Unit deleted successfully');
+              await HospitalAdminApi.updateUnit(unit.unitCode, { isActive: false });
+              Alert.alert('Success', 'Unit deactivated successfully');
               await load();
             } catch (e: any) {
-              Alert.alert('Error', e?.response?.data?.message || e?.message || 'Failed to delete unit');
+              Alert.alert('Error', e?.response?.data?.message || e?.message || 'Failed to deactivate unit');
             }
           },
         },
@@ -132,8 +132,31 @@ const HospitalAdminUnitsScreen: React.FC = () => {
         <TouchableOpacity style={styles.editButton} onPress={() => handleEdit(item)}>
           <FontAwesomeIcon icon="edit" size={Responsive.iconSize(16)} color={Colors.primary} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(item)}>
-          <FontAwesomeIcon icon="trash" size={Responsive.iconSize(16)} color="#EF4444" />
+        <TouchableOpacity
+          style={[styles.editButton, { backgroundColor: item.isActive ? '#FEE2E2' : '#D1FAE5' }]}
+          onPress={async () => {
+            const nextState = !item.isActive;
+            Alert.alert(
+              nextState ? 'Activate Unit' : 'Deactivate Unit',
+              nextState ? `Activate ${item.unitName}?` : `Mark ${item.unitName} as inactive? You can reactivate it later.`,
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: nextState ? 'Activate' : 'Deactivate',
+                  style: nextState ? 'default' : 'destructive',
+                  onPress: async () => {
+                    try {
+                      await HospitalAdminApi.updateUnit(item.unitCode, { isActive: nextState });
+                      await load();
+                    } catch (e: any) {
+                      Alert.alert('Error', e?.response?.data?.message || e?.message || 'Failed to update status');
+                    }
+                  },
+                },
+              ]
+            );
+          }}>
+          <FontAwesomeIcon icon={item.isActive ? 'times' : 'check'} size={Responsive.iconSize(16)} color={item.isActive ? '#B91C1C' : '#059669'} />
         </TouchableOpacity>
       </View>
     </View>

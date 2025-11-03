@@ -6,7 +6,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { Typography } from '../../constants/typography';
 
 const HospitalAdminThemeManageScreen: React.FC = () => {
-  const { loadAndApplyDefaultTheme } = useTheme();
+  const { loadAndApplyDefaultTheme, setTheme } = useTheme();
   const [themes, setThemes] = useState<any[]>([]);
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -90,6 +90,11 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
     if (!v.startsWith('#')) v = `#${v}`;
     return v;
   };
+  const isValidHex = (value: string) => /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/.test(value.trim());
+  const getSafeHex = (value: string, fallback: string = '#3B82F6') => {
+    const nv = normalizeHex(value || '');
+    return isValidHex(nv) ? nv : fallback;
+  };
 
   const clamp255 = (n: number) => Math.max(0, Math.min(255, Math.round(n)));
   const toHex2 = (n: number) => clamp255(n).toString(16).padStart(2, '0');
@@ -149,6 +154,15 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
           setSelectedKey(newId);
         }
       }
+      // Apply locally for immediate feedback
+      setTheme({
+        name: themeData.name,
+        primaryColor: themeData.primaryColor,
+        secondaryColor: themeData.secondaryColor,
+        backgroundColor: themeData.backgroundColor,
+        textColor: themeData.textColor,
+        accentTextColor: themeData.accentTextColor,
+      });
       Alert.alert('Success', 'Theme created successfully' + (setAsDefault ? ' and set as default' : ''));
       // Reset form
       setForm({
@@ -179,6 +193,15 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
         await loadAndApplyDefaultTheme();
         setCurrentId(String(key));
       }
+      // Apply locally even if not default, for immediate app preview
+      setTheme({
+        name: updates.name || form.name,
+        primaryColor: updates.primaryColor || form.primaryColor,
+        secondaryColor: updates.secondaryColor || form.secondaryColor,
+        backgroundColor: updates.backgroundColor || form.backgroundColor,
+        textColor: updates.textColor || form.textColor,
+        accentTextColor: updates.accentTextColor || form.accentTextColor,
+      });
     } catch (e: any) {
       Alert.alert('Error', e?.response?.data?.message || e?.message || 'Failed to update theme');
     } finally { setIsSubmitting(false); }
@@ -387,7 +410,7 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
                   key={String(t.id || t.name)}
                   style={styles.modalItem}
                   onPress={() => {
-                    setForm({
+                    const selected = {
                       id: String(t.id || t.name),
                       name: t.name || String(t.id || ''),
                       primaryColor: t.primaryColor || '#3B82F6',
@@ -396,6 +419,16 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
                       textColor: t.textColor || '#111827',
                       accentTextColor: t.accentTextColor || '#FFFFFF',
                       setAsDefault: false,
+                    };
+                    setForm(selected);
+                    // Immediately apply for preview
+                    setTheme({
+                      name: selected.name,
+                      primaryColor: selected.primaryColor,
+                      secondaryColor: selected.secondaryColor,
+                      backgroundColor: selected.backgroundColor,
+                      textColor: selected.textColor,
+                      accentTextColor: selected.accentTextColor,
                     });
                     setSelectedKey(t.id ?? t.name);
                     setSelectModalVisible(false);
@@ -484,10 +517,10 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
               <View style={{ height: 260, marginBottom: 12 }}>
                 <TriangleColorPickerComp
                   style={{ flex: 1 }}
-                  color={toHsv(tempColor || '#3B82F6')}
+                  color={toHsv(getSafeHex(tempColor))}
                   onColorChange={(hsv: any) => {
                     const hex = fromHsv(hsv);
-                    setTempColor(normalizeHex(hex));
+                    setTempColor(getSafeHex(hex));
                     const { r, g, b } = hexToRgb(hex);
                     setRgb({ r: String(r), g: String(g), b: String(b) });
                   }}
@@ -497,10 +530,10 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
               <View style={{ height: 220, marginBottom: 10 }}>
                 <ColorPickerComp
                   style={{ flex: 1 }}
-                  defaultColor={tempColor || '#3B82F6'}
+                  defaultColor={getSafeHex(tempColor)}
                   onColorChange={(hsv: any) => {
                     const hex = fromHsv(hsv);
-                    setTempColor(normalizeHex(hex));
+                    setTempColor(getSafeHex(hex));
                     const { r, g, b } = hexToRgb(hex);
                     setRgb({ r: String(r), g: String(g), b: String(b) });
                   }}
