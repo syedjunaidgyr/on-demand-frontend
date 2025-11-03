@@ -107,7 +107,12 @@ const CheckInOutScreen: React.FC = () => {
             return {
               ...assignment,
               isCheckedIn: checkInStatus.isCheckedIn,
-              checkInId: checkInStatus.checkInId
+              checkInId: checkInStatus.checkInId,
+              approvalStatus: checkInStatus.approvalStatus,
+              approvedBy: checkInStatus.approvedBy,
+              approvedAt: checkInStatus.approvedAt,
+              rejectionReason: checkInStatus.rejectionReason,
+              isApprovalPending: checkInStatus.approvalStatus === 'pending'
             };
           } catch (error) {
             console.log('Could not get check-in status for assignment:', assignment.id, error);
@@ -115,7 +120,12 @@ const CheckInOutScreen: React.FC = () => {
             return {
               ...assignment,
               isCheckedIn: false,
-              checkInId: null
+              checkInId: null,
+              approvalStatus: undefined,
+              approvedBy: undefined,
+              approvedAt: undefined,
+              rejectionReason: undefined,
+              isApprovalPending: false
             };
           }
         })
@@ -222,6 +232,15 @@ const CheckInOutScreen: React.FC = () => {
   };
 
   const handleCheckIn = async (assignment: JobAssignment) => {
+    // Gate: prevent duplicate or pending flows
+    if (assignment.isApprovalPending) {
+      Alert.alert('Awaiting Approval', 'Your previous check-in is pending HR/Admin approval. You cannot check in again yet.');
+      return;
+    }
+    if (assignment.approvalStatus === 'rejected') {
+      Alert.alert('Check-In Rejected', assignment.rejectionReason || 'Your last check-in was rejected.');
+      return;
+    }
     setCurrentAssignment(assignment);
     setActionType('checkin');
     setShowActionSheet(true);
@@ -443,6 +462,11 @@ const CheckInOutScreen: React.FC = () => {
   };
 
   const handleCheckOut = async (assignment: JobAssignment) => {
+    // Gate: allow checkout only if last check-in approved
+    if (assignment.approvalStatus !== 'approved' || !assignment.isCheckedIn) {
+      Alert.alert('Pending Approval', 'You can check out only after your check-in is approved.');
+      return;
+    }
     setCurrentAssignment(assignment);
     setActionType('checkout');
     setShowActionSheet(true);
@@ -898,7 +922,11 @@ const CheckInOutScreen: React.FC = () => {
               {actionType === 'checkin' ? 'Check In' : 'Check Out'}
             </Text>
             <Text style={styles.actionSheetSubtitle}>
-              How would you like to {actionType === 'checkin' ? 'check in' : 'check out'}?
+              {currentAssignment?.isApprovalPending
+                ? 'Awaiting HR/Admin approval. Actions are temporarily disabled.'
+                : currentAssignment?.approvalStatus === 'rejected'
+                ? `Check-in rejected${currentAssignment?.rejectionReason ? `: ${currentAssignment.rejectionReason}` : ''}`
+                : `How would you like to ${actionType === 'checkin' ? 'check in' : 'check out'}?`}
             </Text>
             
             {/* <TouchableOpacity
@@ -916,7 +944,8 @@ const CheckInOutScreen: React.FC = () => {
             </TouchableOpacity> */}
 
             <TouchableOpacity
-              style={styles.actionSheetButton}
+              style={[styles.actionSheetButton, (currentAssignment?.isApprovalPending || currentAssignment?.approvalStatus === 'rejected') && { opacity: 0.5 }]}
+              disabled={!!(currentAssignment?.isApprovalPending || currentAssignment?.approvalStatus === 'rejected')}
               onPress={handleGenerateQRCode}
             >
               <FontAwesomeIcon icon="qrcode" size={Responsive.iconSize(20)} color={Colors.primary} />
@@ -924,7 +953,8 @@ const CheckInOutScreen: React.FC = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.actionSheetButton}
+              style={[styles.actionSheetButton, (currentAssignment?.isApprovalPending || currentAssignment?.approvalStatus === 'rejected') && { opacity: 0.5 }]}
+              disabled={!!(currentAssignment?.isApprovalPending || currentAssignment?.approvalStatus === 'rejected')}
               onPress={handleScanQRCode}
             >
               <FontAwesomeIcon icon="camera" size={Responsive.iconSize(20)} color={Colors.primary} />

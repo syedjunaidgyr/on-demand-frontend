@@ -112,7 +112,7 @@ const QRCodeDisplayScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
       <GlobalHeader
-        title={`QR Code - ${action === 'checkin' ? 'Check In' : 'Check Out'}`}
+        title={assignment.isApprovalPending && action === 'checkin' ? 'Awaiting Approval' : `QR Code - ${action === 'checkin' ? 'Check In' : 'Check Out'}`}
         backgroundColor={Colors.primary}
         onBackPress={() => navigation.goBack()}
       />
@@ -125,6 +125,11 @@ const QRCodeDisplayScreen: React.FC = () => {
           <Text style={styles.infoText}>
             Provider: {assignment.user?.firstName} {assignment.user?.lastName}
           </Text>
+          {assignment.isApprovalPending && action === 'checkin' && (
+            <Text style={[styles.infoText, { color: Colors.warning }]}>
+              Check-in submitted. Awaiting HR/Admin approval.
+            </Text>
+          )}
           
           {locationData && (
             <View style={styles.locationContainer}>

@@ -54,7 +54,7 @@ export interface Job {
     parking: boolean;
     malpractice: boolean;
   };
-  facilityName: string;
+  // facilityName already declared above as optional; keep optional only
   facilityAddress: {
     street: string;
     city: string;
@@ -91,6 +91,12 @@ export interface JobAssignment {
   // Additional properties for check-in/out functionality
   isCheckedIn?: boolean;
   checkInId?: string | null;
+  // Approval workflow fields
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
+  approvedBy?: { id: string; name: string } | null;
+  approvedAt?: string | null;
+  // Derived helpers
+  isApprovalPending?: boolean;
   // ✅ New fields for user tracking
   checkedInBy?: any; // User who checked in
   checkedOutBy?: any; // User who checked out
@@ -113,6 +119,10 @@ export interface CheckIn {
   };
   notes?: string;
   createdAt: string;
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
+  approvedBy?: { id: string; name: string } | null;
+  approvedAt?: string | null;
+  rejectionReason?: string;
   jobContext?: {
     facilityName: string;
     location: string;
