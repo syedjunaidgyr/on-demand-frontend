@@ -50,7 +50,14 @@ const PermissionManagementScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'my' | 'all' | 'users' | 'masters'>('my');
+  const [activeTab, setActiveTab] = useState<'permissions' | 'masters' | 'userPerms' | 'grants'>('permissions');
+  // Forms
+  const [permForm, setPermForm] = useState({ name: '', code: '', description: '', category: '', resource: '', action: '', scope: '' });
+  const [masterForm, setMasterForm] = useState({ name: '', code: '', role: '', isDefault: false });
+  const [grantForm, setGrantForm] = useState({ userId: '', permissionCode: '', hospitalId: '', unitCode: '', expiresAt: '', notes: '' });
+  const [revokeForm, setRevokeForm] = useState({ userId: '', permissionCode: '', hospitalId: '', unitCode: '' });
+  const [applyMasterForm, setApplyMasterForm] = useState({ userId: '', masterId: '', hospitalId: '', unitCode: '' });
+  const [userPermsUserId, setUserPermsUserId] = useState('');
 
   const loadMyPermissions = async () => {
     try {
@@ -81,12 +88,17 @@ const PermissionManagementScreen: React.FC = () => {
 
   const load = async () => {
     setLoading(true);
-    await Promise.all([
-      loadMyPermissions(),
-      activeTab === 'all' && loadAllPermissions(),
-      activeTab === 'masters' && loadPermissionMasters(),
-    ]);
-    setLoading(false);
+    try {
+      await loadMyPermissions();
+      if (activeTab === 'permissions') await loadAllPermissions();
+      if (activeTab === 'masters') await loadPermissionMasters();
+      if (activeTab === 'userPerms' && userPermsUserId) {
+        const res = await ApiService.getUserPermissions(Number(userPermsUserId));
+        setUserPermissions(res.permissions || { global: [], hospital: [], unit: [] });
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -192,25 +204,18 @@ const PermissionManagementScreen: React.FC = () => {
 
       {/* Tabs */}
       <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'my' && styles.tabActive]}
-          onPress={() => setActiveTab('my')}>
-          <Text style={[styles.tabText, activeTab === 'my' && styles.tabTextActive]}>My Permissions</Text>
+        <TouchableOpacity style={[styles.tab, activeTab === 'permissions' && styles.tabActive]} onPress={() => setActiveTab('permissions')}>
+          <Text style={[styles.tabText, activeTab === 'permissions' && styles.tabTextActive]}>Permissions</Text>
         </TouchableOpacity>
-        {(user?.role === 'ADMIN' || user?.role === 'HR') && (
-          <>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'all' && styles.tabActive]}
-              onPress={() => setActiveTab('all')}>
-              <Text style={[styles.tabText, activeTab === 'all' && styles.tabTextActive]}>All Permissions</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'masters' && styles.tabActive]}
-              onPress={() => setActiveTab('masters')}>
-              <Text style={[styles.tabText, activeTab === 'masters' && styles.tabTextActive]}>Templates</Text>
-            </TouchableOpacity>
-          </>
-        )}
+        <TouchableOpacity style={[styles.tab, activeTab === 'masters' && styles.tabActive]} onPress={() => setActiveTab('masters')}>
+          <Text style={[styles.tabText, activeTab === 'masters' && styles.tabTextActive]}>Masters</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.tab, activeTab === 'userPerms' && styles.tabActive]} onPress={() => setActiveTab('userPerms')}>
+          <Text style={[styles.tabText, activeTab === 'userPerms' && styles.tabTextActive]}>User Permissions</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.tab, activeTab === 'grants' && styles.tabActive]} onPress={() => setActiveTab('grants')}>
+          <Text style={[styles.tabText, activeTab === 'grants' && styles.tabTextActive]}>Grants</Text>
+        </TouchableOpacity>
       </View>
 
       {loading ? (
@@ -221,40 +226,10 @@ const PermissionManagementScreen: React.FC = () => {
         <ScrollView
           style={styles.scrollView}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-          {activeTab === 'my' && myPermissions && (
+          {activeTab === 'permissions' && (
             <View style={styles.content}>
-              <Text style={styles.sectionTitle}>Global Permissions</Text>
-              {myPermissions.global.length > 0 ? (
-                myPermissions.global.map((p) => renderPermissionItem(p, 'global'))
-              ) : (
-                <Text style={styles.emptyText}>No global permissions</Text>
-              )}
-
-              <Text style={styles.sectionTitle}>Hospital Permissions</Text>
-              {myPermissions.hospital.length > 0 ? (
-                myPermissions.hospital.map((p) => renderPermissionItem(p, 'hospital'))
-              ) : (
-                <Text style={styles.emptyText}>No hospital permissions</Text>
-              )}
-
-              <Text style={styles.sectionTitle}>Unit Permissions</Text>
-              {myPermissions.unit.length > 0 ? (
-                myPermissions.unit.map((p) => renderPermissionItem(p, 'unit'))
-              ) : (
-                <Text style={styles.emptyText}>No unit permissions</Text>
-              )}
-            </View>
-          )}
-
-          {activeTab === 'all' && (
-            <View style={styles.content}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search permissions..."
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholderTextColor={Colors.textSecondary}
-              />
+              <Text style={styles.sectionTitle}>All Permissions</Text>
+              <TextInput style={styles.searchInput} placeholder="Filter by name/code..." value={searchQuery} onChangeText={setSearchQuery} placeholderTextColor={Colors.textSecondary} />
               <FlatList
                 data={filteredPermissions}
                 keyExtractor={(item) => String(item.id)}
@@ -262,12 +237,101 @@ const PermissionManagementScreen: React.FC = () => {
                 scrollEnabled={false}
                 ListEmptyComponent={<Text style={styles.emptyText}>No permissions found</Text>}
               />
+              {(user?.role === 'ADMIN') && (
+                <>
+                  <Text style={styles.sectionTitle}>Add Permission</Text>
+                  <View style={{ gap: 8 }}>
+                    <TextInput style={styles.input} placeholder="Name" value={permForm.name} onChangeText={(v)=>setPermForm({...permForm,name:v})} placeholderTextColor={Colors.textSecondary} />
+                    <TextInput style={styles.input} placeholder="Code (UPPER_SNAKE)" autoCapitalize="characters" value={permForm.code} onChangeText={(v)=>setPermForm({...permForm,code:v})} placeholderTextColor={Colors.textSecondary} />
+                    <TextInput style={styles.input} placeholder="Description" value={permForm.description} onChangeText={(v)=>setPermForm({...permForm,description:v})} placeholderTextColor={Colors.textSecondary} />
+                    <TextInput style={styles.input} placeholder="Category" value={permForm.category} onChangeText={(v)=>setPermForm({...permForm,category:v})} placeholderTextColor={Colors.textSecondary} />
+                    <TextInput style={styles.input} placeholder="Resource" value={permForm.resource} onChangeText={(v)=>setPermForm({...permForm,resource:v})} placeholderTextColor={Colors.textSecondary} />
+                    <TextInput style={styles.input} placeholder="Action" value={permForm.action} onChangeText={(v)=>setPermForm({...permForm,action:v})} placeholderTextColor={Colors.textSecondary} />
+                    <TextInput style={styles.input} placeholder="Scope" value={permForm.scope} onChangeText={(v)=>setPermForm({...permForm,scope:v})} placeholderTextColor={Colors.textSecondary} />
+                    <TouchableOpacity style={styles.primaryBtn} onPress={async()=>{ try{ await ApiService.createPermission(permForm as any); Alert.alert('Success','Permission created'); await loadAllPermissions(); }catch(e:any){ Alert.alert('Error', e?.response?.data?.message||e?.message||'Failed'); } }}>
+                      <Text style={styles.primaryBtnText}>Create</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
             </View>
           )}
 
           {activeTab === 'masters' && (
             <View style={styles.content}>
-              <Text style={styles.emptyText}>Permission Masters/Templates feature coming soon</Text>
+              <Text style={styles.sectionTitle}>Permission Masters</Text>
+              {/* Simple create master form */}
+              {(user?.role==='ADMIN') && (
+                <View style={{ gap: 8 }}>
+                  <TextInput style={styles.input} placeholder="Name" value={masterForm.name} onChangeText={(v)=>setMasterForm({...masterForm,name:v})} placeholderTextColor={Colors.textSecondary} />
+                  <TextInput style={styles.input} placeholder="Code" value={masterForm.code} onChangeText={(v)=>setMasterForm({...masterForm,code:v})} placeholderTextColor={Colors.textSecondary} />
+                  <TextInput style={styles.input} placeholder="Role" value={masterForm.role} onChangeText={(v)=>setMasterForm({...masterForm,role:v})} placeholderTextColor={Colors.textSecondary} />
+                  <TouchableOpacity style={styles.primaryBtn} onPress={async()=>{ try{ await ApiService.createPermissionMaster({ ...masterForm, isDefault: false } as any); Alert.alert('Success','Master created'); await loadPermissionMasters(); }catch(e:any){ Alert.alert('Error', e?.response?.data?.message||e?.message||'Failed'); } }}>
+                    <Text style={styles.primaryBtnText}>Create Master</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              {/* Basic list placeholder */}
+              <Text style={[styles.emptyText,{textAlign:'left',paddingHorizontal:0, paddingTop:12}]}>List and pick-lists can be expanded here.</Text>
+            </View>
+          )}
+
+          {activeTab === 'userPerms' && (
+            <View style={styles.content}>
+              <Text style={styles.sectionTitle}>User Permissions</Text>
+              <TextInput style={styles.input} placeholder="User ID" value={userPermsUserId} onChangeText={setUserPermsUserId} keyboardType="number-pad" placeholderTextColor={Colors.textSecondary} />
+              <TouchableOpacity style={styles.primaryBtn} onPress={async()=>{ try{ const res = await ApiService.getUserPermissions(Number(userPermsUserId)); setUserPermissions(res.permissions||{global:[],hospital:[],unit:[]}); }catch(e:any){ Alert.alert('Error', e?.response?.data?.message||e?.message||'Failed'); } }}>
+                <Text style={styles.primaryBtnText}>Load</Text>
+              </TouchableOpacity>
+              {userPermissions && (
+                <>
+                  <Text style={styles.sectionTitle}>Global</Text>
+                  {userPermissions.global?.map(p=>renderPermissionItem(p,'global'))}
+                  <Text style={styles.sectionTitle}>Hospital</Text>
+                  {userPermissions.hospital?.map(p=>renderPermissionItem(p,'hospital'))}
+                  <Text style={styles.sectionTitle}>Unit</Text>
+                  {userPermissions.unit?.map(p=>renderPermissionItem(p,'unit'))}
+                </>
+              )}
+            </View>
+          )}
+
+          {activeTab === 'grants' && (
+            <View style={styles.content}>
+              <Text style={styles.sectionTitle}>Grant Permission</Text>
+              <View style={{ gap: 8 }}>
+                <TextInput style={styles.input} placeholder="User ID" value={grantForm.userId} onChangeText={(v)=>setGrantForm({...grantForm,userId:v})} keyboardType="number-pad" placeholderTextColor={Colors.textSecondary} />
+                <TextInput style={styles.input} placeholder="Permission Code" value={grantForm.permissionCode} onChangeText={(v)=>setGrantForm({...grantForm,permissionCode:v})} placeholderTextColor={Colors.textSecondary} />
+                <TextInput style={styles.input} placeholder="Hospital ID (optional)" value={grantForm.hospitalId} onChangeText={(v)=>setGrantForm({...grantForm,hospitalId:v})} keyboardType="number-pad" placeholderTextColor={Colors.textSecondary} />
+                <TextInput style={styles.input} placeholder="Unit Code (optional)" value={grantForm.unitCode} onChangeText={(v)=>setGrantForm({...grantForm,unitCode:v})} placeholderTextColor={Colors.textSecondary} />
+                <TextInput style={styles.input} placeholder="Expires At (ISO)" value={grantForm.expiresAt} onChangeText={(v)=>setGrantForm({...grantForm,expiresAt:v})} placeholderTextColor={Colors.textSecondary} />
+                <TextInput style={styles.input} placeholder="Notes" value={grantForm.notes} onChangeText={(v)=>setGrantForm({...grantForm,notes:v})} placeholderTextColor={Colors.textSecondary} />
+                <TouchableOpacity style={styles.primaryBtn} onPress={async()=>{ try{ await ApiService.grantPermission(Number(grantForm.userId),{ permissionCode: grantForm.permissionCode, hospitalId: grantForm.hospitalId?Number(grantForm.hospitalId):undefined, unitCode: grantForm.unitCode||undefined, expiresAt: grantForm.expiresAt||undefined, notes: grantForm.notes||undefined }); Alert.alert('Success','Granted'); }catch(e:any){ Alert.alert('Error', e?.response?.data?.message||e?.message||'Failed'); } }}>
+                  <Text style={styles.primaryBtnText}>Grant</Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.sectionTitle}>Revoke Permission</Text>
+              <View style={{ gap: 8 }}>
+                <TextInput style={styles.input} placeholder="User ID" value={revokeForm.userId} onChangeText={(v)=>setRevokeForm({...revokeForm,userId:v})} keyboardType="number-pad" placeholderTextColor={Colors.textSecondary} />
+                <TextInput style={styles.input} placeholder="Permission Code" value={revokeForm.permissionCode} onChangeText={(v)=>setRevokeForm({...revokeForm,permissionCode:v})} placeholderTextColor={Colors.textSecondary} />
+                <TextInput style={styles.input} placeholder="Hospital ID (optional)" value={revokeForm.hospitalId} onChangeText={(v)=>setRevokeForm({...revokeForm,hospitalId:v})} keyboardType="number-pad" placeholderTextColor={Colors.textSecondary} />
+                <TextInput style={styles.input} placeholder="Unit Code (optional)" value={revokeForm.unitCode} onChangeText={(v)=>setRevokeForm({...revokeForm,unitCode:v})} placeholderTextColor={Colors.textSecondary} />
+                <TouchableOpacity style={styles.primaryBtn} onPress={async()=>{ try{ await ApiService.revokePermission(Number(revokeForm.userId),{ permissionCode: revokeForm.permissionCode, hospitalId: revokeForm.hospitalId?Number(revokeForm.hospitalId):undefined, unitCode: revokeForm.unitCode||undefined }); Alert.alert('Success','Revoked'); }catch(e:any){ Alert.alert('Error', e?.response?.data?.message||e?.message||'Failed'); } }}>
+                  <Text style={styles.primaryBtnText}>Revoke</Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.sectionTitle}>Apply Master</Text>
+              <View style={{ gap: 8 }}>
+                <TextInput style={styles.input} placeholder="User ID" value={applyMasterForm.userId} onChangeText={(v)=>setApplyMasterForm({...applyMasterForm,userId:v})} keyboardType="number-pad" placeholderTextColor={Colors.textSecondary} />
+                <TextInput style={styles.input} placeholder="Master ID" value={applyMasterForm.masterId} onChangeText={(v)=>setApplyMasterForm({...applyMasterForm,masterId:v})} keyboardType="number-pad" placeholderTextColor={Colors.textSecondary} />
+                <TextInput style={styles.input} placeholder="Hospital ID (optional)" value={applyMasterForm.hospitalId} onChangeText={(v)=>setApplyMasterForm({...applyMasterForm,hospitalId:v})} keyboardType="number-pad" placeholderTextColor={Colors.textSecondary} />
+                <TextInput style={styles.input} placeholder="Unit Code (optional)" value={applyMasterForm.unitCode} onChangeText={(v)=>setApplyMasterForm({...applyMasterForm,unitCode:v})} placeholderTextColor={Colors.textSecondary} />
+                <TouchableOpacity style={styles.primaryBtn} onPress={async()=>{ try{ await ApiService.applyPermissionMaster(Number(applyMasterForm.userId),{ masterId: Number(applyMasterForm.masterId), hospitalId: applyMasterForm.hospitalId?Number(applyMasterForm.hospitalId):undefined, unitCode: applyMasterForm.unitCode||undefined }); Alert.alert('Success','Master applied'); }catch(e:any){ Alert.alert('Error', e?.response?.data?.message||e?.message||'Failed'); } }}>
+                  <Text style={styles.primaryBtnText}>Apply</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         </ScrollView>

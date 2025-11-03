@@ -45,7 +45,7 @@ const HospitalAdminDashboardScreen: React.FC = () => {
         HospitalAdminApi.getThemes(),
       ]);
       setDashboard(dashRes);
-      setHospital(hospRes);
+      setHospital((hospRes as any)?.hospital || hospRes);
       setThemes(themesRes);
     } catch (e) {
       setDashboard(null);
@@ -296,17 +296,18 @@ const HospitalAdminDashboardScreen: React.FC = () => {
           {hospital && (
             <View style={styles.headerCard}>
               <View style={styles.headerRow}>
-                {(hospital?.logoUrl || hospital?.logo) ? (() => {
-                  const logoPath = hospital.logoUrl || hospital.logo;
+                {(() => {
+                  const candidate = (hospital as any);
+                  const logoPath = candidate?.logoUrl || candidate?.logoPath || candidate?.logo || candidate?.assets?.logoUrl || null;
                   // Construct full URL if it's a relative path
-                  let logoUri = logoPath;
-                  if (logoPath && !logoPath.startsWith('http')) {
+                  let logoUri = logoPath as string | null;
+                  if (logoUri && !logoUri.startsWith('http')) {
                     const baseUrl = getFinalApiUrl().replace('/api/v1', '');
-                    logoUri = logoPath.startsWith('/') 
-                      ? `${baseUrl}${logoPath}` 
-                      : `${baseUrl}/${logoPath}`;
+                    logoUri = logoUri.startsWith('/') 
+                      ? `${baseUrl}${logoUri}` 
+                      : `${baseUrl}/${logoUri}`;
                   }
-                  return (
+                  return logoUri ? (
                     <Image 
                       source={{ uri: logoUri }} 
                       style={styles.logo} 
@@ -315,10 +316,10 @@ const HospitalAdminDashboardScreen: React.FC = () => {
                         console.error('Logo load error:', e);
                       }}
                     />
+                  ) : (
+                    <View style={styles.logoPlaceholder} />
                   );
-                })() : (
-                  <View style={styles.logoPlaceholder} />
-                )}
+                })()}
                 <View style={{ flex: 1 }}>
                   <Text style={styles.hospitalName}>{hospital?.name || 'Hospital'}</Text>
                   {!!hospital?.units?.length && (
