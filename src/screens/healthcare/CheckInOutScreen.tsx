@@ -51,6 +51,12 @@ const CheckInOutScreen: React.FC = () => {
     action: 'checkin' | 'checkout';
     qrData?: string;
   } | null>(null);
+  const [showActivityModal, setShowActivityModal] = useState(false);
+  const [activityDescription, setActivityDescription] = useState('');
+  const [activityAssignmentId, setActivityAssignmentId] = useState<string | null>(null);
+  const [showActivitiesListModal, setShowActivitiesListModal] = useState(false);
+  const [activitiesList, setActivitiesList] = useState<any[]>([]);
+  const [isLoadingActivities, setIsLoadingActivities] = useState(false);
 
   
 
@@ -268,12 +274,38 @@ const CheckInOutScreen: React.FC = () => {
       if (approval === 'approved') {
         Alert.alert(
           'Check-In Successful! ✅', 
-          `${userName} successfully checked in at ${facilityName}!\n\nLocation verified: ${address}\nCoordinates: ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}\nAccuracy: ${Math.round(location.accuracy)}m`
+          `${userName} successfully checked in at ${facilityName}!\n\nLocation verified: ${address}\nCoordinates: ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}\nAccuracy: ${Math.round(location.accuracy)}m`,
+          [
+            {
+              text: 'Add Activity',
+              onPress: () => {
+                setActivityAssignmentId(currentAssignment.id);
+                setActivityDescription('');
+                setShowActivityModal(true);
+              }
+            },
+            { text: 'Skip', style: 'cancel' }
+          ]
         );
       } else if (approval === 'rejected') {
         Alert.alert('Check-In Rejected', response?.rejectionReason || 'Your check-in was rejected.');
       } else {
-        Alert.alert('Submitted for Approval', 'Check-in submitted. Awaiting HR/Admin approval.');
+        // Check-in submitted but pending approval - still allow activity entry
+        Alert.alert(
+          'Check-In Submitted', 
+          'Check-in submitted. Awaiting HR/Admin approval.\n\nYou can log activities now.',
+          [
+            {
+              text: 'Add Activity',
+              onPress: () => {
+                setActivityAssignmentId(currentAssignment.id);
+                setActivityDescription('');
+                setShowActivityModal(true);
+              }
+            },
+            { text: 'Skip', style: 'cancel' }
+          ]
+        );
       }
 
       // ✅ Update assignment with approval status (do NOT mark in-progress until approved)
@@ -409,7 +441,21 @@ const CheckInOutScreen: React.FC = () => {
         await ApiService.checkIn(pendingLocationAction.assignmentId, locationData, notes);
         Alert.alert(
           'Check-In Successful! ✅', 
-          `Location verified: ${address}\nCoordinates: ${freshLocation.latitude.toFixed(6)}, ${freshLocation.longitude.toFixed(6)}\nAccuracy: ${Math.round(freshLocation.accuracy)}m`
+          `Location verified: ${address}\nCoordinates: ${freshLocation.latitude.toFixed(6)}, ${freshLocation.longitude.toFixed(6)}\nAccuracy: ${Math.round(freshLocation.accuracy)}m`,
+          [
+            {
+              text: 'Add Activity',
+              onPress: () => {
+                const assignment = confirmedAssignments.find(a => a.id === pendingLocationAction.assignmentId);
+                if (assignment) {
+                  setActivityAssignmentId(assignment.id);
+                  setActivityDescription('');
+                  setShowActivityModal(true);
+                }
+              }
+            },
+            { text: 'Skip', style: 'cancel' }
+          ]
         );
       } else {
         await ApiService.checkOut(pendingLocationAction.assignmentId, locationData, notes);
@@ -647,6 +693,33 @@ const CheckInOutScreen: React.FC = () => {
     const startDateText = job.startDate ? formatDate(job.startDate) : '—';
     const timeRangeText = job.startTime && job.endTime ? `${formatTime(job.startTime)} - ${formatTime(job.endTime)}` : undefined;
     const priority = job.priority || '';
+    
+    // Show "Add Activity" button when:
+    // 1. Status is IN_PROGRESS (check-in approved and working)
+    // 2. OR user has checked in (even if pending approval) - they can log activities while waiting
+    // 3. OR there's a check-in record (checkInId exists)
+    const assignmentStatus = String(assignment.status || '').toUpperCase();
+    const isInProgress = assignmentStatus === 'IN_PROGRESS';
+    const hasCheckInId = !!(assignment as any).checkInId;
+    const isCheckedInFlag = assignment.isCheckedIn === true;
+    const approvalStatusLower = String(assignment.approvalStatus || '').toLowerCase();
+    const isApproved = approvalStatusLower === 'approved';
+    const isPending = approvalStatusLower === 'pending';
+    
+    // Allow activity entry if: IN_PROGRESS, or checked in (approved or pending), or has check-in record
+    const canAddActivity = isInProgress || (isCheckedInFlag && (isApproved || isPending)) || hasCheckInId;
+    
+    console.log('🔍 Assignment Card Debug:', {
+      assignmentId: assignment.id,
+      status: assignmentStatus,
+      isInProgress,
+      approvalStatus: assignment.approvalStatus,
+      isApproved,
+      isPending,
+      isCheckedIn: isCheckedInFlag,
+      hasCheckInId,
+      canAddActivity
+    });
 
     return (
       <View style={styles.assignmentCard}>
@@ -712,6 +785,41 @@ const CheckInOutScreen: React.FC = () => {
             )}
           </View>
         </View>
+
+        {/* Activity Actions - Add and View */}
+        {canAddActivity && (
+          <View style={styles.activityActionsRow}>
+            <TouchableOpacity
+              style={styles.addActivityButton}
+              onPress={() => {
+                setActivityAssignmentId(assignment.id);
+                setActivityDescription('');
+                setShowActivityModal(true);
+              }}
+            >
+              <FontAwesomeIcon icon="plus" size={Responsive.iconSize(16)} color={Colors.white} />
+              <Text style={styles.addActivityButtonText}>Add Activity</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.viewActivitiesButton}
+              onPress={async () => {
+                try {
+                  setIsLoadingActivities(true);
+                  setShowActivitiesListModal(true);
+                  const resp = await ApiService.getAssignmentActivities(assignment.id, { page: 1, limit: 20 });
+                  setActivitiesList(resp?.activities || []);
+                } catch (e) {
+                  setActivitiesList([]);
+                } finally {
+                  setIsLoadingActivities(false);
+                }
+              }}
+            >
+              <FontAwesomeIcon icon="list" size={Responsive.iconSize(16)} color={Colors.primary} />
+              <Text style={styles.viewActivitiesButtonText}>View Activities</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Per-card actions removed; use floating button */}
         <View style={styles.checkInOutActions} />
@@ -881,6 +989,31 @@ const CheckInOutScreen: React.FC = () => {
               <Text style={styles.actionSheetButtonText}>Scan QR Code</Text>
             </TouchableOpacity>
 
+            {/* Add Activity Button - Show when checked in (approved, pending, or IN_PROGRESS status) */}
+            {currentAssignment && (() => {
+              const assignmentStatus = String(currentAssignment.status || '').toUpperCase();
+              const isInProgress = assignmentStatus === 'IN_PROGRESS';
+              const hasCheckInId = !!(currentAssignment as any).checkInId;
+              const isCheckedInFlag = currentAssignment.isCheckedIn === true;
+              const approvalStatusLower = String(currentAssignment.approvalStatus || '').toLowerCase();
+              const isApproved = approvalStatusLower === 'approved';
+              const isPending = approvalStatusLower === 'pending';
+              return isInProgress || (isCheckedInFlag && (isApproved || isPending)) || hasCheckInId;
+            })() && (
+              <TouchableOpacity
+                style={styles.actionSheetButton}
+                onPress={() => {
+                  setShowActionSheet(false);
+                  setActivityAssignmentId(currentAssignment.id);
+                  setActivityDescription('');
+                  setShowActivityModal(true);
+                }}
+              >
+                <FontAwesomeIcon icon="plus" size={Responsive.iconSize(20)} color={Colors.primary} />
+                <Text style={styles.actionSheetButtonText}>Add Activity</Text>
+              </TouchableOpacity>
+            )}
+
             <TouchableOpacity
               style={[styles.actionSheetButton, styles.cancelButton]}
               onPress={() => setShowActionSheet(false)}
@@ -927,6 +1060,160 @@ const CheckInOutScreen: React.FC = () => {
           } : undefined}
         maxDistanceMeters={500}
       />
+
+      {/* Activities List Modal */}
+      <Modal
+        visible={showActivitiesListModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowActivitiesListModal(false)}
+      >
+        <View style={styles.activityModalOverlay}>
+          <View style={styles.activityModalContainer}>
+            <View style={styles.activityModalHeader}>
+              <Text style={styles.activityModalTitle}>Activities</Text>
+              {!!activitiesList && !isLoadingActivities && (
+                <View style={styles.activityCountBadge}>
+                  <Text style={styles.activityCountText}>{activitiesList.length}</Text>
+                </View>
+              )}
+              <TouchableOpacity onPress={() => setShowActivitiesListModal(false)}>
+                <FontAwesomeIcon icon="times" size={Responsive.iconSize(20)} color={Colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+            {isLoadingActivities ? (
+              <View style={styles.activitiesLoadingContainer}>
+                <ActivityIndicator size="small" color={Colors.primary} />
+                <Text style={styles.activitiesLoadingText}>Loading activities...</Text>
+              </View>
+            ) : activitiesList && activitiesList.length > 0 ? (
+              <View style={styles.activitiesListWrapper}>
+                <ScrollView style={styles.activitiesScroll} showsVerticalScrollIndicator={true}>
+                  {activitiesList.map((a: any, idx: number) => (
+                    <View key={a.id || idx} style={styles.activityCard}>
+                      <View style={styles.activityRow}>
+                        <View style={styles.activityIconCircle}>
+                          <FontAwesomeIcon icon="clipboard-list" size={Responsive.iconSize(14)} color={Colors.primary} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.activityDescription} numberOfLines={2}>{a.description}</Text>
+                          <View style={styles.activityMetaRow}>
+                            <View style={styles.activityMetaPill}>
+                              <FontAwesomeIcon icon="clock" size={Responsive.iconSize(12)} color={Colors.textSecondary} />
+                              <Text style={styles.activityTime}>{new Date(a.activityTime || a.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date(a.activityTime || a.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</Text>
+                            </View>
+                            <View style={styles.activityIndexChip}>
+                              <Text style={styles.activityIndexChipText}>#{idx + 1}</Text>
+                            </View>
+                          </View>
+                        </View>
+                      </View>
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
+            ) : (
+              <View style={styles.activitiesEmptyState}>
+                <FontAwesomeIcon icon="clipboard-list" size={Responsive.iconSize(28)} color={Colors.textTertiary} />
+                <Text style={styles.activitiesEmptyText}>No activities recorded yet.</Text>
+              </View>
+            )}
+
+            <View style={styles.activityModalFooter}>
+              <TouchableOpacity style={styles.closeModalButton} onPress={() => setShowActivitiesListModal(false)}>
+                <Text style={styles.closeModalButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Activity Entry Modal */}
+      <Modal
+        visible={showActivityModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => {
+          setShowActivityModal(false);
+          setActivityDescription('');
+          setActivityAssignmentId(null);
+        }}
+      >
+        <View style={styles.activityModalOverlay}>
+          <View style={styles.activityModalContainer}>
+            <View style={styles.activityModalHeader}>
+              <Text style={styles.activityModalTitle}>Add Activity</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowActivityModal(false);
+                  setActivityDescription('');
+                  setActivityAssignmentId(null);
+                }}
+              >
+                <FontAwesomeIcon icon="times" size={Responsive.iconSize(20)} color={Colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.activityModalLabel}>Activity Description</Text>
+            <TextInput
+              style={styles.activityModalInput}
+              placeholder="Enter activity description (e.g., Saw patient John Doe in Room 201, ordered ECG and blood tests)"
+              placeholderTextColor={Colors.textTertiary}
+              value={activityDescription}
+              onChangeText={setActivityDescription}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+            
+            <View style={styles.activityModalActions}>
+              <TouchableOpacity
+                style={[styles.activityModalButton, styles.activityModalCancelButton]}
+                onPress={() => {
+                  setShowActivityModal(false);
+                  setActivityDescription('');
+                  setActivityAssignmentId(null);
+                }}
+              >
+                <Text style={styles.activityModalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.activityModalButton, styles.activityModalSubmitButton]}
+                onPress={async () => {
+                  if (!activityDescription.trim() || !activityAssignmentId) {
+                    Alert.alert('Error', 'Please enter an activity description.');
+                    return;
+                  }
+                  
+                  setIsProcessing(true);
+                  try {
+                    await ApiService.createAssignmentActivity(activityAssignmentId, {
+                      activityTime: new Date().toISOString(),
+                      description: activityDescription.trim()
+                    });
+                    Alert.alert('Success', 'Activity added successfully!');
+                    setShowActivityModal(false);
+                    setActivityDescription('');
+                    setActivityAssignmentId(null);
+                  } catch (error: any) {
+                    console.error('Failed to create activity:', error);
+                    Alert.alert('Error', error?.message || 'Failed to add activity. Please try again.');
+                  } finally {
+                    setIsProcessing(false);
+                  }
+                }}
+                disabled={!activityDescription.trim() || isProcessing}
+              >
+                {isProcessing ? (
+                  <ActivityIndicator size="small" color={Colors.white} />
+                ) : (
+                  <Text style={styles.activityModalSubmitText}>Add Activity</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -1455,6 +1742,262 @@ const styles = StyleSheet.create({
     fontWeight: Typography.fontWeight.medium,
     color: Colors.success,
     marginLeft: Spacing.sm,
+  },
+  activityModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  activityModalContainer: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    paddingBottom: Spacing['2xl'],
+    maxHeight: '80%',
+  },
+  activityModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  activityModalTitle: {
+    fontSize: Typography.fontSize.xl,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.textPrimary,
+  },
+  activityModalLabel: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.medium,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.sm,
+  },
+  activityModalInput: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    fontSize: Typography.fontSize.base,
+    color: Colors.textPrimary,
+    minHeight: 100,
+    marginBottom: Spacing.lg,
+  },
+  activityModalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+  },
+  activityModalButton: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activityModalCancelButton: {
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  activityModalCancelText: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.medium,
+    color: Colors.textPrimary,
+  },
+  activityModalSubmitButton: {
+    backgroundColor: Colors.primary,
+  },
+  activityModalSubmitText: {
+    fontSize: Typography.fontSize.base,
+    fontWeight: Typography.fontWeight.medium,
+    color: Colors.white,
+  },
+  activitiesLoadingContainer: {
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+  },
+  activitiesLoadingText: {
+    marginTop: Spacing.xs,
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textSecondary,
+  },
+  activitiesListWrapper: {
+    maxHeight: '65%',
+  },
+  activitiesScroll: {
+    paddingBottom: Spacing.sm,
+  },
+  activityCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    marginBottom: 6,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.primary,
+    ...Shadow.sm,
+  },
+  activityRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+  },
+  activityIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.primary + '12',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.primary + '40',
+    marginTop: 2,
+  },
+  activityMetaRow: {
+    marginTop: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  activityMetaPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.background,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+  },
+  activityTime: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textSecondary,
+    fontFamily: Typography.fontFamily.medium,
+  },
+  activityDescription: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textPrimary,
+    lineHeight: 18,
+    fontFamily: Typography.fontFamily.medium,
+  },
+  activityCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  activityIndexBadge: {
+    backgroundColor: Colors.primary + '10',
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  activityIndexText: {
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.primary,
+  },
+  activityIndexChip: {
+    backgroundColor: Colors.background,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  activityIndexChipText: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textSecondary,
+    fontFamily: Typography.fontFamily.medium,
+  },
+  activityDivider: {
+    height: 1,
+    backgroundColor: Colors.borderLight,
+    marginVertical: 6,
+  },
+  activitiesEmptyState: {
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    gap: 6,
+  },
+  activitiesEmptyText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textTertiary,
+  },
+  activityCountBadge: {
+    marginLeft: 'auto',
+    marginRight: Spacing.sm,
+    backgroundColor: Colors.primary + '15',
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  activityCountText: {
+    fontSize: Typography.fontSize.xs,
+    fontWeight: Typography.fontWeight.bold,
+    color: Colors.primary,
+  },
+  activityModalFooter: {
+    marginTop: Spacing.md,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  closeModalButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+  },
+  closeModalButtonText: {
+    color: Colors.white,
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.medium,
+  },
+  activityActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+  addActivityButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primary,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    gap: Spacing.xs,
+  },
+  addActivityButtonText: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.medium,
+    color: Colors.white,
+  },
+  viewActivitiesButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    gap: Spacing.xs,
+  },
+  viewActivitiesButtonText: {
+    fontSize: Typography.fontSize.sm,
+    fontWeight: Typography.fontWeight.medium,
+    color: Colors.primary,
   },
 });
 

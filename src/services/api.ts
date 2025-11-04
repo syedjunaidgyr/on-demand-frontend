@@ -557,6 +557,32 @@ class ApiService {
     return this.checkOut(checkOutData.jobAssignmentId, checkOutData.location, checkOutData.notes);
   }
 
+  // Assignment Activities APIs
+  async getAssignmentActivities(assignmentId: string | number, params?: { page?: number; limit?: number }): Promise<{ activities: any[]; pagination: any }> {
+    try {
+      console.log('🔧 Getting assignment activities for assignment:', assignmentId);
+      const response = await this.api.get(`/staff/assignments/${assignmentId}/activities`, { params });
+      console.log('✅ Assignment activities response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to get assignment activities:', error?.response?.data || error?.message || error);
+      throw error;
+    }
+  }
+
+  async createAssignmentActivity(assignmentId: string | number, data: { activityTime: string; description: string }): Promise<any> {
+    try {
+      console.log('🔧 Creating assignment activity for assignment:', assignmentId);
+      console.log('📝 Activity data:', data);
+      const response = await this.api.post(`/staff/assignments/${assignmentId}/activities`, data);
+      console.log('✅ Assignment activity created:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to create assignment activity:', error?.response?.data || error?.message || error);
+      throw error;
+    }
+  }
+
   async getCheckInStatus(jobAssignmentId: string): Promise<{ isCheckedIn: boolean; checkInId: string | null; checkInTime: string | null; approvalStatus?: 'pending' | 'approved' | 'rejected'; approvedBy?: any; approvedAt?: string | null; rejectionReason?: string }> {
     // Preferred: staff-safe latest-checkin endpoint if available
     try {

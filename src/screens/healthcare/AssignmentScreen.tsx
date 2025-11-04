@@ -33,10 +33,47 @@ const AssignmentScreen: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [detailsVisible, setDetailsVisible] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<any | null>(null);
+  const [activities, setActivities] = useState<any[]>([]);
+  const [loadingActivities, setLoadingActivities] = useState(false);
 
   useEffect(() => {
     loadAssignments();
   }, []);
+
+  useEffect(() => {
+    if (selectedAssignment && detailsVisible) {
+      loadActivities();
+    } else {
+      setActivities([]);
+    }
+  }, [selectedAssignment, detailsVisible]);
+
+  const loadActivities = async () => {
+    if (!selectedAssignment) return;
+    
+    setLoadingActivities(true);
+    try {
+      const response = await ApiService.getAssignmentActivities(selectedAssignment.id, { page: 1, limit: 10 });
+      setActivities(response.activities || []);
+    } catch (error: any) {
+      console.error('Failed to load activities:', error);
+      setActivities([]);
+    } finally {
+      setLoadingActivities(false);
+    }
+  };
+
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
 
   const loadAssignments = async () => {
     try {
@@ -628,6 +665,35 @@ const AssignmentScreen: React.FC = () => {
                         </View>
                       )}
 
+                      {/* Activities Section */}
+                      <View style={{ marginBottom: 20 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                          <Text style={styles.metaLabel}>Activities</Text>
+                          {loadingActivities && (
+                            <ActivityIndicator size="small" color={Colors.primary} />
+                          )}
+                        </View>
+                        {activities && activities.length > 0 ? (
+                          <View style={{ gap: 12 }}>
+                            {activities.map((activity: any) => (
+                              <View key={activity.id} style={styles.activityItem}>
+                                <View style={styles.activityHeader}>
+                                  <FontAwesomeIcon icon="clock" size={Responsive.iconSize(14)} color={Colors.textTertiary} />
+                                  <Text style={styles.activityTime}>
+                                    {formatDateTime(activity.activityTime || activity.createdAt)}
+                                  </Text>
+                                </View>
+                                <Text style={styles.activityDescription}>{activity.description}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        ) : !loadingActivities ? (
+                          <Text style={[styles.descText, { fontStyle: 'italic', color: Colors.textTertiary }]}>
+                            No activities recorded yet.
+                          </Text>
+                        ) : null}
+                      </View>
+
                       {/* Removed: Creator and Assignment sections per request */}
                      </>
                    );
@@ -1195,6 +1261,29 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.medium,
     color: Colors.white,
     marginLeft: 8,
+  },
+  activityItem: {
+    backgroundColor: Colors.background,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.primary,
+  },
+  activityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    marginBottom: Spacing.xs,
+  },
+  activityTime: {
+    fontSize: Typography.fontSize.xs,
+    color: Colors.textTertiary,
+    fontFamily: Typography.fontFamily.medium,
+  },
+  activityDescription: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.textPrimary,
+    lineHeight: 20,
   },
 });
 
