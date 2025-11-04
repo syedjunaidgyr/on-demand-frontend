@@ -8,13 +8,13 @@ import {
   Image,
   Dimensions,
   SafeAreaView,
-  Alert,
   ActivityIndicator,
   Keyboard,
   TouchableWithoutFeedback,
   KeyboardAvoidingView,
   Platform,
   PermissionsAndroid,
+  Modal,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
@@ -42,11 +42,15 @@ const LoginScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [retryMessage, setRetryMessage] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const performLogin = async (isRetry = false) => {
     if (!isRetry) {
       if (!email || !password) {
-        Alert.alert('Error', 'Please fill in all fields');
+        setErrorMessage('Please fill in all fields');
+        setShowErrorModal(true);
         return;
       }
 
@@ -64,8 +68,15 @@ const LoginScreen: React.FC = () => {
       const response = await ApiService.login({ email, password });
       console.log('✅ Login successful, updating auth context...');
       
-      login(response.user);
-      console.log('✅ Auth context updated, navigation should happen now');
+      // Show success modal
+      setShowSuccessModal(true);
+      
+      // Wait 1.5 seconds before proceeding
+      setTimeout(() => {
+        setShowSuccessModal(false);
+        login(response.user);
+        console.log('✅ Auth context updated, navigation should happen now');
+      }, 1500);
 
       // Register device push token after successful login
       try {
@@ -96,12 +107,12 @@ const LoginScreen: React.FC = () => {
     } catch (error: any) {
       console.error('❌ Login error:', error);
       
-      let errorMessage = 'Login failed. Please try again.';
+      let errorMsg = 'Login failed. Please try again.';
       
       if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
-        errorMessage = 'Network error. Please check your internet connection and server status.';
+        errorMsg = 'Network error. Please check your internet connection and server status.';
       } else if (error.response?.status === 401) {
-        errorMessage = 'Invalid email or password.';
+        errorMsg = 'Invalid email or password.';
       } else if (error.response?.status === 429) {
         if (retryCount < 2) {
           const delay = Math.pow(2, retryCount) * 1000;
@@ -112,17 +123,18 @@ const LoginScreen: React.FC = () => {
           }, delay);
           return;
         } else {
-          errorMessage = 'Too many login attempts. Please wait a few minutes before trying again.';
+          errorMsg = 'Too many login attempts. Please wait a few minutes before trying again.';
           setRetryCount(0);
           setRetryMessage('');
         }
       } else if (error.response?.status === 500) {
-        errorMessage = 'Server error. Please try again later.';
+        errorMsg = 'Server error. Please try again later.';
       } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
+        errorMsg = error.response.data.message;
       }
       
-      Alert.alert('Login Failed', errorMessage);
+      setErrorMessage(errorMsg);
+      setShowErrorModal(true);
     } finally {
       setIsLoading(false);
     }
@@ -263,6 +275,56 @@ const LoginScreen: React.FC = () => {
           resizeMode="contain"
         />
       </View>
+
+      {/* Success Modal */}
+      <Modal
+        transparent
+        visible={showSuccessModal}
+        animationType="fade"
+        onRequestClose={() => setShowSuccessModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.successIconContainer}>
+              <FontAwesomeIcon 
+                icon="check-circle" 
+                size={Responsive.iconSize(60)} 
+                color={Colors.success} 
+              />
+            </View>
+            <Text style={styles.successTitle}>Login Successful!</Text>
+            <Text style={styles.successMessage}>Welcome back! You have successfully signed in.</Text>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Error Modal */}
+      <Modal
+        transparent
+        visible={showErrorModal}
+        animationType="fade"
+        onRequestClose={() => setShowErrorModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.errorIconContainer}>
+              <FontAwesomeIcon 
+                icon="exclamation-triangle" 
+                size={Responsive.iconSize(60)} 
+                color={Colors.error} 
+              />
+            </View>
+            <Text style={styles.errorTitle}>Login Failed</Text>
+            <Text style={styles.errorMessage}>{errorMessage}</Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setShowErrorModal(false)}
+            >
+              <Text style={styles.closeButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -317,20 +379,20 @@ const styles = StyleSheet.create({
   },
   logoText: {
     fontSize: Responsive.fontSize(width * 0.07),
-    fontFamily: Typography.fontFamily.bold, // DM Sans Bold
+    fontFamily: Typography.fontFamily.bold,
     color: Colors.primary,
     letterSpacing: 1,
     marginTop: Responsive.verticalScale(3),
   },
   logoSubtext: {
     fontSize: Responsive.fontSize(width * 0.035),
-    fontFamily: Typography.fontFamily.regular, // DM Sans Regular
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.textSecondary,
     marginTop: Responsive.verticalScale(1),
   },
   logoSubtext2: {
     fontSize: Responsive.fontSize(width * 0.035),
-    fontFamily: Typography.fontFamily.regular, // DM Sans Regular
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.textSecondary,
     marginTop: Responsive.verticalScale(1),
   },
@@ -345,14 +407,14 @@ const styles = StyleSheet.create({
   },
   welcomeText: {
     fontSize: Responsive.fontSize(24),
-    fontFamily: Typography.fontFamily.bold, // DM Sans Bold for headers
+    fontFamily: Typography.fontFamily.bold,
     color: Colors.textPrimary,
     marginBottom: Responsive.verticalScale(8),
     textAlign: 'center',
   },
   subtitleText: {
     fontSize: Responsive.fontSize(16),
-    fontFamily: Typography.fontFamily.regular, // DM Sans Regular for subtitles
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.textSecondary,
     textAlign: 'center',
     marginBottom: Responsive.verticalScale(24),
@@ -377,7 +439,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: Responsive.fontSize(Typography.fontSize.base),
-    fontFamily: Typography.fontFamily.regular, // DM Sans Regular for input text
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.textPrimary,
     paddingVertical: 0,
   },
@@ -400,12 +462,12 @@ const styles = StyleSheet.create({
   signInButtonText: {
     color: Colors.white,
     fontSize: Responsive.fontSize(width * 0.045),
-    fontFamily: Typography.fontFamily.medium, // DM Sans Medium for button text
+    fontFamily: Typography.fontFamily.medium,
     fontWeight: Typography.fontWeight.medium,
   },
   retryMessage: {
     fontSize: Responsive.fontSize(Typography.fontSize.sm),
-    fontFamily: Typography.fontFamily.regular, // DM Sans Regular
+    fontFamily: Typography.fontFamily.regular,
     color: Colors.warning,
     textAlign: 'center',
     marginTop: Spacing.sm,
@@ -421,13 +483,13 @@ const styles = StyleSheet.create({
   },
   accountLinkText: {
     fontSize: Responsive.fontSize(14),
-    fontFamily: Typography.fontFamily.regular, // DM Sans Regular
+    fontFamily: Typography.fontFamily.regular,
     color: '#000000',
   },
   signUpLink: {
     fontSize: Responsive.fontSize(16),
     color: Colors.primary,
-    fontFamily: Typography.fontFamily.medium, // DM Sans Medium
+    fontFamily: Typography.fontFamily.medium,
     fontWeight: Typography.fontWeight.medium,
   },
   poweredByContainer: {
@@ -440,13 +502,76 @@ const styles = StyleSheet.create({
   },
   poweredByText: {
     fontSize: Responsive.fontSize(12),
-    fontFamily: Typography.fontFamily.medium, // DM Sans Medium
+    fontFamily: Typography.fontFamily.medium,
     color: '#000000',
     marginRight: IS_VERY_SMALL_DEVICE ? Responsive.scale(-15) : Responsive.scale(-25),
   },
   companyLogo: {
     height: IS_VERY_SMALL_DEVICE ? Responsive.verticalScale(12) : Responsive.verticalScale(15),
     width: IS_VERY_SMALL_DEVICE ? Responsive.scale(80) : Responsive.scale(95),
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.xl,
+    padding: Responsive.scale(32),
+    alignItems: 'center',
+    width: Responsive.wp('80%'),
+    maxWidth: 400,
+    ...Shadow.lg,
+  },
+  successIconContainer: {
+    marginBottom: Responsive.verticalScale(20),
+  },
+  successTitle: {
+    fontSize: Responsive.fontSize(24),
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+    marginBottom: Responsive.verticalScale(12),
+    textAlign: 'center',
+  },
+  successMessage: {
+    fontSize: Responsive.fontSize(16),
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  errorIconContainer: {
+    marginBottom: Responsive.verticalScale(20),
+  },
+  errorTitle: {
+    fontSize: Responsive.fontSize(24),
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+    marginBottom: Responsive.verticalScale(12),
+    textAlign: 'center',
+  },
+  errorMessage: {
+    fontSize: Responsive.fontSize(16),
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: Responsive.verticalScale(20),
+  },
+  closeButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: BorderRadius.lg,
+    paddingVertical: Responsive.verticalScale(12),
+    paddingHorizontal: Responsive.scale(40),
+    marginTop: Responsive.verticalScale(8),
+  },
+  closeButtonText: {
+    color: Colors.white,
+    fontSize: Responsive.fontSize(16),
+    fontFamily: Typography.fontFamily.medium,
+    fontWeight: Typography.fontWeight.medium,
   },
 });
 

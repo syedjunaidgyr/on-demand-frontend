@@ -14,7 +14,7 @@ import {
   Dimensions,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { FontAwesomeIcon } from '../../utils/icons';
 import GlobalHeader from '../../components/GlobalHeader';
@@ -145,19 +145,19 @@ const InputField = ({
   const isOverLimit = maxWords ? wordCount > maxWords : false;
 
   return (
-    <View style={styles.inputContainer}>
-      <Text style={styles.inputLabel}>{label}</Text>
+  <View style={styles.inputContainer}>
+    <Text style={styles.inputLabel}>{label}</Text>
       <View style={styles.inputWrapper}>
-        <TextInput
+    <TextInput
           style={[styles.textInput, multiline && styles.multilineInput, error && styles.textInputError]}
-          placeholder={placeholder}
-          placeholderTextColor={Colors.textTertiary}
-          value={value}
-          onChangeText={onChangeText}
-          keyboardType={keyboardType}
-          multiline={multiline}
-          numberOfLines={numberOfLines}
-          blurOnSubmit={false}
+      placeholder={placeholder}
+      placeholderTextColor={Colors.textTertiary}
+      value={value}
+      onChangeText={onChangeText}
+      keyboardType={keyboardType}
+      multiline={multiline}
+      numberOfLines={numberOfLines}
+      blurOnSubmit={false}
           maxLength={maxWords ? undefined : undefined}
         />
       </View>
@@ -168,9 +168,9 @@ const InputField = ({
           </Text>
         </View>
       )}
-      {error && <Text style={styles.errorText}>{error}</Text>}
-    </View>
-  );
+      {/* inline error hidden; highlight via border only */}
+  </View>
+);
 };
 
 // Date input component
@@ -234,7 +234,7 @@ const DateField = ({
           </TouchableOpacity>
         )}
       </View>
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {/* inline error hidden; highlight via border only */}
       {show && (
         <DateTimePicker
           value={value ? parseDateString(value) : new Date()}
@@ -342,7 +342,7 @@ const TimeField = ({
           </TouchableOpacity>
         )}
       </View>
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {/* inline error hidden; highlight via border only */}
       {show && (
         <DateTimePicker
           value={value ? parseTimeString(value) : new Date()}
@@ -392,6 +392,8 @@ const DepartmentDropdown = ({
       setOpen={setOpen}
       setValue={setValue}
       placeholder={placeholder}
+      arrowIconContainerStyle={styles.dropdownArrowContainer}
+      arrowIconStyle={styles.dropdownArrowIcon}
       style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
       textStyle={styles.dropdownTextStyle}
       placeholderStyle={styles.dropdownPlaceholderStyle}
@@ -403,7 +405,7 @@ const DepartmentDropdown = ({
       zIndex={4000}
       zIndexInverse={1000}
     />
-    {error && <Text style={styles.errorText}>{error}</Text>}
+    {error && <Text numberOfLines={1} style={styles.errorText}>{error}</Text>}
   </View>
 );
 
@@ -435,6 +437,8 @@ const SpecializationDropdown = ({
       setOpen={setOpen}
       setValue={setValue}
       placeholder={placeholder}
+      arrowIconContainerStyle={styles.dropdownArrowContainer}
+      arrowIconStyle={styles.dropdownArrowIcon}
       style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
       textStyle={styles.dropdownTextStyle}
       placeholderStyle={styles.dropdownPlaceholderStyle}
@@ -446,7 +450,7 @@ const SpecializationDropdown = ({
       zIndex={3000}
       zIndexInverse={2000}
     />
-    {error && <Text style={styles.errorText}>{error}</Text>}
+    {error && <Text numberOfLines={1} style={styles.errorText}>{error}</Text>}
   </View>
 );
 
@@ -481,6 +485,8 @@ const HospitalDropdown = ({
       setValue={setValue}
       placeholder={placeholder}
       loading={loading}
+      arrowIconContainerStyle={styles.dropdownArrowContainer}
+      arrowIconStyle={styles.dropdownArrowIcon}
       style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
       textStyle={styles.dropdownTextStyle}
       placeholderStyle={styles.dropdownPlaceholderStyle}
@@ -492,7 +498,7 @@ const HospitalDropdown = ({
       zIndex={2000}
       zIndexInverse={3000}
     />
-    {error && <Text style={styles.errorText}>{error}</Text>}
+    {error && <Text numberOfLines={1} style={styles.errorText}>{error}</Text>}
   </View>
 );
 
@@ -530,6 +536,8 @@ const UnitDropdown = ({
       placeholder={placeholder}
       loading={loading}
       disabled={disabled}
+      arrowIconContainerStyle={styles.dropdownArrowContainer}
+      arrowIconStyle={styles.dropdownArrowIcon}
       style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
       textStyle={styles.dropdownTextStyle}
       placeholderStyle={styles.dropdownPlaceholderStyle}
@@ -541,7 +549,7 @@ const UnitDropdown = ({
       zIndex={1000}
       zIndexInverse={4000}
     />
-    {error && <Text style={styles.errorText}>{error}</Text>}
+    {error && <Text numberOfLines={1} style={styles.errorText}>{error}</Text>}
   </View>
 );
 
@@ -573,6 +581,8 @@ const StateDropdown = ({
       setOpen={setOpen}
       setValue={setValue}
       placeholder={placeholder}
+      arrowIconContainerStyle={styles.dropdownArrowContainer}
+      arrowIconStyle={styles.dropdownArrowIcon}
       style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
       textStyle={styles.dropdownTextStyle}
       placeholderStyle={styles.dropdownPlaceholderStyle}
@@ -584,7 +594,7 @@ const StateDropdown = ({
       zIndex={900}
       zIndexInverse={3100}
     />
-    {error && <Text style={styles.errorText}>{error}</Text>}
+    {error && <Text numberOfLines={1} style={styles.errorText}>{error}</Text>}
   </View>
 );
 
@@ -619,6 +629,8 @@ const CityDropdown = ({
       setValue={setValue}
       placeholder={placeholder}
       disabled={disabled}
+      arrowIconContainerStyle={styles.dropdownArrowContainer}
+      arrowIconStyle={styles.dropdownArrowIcon}
       style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
       textStyle={styles.dropdownTextStyle}
       placeholderStyle={styles.dropdownPlaceholderStyle}
@@ -630,7 +642,7 @@ const CityDropdown = ({
       zIndex={800}
       zIndexInverse={3200}
     />
-    {error && <Text style={styles.errorText}>{error}</Text>}
+    {error && <Text numberOfLines={1} style={styles.errorText}>{error}</Text>}
   </View>
 );
 
@@ -662,6 +674,8 @@ const CountryDropdown = ({
       setOpen={setOpen}
       setValue={setValue}
       placeholder={placeholder}
+      arrowIconContainerStyle={styles.dropdownArrowContainer}
+      arrowIconStyle={styles.dropdownArrowIcon}
       style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
       textStyle={styles.dropdownTextStyle}
       placeholderStyle={styles.dropdownPlaceholderStyle}
@@ -673,7 +687,7 @@ const CountryDropdown = ({
       zIndex={700}
       zIndexInverse={3300}
     />
-    {error && <Text style={styles.errorText}>{error}</Text>}
+    {error && <Text numberOfLines={1} style={styles.errorText}>{error}</Text>}
   </View>
 );
 
@@ -744,6 +758,7 @@ const AccordionSection = ({
 
 const CreateJobScreen: React.FC = () => {
   const navigation = useNavigation();
+  const route = useRoute();
   const { height } = Dimensions.get('window');
   const [isLoading, setIsLoading] = useState(false);
   
@@ -757,39 +772,43 @@ const CreateJobScreen: React.FC = () => {
   const checkmarkScale = useRef(new Animated.Value(0)).current;
   
   const { user } = useAuth();
+  
+  // Get recreate job data from route params if available
+  const recreateJobData = (route.params as any)?.recreateJobData;
+  
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    department: '',
-    location: '',
-    requiredRole: (user?.role === 'AGENCY' ? 'AGENCY' : 'DOCTOR') as 'DOCTOR' | 'NURSE' | 'AGENCY',
-    specialization: '',
-    startDate: '',
-    endDate: '',
-    startTime: '',
-    endTime: '',
-    hourlyRate: '',
-    priority: 'MEDIUM' as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT',
-    maxAssignments: '',
-    hospitalId: '',
-    unitCode: '',
-    facilityName: '',
-    facilityStreet: '',
-    facilityCity: '',
-    facilityState: '',
-    facilityZipCode: '',
-    facilityCountry: '',
-    contactName: '',
-    contactPhone: '',
-    contactEmail: '',
-    contactPosition: '',
-    notes: '',
-    boardCertified: false,
-    experience: '',
-    skills: '',
-    mealAllowance: false,
-    parking: false,
-    malpractice: false,
+    title: recreateJobData?.title || '',
+    description: recreateJobData?.description || '',
+    department: recreateJobData?.department || '',
+    location: recreateJobData?.location || '',
+    requiredRole: (recreateJobData?.requiredRole || (user?.role === 'AGENCY' ? 'AGENCY' : 'DOCTOR')) as 'DOCTOR' | 'NURSE' | 'AGENCY',
+    specialization: recreateJobData?.specialization || '',
+    startDate: recreateJobData?.startDate || '', // Will be empty for recreation
+    endDate: recreateJobData?.endDate || '', // Will be empty for recreation
+    startTime: recreateJobData?.startTime || '', // Will be empty for recreation
+    endTime: recreateJobData?.endTime || '', // Will be empty for recreation
+    hourlyRate: recreateJobData?.hourlyRate || '',
+    priority: (recreateJobData?.priority || 'MEDIUM') as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT',
+    maxAssignments: recreateJobData?.maxAssignments || '',
+    hospitalId: recreateJobData?.hospitalId || '',
+    unitCode: recreateJobData?.unitCode || '',
+    facilityName: recreateJobData?.facilityName || '',
+    facilityStreet: recreateJobData?.facilityStreet || '',
+    facilityCity: recreateJobData?.facilityCity || '',
+    facilityState: recreateJobData?.facilityState || '',
+    facilityZipCode: recreateJobData?.facilityZipCode || '',
+    facilityCountry: recreateJobData?.facilityCountry || '',
+    contactName: recreateJobData?.contactName || '',
+    contactPhone: recreateJobData?.contactPhone || '',
+    contactEmail: recreateJobData?.contactEmail || '',
+    contactPosition: recreateJobData?.contactPosition || '',
+    notes: recreateJobData?.notes || '',
+    boardCertified: recreateJobData?.boardCertified || false,
+    experience: recreateJobData?.experience || '',
+    skills: recreateJobData?.skills || '',
+    mealAllowance: recreateJobData?.mealAllowance || false,
+    parking: recreateJobData?.parking || false,
+    malpractice: recreateJobData?.malpractice || false,
   });
 
   // Accordion section states
@@ -914,6 +933,37 @@ const CreateJobScreen: React.FC = () => {
     }));
   };
 
+  const sectionOrder: Array<keyof typeof expandedSections> = [
+    'jobDetails',
+    'scheduleCompensation',
+    'facilityLocation',
+    'contactInfo',
+    'requirementsBenefits',
+    'additionalInfo',
+  ];
+
+  const openOnlySection = (section: keyof typeof expandedSections) => {
+    setExpandedSections({
+      jobDetails: section === 'jobDetails',
+      scheduleCompensation: section === 'scheduleCompensation',
+      facilityLocation: section === 'facilityLocation',
+      contactInfo: section === 'contactInfo',
+      requirementsBenefits: section === 'requirementsBenefits',
+      additionalInfo: section === 'additionalInfo',
+    });
+  };
+
+  const openAllSections = () => {
+    setExpandedSections({
+      jobDetails: true,
+      scheduleCompensation: true,
+      facilityLocation: true,
+      contactInfo: true,
+      requirementsBenefits: true,
+      additionalInfo: true,
+    });
+  };
+
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
@@ -991,6 +1041,16 @@ const CreateJobScreen: React.FC = () => {
   useEffect(() => {
     loadHospitals();
   }, [loadHospitals]);
+
+  // Load units if hospitalId is provided from recreate job data
+  useEffect(() => {
+    if (formData.hospitalId) {
+      const hospitalIdNum = parseInt(formData.hospitalId);
+      if (!isNaN(hospitalIdNum)) {
+        loadUnits(hospitalIdNum);
+      }
+    }
+  }, [formData.hospitalId, loadUnits]);
 
   // Animate success modal when it appears
   useEffect(() => {
@@ -1085,61 +1145,99 @@ const CreateJobScreen: React.FC = () => {
     }
   };
 
+  // Auto-advance to next section when current expanded section is completed
+  useEffect(() => {
+    // find the currently expanded section (first true in order)
+    const currentSection = sectionOrder.find(key => expandedSections[key]);
+    if (!currentSection) return;
+
+    if (isSectionComplete(currentSection)) {
+      const currentIdx = sectionOrder.indexOf(currentSection);
+      const nextSection = sectionOrder[currentIdx + 1];
+      if (nextSection) {
+        openOnlySection(nextSection);
+      }
+    }
+  }, [formData, expandedSections]);
+
   const validateForm = () => {
     const errors: Record<string, string> = {};
     const requiredFields = [
       'title', 'description', 'department', 'location', 'startDate', 'endDate',
       'startTime', 'endTime', 'hourlyRate', 'facilityName', 'facilityStreet',
       'facilityCity', 'facilityState', 'facilityZipCode', 'contactName',
-      'contactPhone', 'contactEmail', 'contactPosition', 'hospitalId', 'unitCode'
+      'contactPhone', 'contactEmail', 'contactPosition', 'hospitalId', 'unitCode',
+      // Additional required fields per request
+      'experience', 'skills', 'notes'
     ];
+
+    const capitalize = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
     for (const field of requiredFields) {
       if (!formData[field as keyof typeof formData]) {
         const fieldName = field.replace(/([A-Z])/g, ' $1').toLowerCase();
-        errors[field] = `${fieldName} is required`;
+        errors[field] = `${capitalize(fieldName)} is required`;
       }
     }
 
     if (!formData.department) {
-      errors.department = 'please select a department';
+      errors.department = 'Please select a department';
     }
 
     if (formData.requiredRole === 'DOCTOR' && !formData.specialization) {
-      errors.specialization = 'please select a specialization for doctors';
+      errors.specialization = 'Please select a specialization for doctors';
     }
 
     if (formData.requiredRole === 'DOCTOR' && formData.specialization && formData.department) {
       const validSpecializations = departmentSpecializations[formData.department] || [];
       if (!validSpecializations.includes(formData.specialization)) {
-        errors.specialization = `selected specialization is not valid for department "${formData.department}"`;
+        errors.specialization = `Selected specialization is not valid for department "${formData.department}"`;
       }
     }
 
     if (!formData.hospitalId) {
-      errors.hospitalId = 'please select a hospital';
+      errors.hospitalId = 'Please select a hospital';
     }
 
     if (!formData.unitCode) {
-      errors.unitCode = 'please select a unit';
+      errors.unitCode = 'Please select a unit';
     }
 
     if (formData.hourlyRate && parseFloat(formData.hourlyRate) <= 0) {
-      errors.hourlyRate = 'hourly rate must be greater than 0';
+      errors.hourlyRate = 'Hourly rate must be greater than 0';
     }
 
     if (formData.maxAssignments && parseInt(formData.maxAssignments) <= 0) {
-      errors.maxAssignments = 'max assignments must be greater than 0';
+      errors.maxAssignments = 'Max assignments must be greater than 0';
     }
 
     if (formData.contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) {
-      errors.contactEmail = 'please enter a valid email address';
+      errors.contactEmail = 'Please enter a valid email address';
     }
 
     setValidationErrors(errors);
 
     if (Object.keys(errors).length > 0) {
-      setToast({ visible: true, message: 'please fill in all required fields', type: 'error' });
+      // Determine which accordion contains the first missing field and open it
+      const fieldToSection = (field: string): keyof typeof expandedSections => {
+        const jobDetailsFields = ['title', 'description', 'department', 'location', 'requiredRole', 'specialization'];
+        const scheduleFields = ['startDate', 'endDate', 'startTime', 'endTime', 'hourlyRate', 'maxAssignments', 'priority'];
+        const facilityFields = ['hospitalId', 'unitCode', 'facilityName', 'facilityStreet', 'facilityCity', 'facilityState', 'facilityZipCode', 'facilityCountry'];
+        const contactFields = ['contactName', 'contactPhone', 'contactEmail', 'contactPosition'];
+        const reqFields = ['experience', 'skills', 'boardCertified', 'mealAllowance', 'parking', 'malpractice'];
+
+        if (jobDetailsFields.includes(field)) return 'jobDetails';
+        if (scheduleFields.includes(field)) return 'scheduleCompensation';
+        if (facilityFields.includes(field)) return 'facilityLocation';
+        if (contactFields.includes(field)) return 'contactInfo';
+        if (reqFields.includes(field)) return 'requirementsBenefits';
+        return 'additionalInfo';
+      };
+
+      // Open all sections so all inline errors are visible
+      openAllSections();
+
+      setToast({ visible: true, message: 'Please fill in all required fields', type: 'error' });
       return false;
     }
 
@@ -1224,7 +1322,7 @@ const CreateJobScreen: React.FC = () => {
         requirements: {
           boardCertified: formData.boardCertified,
           experience: formData.experience || 'Not specified',
-          skills: formData.skills ? formData.skills.split(',').map(s => s.trim()) : [],
+          skills: formData.skills ? formData.skills.split(',').map((s: string) => s.trim()) : [],
         },
         benefits: {
           mealAllowance: formData.mealAllowance,
@@ -1281,85 +1379,85 @@ const CreateJobScreen: React.FC = () => {
             isExpanded={expandedSections.jobDetails}
             onToggle={() => toggleSection('jobDetails')}
             isComplete={isSectionComplete('jobDetails')}>
-            <InputField
-              label="Job Title"
-              value={formData.title}
-              onChangeText={(text) => handleInputChange('title', text)}
+          <InputField
+            label="Job Title"
+            value={formData.title}
+            onChangeText={(text) => handleInputChange('title', text)}
               error={validationErrors.title}
               maxWords={150}
-            />
+          />
 
-            <InputField
-              label="Description"
-              value={formData.description}
-              onChangeText={(text) => handleInputChange('description', text)}
-              multiline={true}
-              numberOfLines={4}
+          <InputField
+            label="Description"
+            value={formData.description}
+            onChangeText={(text) => handleInputChange('description', text)}
+            multiline={true}
+            numberOfLines={4}
               error={validationErrors.description}
               maxWords={150}
-            />
+          />
 
-            <DepartmentDropdown 
-              open={departmentDropdownOpen}
-              setOpen={(open) => {
-                setDepartmentDropdownOpen(open);
-                if (open) {
-                  setSpecializationDropdownOpen(false);
-                  setHospitalDropdownOpen(false);
-                  setUnitDropdownOpen(false);
-                }
-              }}
-              value={formData.department}
-              setValue={(callback) => {
-                const newValue = callback(formData.department);
-                handleInputChange('department', newValue);
-              }}
-              items={medicalDepartments.map(dept => ({
-                label: dept,
-                value: dept,
-              }))}
-              styles={styles}
+          <DepartmentDropdown 
+            open={departmentDropdownOpen}
+            setOpen={(open) => {
+              setDepartmentDropdownOpen(open);
+              if (open) {
+                setSpecializationDropdownOpen(false);
+                setHospitalDropdownOpen(false);
+                setUnitDropdownOpen(false);
+              }
+            }}
+            value={formData.department}
+            setValue={(callback) => {
+              const newValue = callback(formData.department);
+              handleInputChange('department', newValue);
+            }}
+            items={medicalDepartments.map(dept => ({
+              label: dept,
+              value: dept,
+            }))}
+            styles={styles}
               error={validationErrors.department}
-            />
+          />
 
-            <InputField
-              label="Location"
-              value={formData.location}
-              onChangeText={(text) => handleInputChange('location', text)}
+          <InputField
+            label="Location"
+            value={formData.location}
+            onChangeText={(text) => handleInputChange('location', text)}
               error={validationErrors.location}
-            />
+          />
 
-            <View style={styles.roleSelector}>
-              <Text style={styles.inputLabel}>Required Role</Text>
-              <View style={styles.roleButtons}>
-                <TouchableOpacity
-                  style={[
-                    styles.roleButton,
-                    formData.requiredRole === 'DOCTOR' && styles.roleButtonActive,
-                  ]}
-                  onPress={() => handleInputChange('requiredRole', 'DOCTOR')}>
+          <View style={styles.roleSelector}>
+            <Text style={styles.inputLabel}>Required Role</Text>
+            <View style={styles.roleButtons}>
+              <TouchableOpacity
+                style={[
+                  styles.roleButton,
+                  formData.requiredRole === 'DOCTOR' && styles.roleButtonActive,
+                ]}
+                onPress={() => handleInputChange('requiredRole', 'DOCTOR')}>
                   <FontAwesomeIcon icon="stethoscope" size={Responsive.iconSize(16)} color={formData.requiredRole === 'DOCTOR' ? Colors.white : Colors.primary}  />
-                  <Text style={[
-                    styles.roleButtonText,
-                    formData.requiredRole === 'DOCTOR' && styles.roleButtonTextActive,
-                  ]}>
-                    Doctor
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.roleButton,
-                    formData.requiredRole === 'NURSE' && styles.roleButtonActive,
-                  ]}
-                  onPress={() => handleInputChange('requiredRole', 'NURSE')}>
+                <Text style={[
+                  styles.roleButtonText,
+                  formData.requiredRole === 'DOCTOR' && styles.roleButtonTextActive,
+                ]}>
+                  Doctor
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.roleButton,
+                  formData.requiredRole === 'NURSE' && styles.roleButtonActive,
+                ]}
+                onPress={() => handleInputChange('requiredRole', 'NURSE')}>
                   <FontAwesomeIcon icon="user-nurse" size={Responsive.iconSize(16)} color={formData.requiredRole === 'NURSE' ? Colors.white : Colors.primary}  />
-                  <Text style={[
-                    styles.roleButtonText,
-                    formData.requiredRole === 'NURSE' && styles.roleButtonTextActive,
-                  ]}>
-                    Nurse
-                  </Text>
-                </TouchableOpacity>
+                <Text style={[
+                  styles.roleButtonText,
+                  formData.requiredRole === 'NURSE' && styles.roleButtonTextActive,
+                ]}>
+                  Nurse
+                </Text>
+              </TouchableOpacity>
                 <TouchableOpacity
                   style={[
                     styles.roleButton,
@@ -1374,30 +1472,30 @@ const CreateJobScreen: React.FC = () => {
                     Agency
                   </Text>
                 </TouchableOpacity>
-              </View>
             </View>
+          </View>
 
-            {formData.requiredRole === 'DOCTOR' && (
-              <SpecializationDropdown 
-                open={specializationDropdownOpen}
-                setOpen={(open) => {
-                  setSpecializationDropdownOpen(open);
-                  if (open) {
-                    setDepartmentDropdownOpen(false);
-                    setHospitalDropdownOpen(false);
-                    setUnitDropdownOpen(false);
-                  }
-                }}
-                value={formData.specialization}
-                setValue={(callback) => {
-                  const newValue = callback(formData.specialization);
-                  handleInputChange('specialization', newValue);
-                }}
-                items={(departmentSpecializations[formData.department] || []).map(specialization => ({
-                  label: specialization,
-                  value: specialization,
-                }))}
-                styles={styles}
+          {formData.requiredRole === 'DOCTOR' && (
+            <SpecializationDropdown 
+              open={specializationDropdownOpen}
+              setOpen={(open) => {
+                setSpecializationDropdownOpen(open);
+                if (open) {
+                  setDepartmentDropdownOpen(false);
+                  setHospitalDropdownOpen(false);
+                  setUnitDropdownOpen(false);
+                }
+              }}
+              value={formData.specialization}
+              setValue={(callback) => {
+                const newValue = callback(formData.specialization);
+                handleInputChange('specialization', newValue);
+              }}
+              items={(departmentSpecializations[formData.department] || []).map(specialization => ({
+                label: specialization,
+                value: specialization,
+              }))}
+              styles={styles}
                 error={validationErrors.specialization}
               />
             )}
@@ -1410,86 +1508,86 @@ const CreateJobScreen: React.FC = () => {
             isExpanded={expandedSections.scheduleCompensation}
             onToggle={() => toggleSection('scheduleCompensation')}
             isComplete={isSectionComplete('scheduleCompensation')}>
-            <View style={styles.row}>
-              <View style={styles.halfWidth}>
-                <DateField
-                  label="Start Date"
-                  value={formData.startDate}
-                  onChange={(text) => handleInputChange('startDate', text)}
+          <View style={styles.row}>
+            <View style={styles.halfWidth}>
+              <DateField
+                label="Start Date"
+                value={formData.startDate}
+                onChange={(text) => handleInputChange('startDate', text)}
                   error={validationErrors.startDate}
                   minimumDate={new Date()}
-                />
-              </View>
-              <View style={styles.halfWidth}>
-                <DateField
-                  label="End Date"
-                  value={formData.endDate}
-                  onChange={(text) => handleInputChange('endDate', text)}
+              />
+            </View>
+            <View style={styles.halfWidth}>
+              <DateField
+                label="End Date"
+                value={formData.endDate}
+                onChange={(text) => handleInputChange('endDate', text)}
                   error={validationErrors.endDate}
-                />
-              </View>
+              />
             </View>
+          </View>
 
-            <View style={styles.row}>
-              <View style={styles.halfWidth}>
-                <TimeField
-                  label="Start Time"
-                  value={formData.startTime}
-                  onChange={(text) => handleInputChange('startTime', text)}
+          <View style={styles.row}>
+            <View style={styles.halfWidth}>
+              <TimeField
+                label="Start Time"
+                value={formData.startTime}
+                onChange={(text) => handleInputChange('startTime', text)}
                   error={validationErrors.startTime}
-                />
-              </View>
-              <View style={styles.halfWidth}>
-                <TimeField
-                  label="End Time"
-                  value={formData.endTime}
-                  onChange={(text) => handleInputChange('endTime', text)}
+              />
+            </View>
+            <View style={styles.halfWidth}>
+              <TimeField
+                label="End Time"
+                value={formData.endTime}
+                onChange={(text) => handleInputChange('endTime', text)}
                   error={validationErrors.endTime}
-                />
-              </View>
+              />
             </View>
+          </View>
 
-            <View style={styles.row}>
-              <View style={styles.halfWidth}>
-                <InputField
-                  label="Hourly Rate (₹)"
-                  value={formData.hourlyRate}
-                  onChangeText={(text) => handleInputChange('hourlyRate', text)}
-                  keyboardType="numeric"
+          <View style={styles.row}>
+            <View style={styles.halfWidth}>
+              <InputField
+                label="Hourly Rate (₹)"
+                value={formData.hourlyRate}
+                onChangeText={(text) => handleInputChange('hourlyRate', text)}
+                keyboardType="numeric"
                   error={validationErrors.hourlyRate}
-                />
-              </View>
-              <View style={styles.halfWidth}>
-                <InputField
-                  label="Max Assignments"
-                  value={formData.maxAssignments}
-                  onChangeText={(text) => handleInputChange('maxAssignments', text)}
-                  keyboardType="numeric"
-                />
-              </View>
+              />
             </View>
+            <View style={styles.halfWidth}>
+              <InputField
+                label="Max Assignments"
+                value={formData.maxAssignments}
+                onChangeText={(text) => handleInputChange('maxAssignments', text)}
+                keyboardType="numeric"
+              />
+            </View>
+          </View>
 
-            <View style={styles.prioritySelector}>
-              <Text style={styles.inputLabel}>Priority</Text>
-              <View style={styles.priorityButtons}>
-                {['LOW', 'MEDIUM', 'HIGH', 'URGENT'].map((priority) => (
-                  <TouchableOpacity
-                    key={priority}
-                    style={[
-                      styles.priorityButton,
-                      formData.priority === priority && styles.priorityButtonActive,
-                    ]}
-                    onPress={() => handleInputChange('priority', priority)}>
-                    <Text style={[
-                      styles.priorityButtonText,
-                      formData.priority === priority && styles.priorityButtonTextActive,
-                    ]}>
-                      {priority}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+          <View style={styles.prioritySelector}>
+            <Text style={styles.inputLabel}>Priority</Text>
+            <View style={styles.priorityButtons}>
+              {['LOW', 'MEDIUM', 'HIGH', 'URGENT'].map((priority) => (
+                <TouchableOpacity
+                  key={priority}
+                  style={[
+                    styles.priorityButton,
+                    formData.priority === priority && styles.priorityButtonActive,
+                  ]}
+                  onPress={() => handleInputChange('priority', priority)}>
+                  <Text style={[
+                    styles.priorityButtonText,
+                    formData.priority === priority && styles.priorityButtonTextActive,
+                  ]}>
+                    {priority}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
+          </View>
           </AccordionSection>
 
           {/* Facility & Location Section */}
@@ -1499,71 +1597,71 @@ const CreateJobScreen: React.FC = () => {
             isExpanded={expandedSections.facilityLocation}
             onToggle={() => toggleSection('facilityLocation')}
             isComplete={isSectionComplete('facilityLocation')}>
-            <InputField
-              label="Facility Name"
-              value={formData.facilityName}
-              onChangeText={(text) => handleInputChange('facilityName', text)}
+          <InputField
+            label="Facility Name"
+            value={formData.facilityName}
+            onChangeText={(text) => handleInputChange('facilityName', text)}
               error={validationErrors.facilityName}
-            />
+          />
 
-            <HospitalDropdown 
-              open={hospitalDropdownOpen}
-              setOpen={(open) => {
-                setHospitalDropdownOpen(open);
-                if (open) {
-                  setDepartmentDropdownOpen(false);
-                  setSpecializationDropdownOpen(false);
-                  setUnitDropdownOpen(false);
-                }
-              }}
-              value={formData.hospitalId}
-              setValue={(callback) => {
-                const newValue = callback(formData.hospitalId);
-                handleInputChange('hospitalId', newValue);
-              }}
-              items={hospitals.map(hospital => ({
-                label: hospital.name,
-                value: hospital.id.toString(),
-              }))}
-              loading={loadingHospitals}
-              styles={styles}
+          <HospitalDropdown 
+            open={hospitalDropdownOpen}
+            setOpen={(open) => {
+              setHospitalDropdownOpen(open);
+              if (open) {
+                setDepartmentDropdownOpen(false);
+                setSpecializationDropdownOpen(false);
+                setUnitDropdownOpen(false);
+              }
+            }}
+            value={formData.hospitalId}
+            setValue={(callback) => {
+              const newValue = callback(formData.hospitalId);
+              handleInputChange('hospitalId', newValue);
+            }}
+            items={hospitals.map(hospital => ({
+              label: hospital.name,
+              value: hospital.id.toString(),
+            }))}
+            loading={loadingHospitals}
+            styles={styles}
               error={validationErrors.hospitalId}
-            />
+          />
 
-            <UnitDropdown 
-              open={unitDropdownOpen}
-              setOpen={(open) => {
-                setUnitDropdownOpen(open);
-                if (open) {
-                  setDepartmentDropdownOpen(false);
-                  setSpecializationDropdownOpen(false);
-                  setHospitalDropdownOpen(false);
-                }
-              }}
-              value={formData.unitCode}
-              setValue={(callback) => {
-                const newValue = callback(formData.unitCode);
-                handleInputChange('unitCode', newValue);
-              }}
-              items={units.map(unit => ({
-                label: unit.name,
-                value: unit.code,
-              }))}
-              loading={loadingUnits}
-              disabled={!formData.hospitalId || units.length === 0}
-              styles={styles}
+          <UnitDropdown 
+            open={unitDropdownOpen}
+            setOpen={(open) => {
+              setUnitDropdownOpen(open);
+              if (open) {
+                setDepartmentDropdownOpen(false);
+                setSpecializationDropdownOpen(false);
+                setHospitalDropdownOpen(false);
+              }
+            }}
+            value={formData.unitCode}
+            setValue={(callback) => {
+              const newValue = callback(formData.unitCode);
+              handleInputChange('unitCode', newValue);
+            }}
+            items={units.map(unit => ({
+              label: unit.name,
+              value: unit.code,
+            }))}
+            loading={loadingUnits}
+            disabled={!formData.hospitalId || units.length === 0}
+            styles={styles}
               error={validationErrors.unitCode}
-            />
+          />
 
-            <InputField
-              label="Street Address"
-              value={formData.facilityStreet}
-              onChangeText={(text) => handleInputChange('facilityStreet', text)}
+          <InputField
+            label="Street Address"
+            value={formData.facilityStreet}
+            onChangeText={(text) => handleInputChange('facilityStreet', text)}
               error={validationErrors.facilityStreet}
-            />
+          />
 
-            <View style={styles.row}>
-              <View style={styles.halfWidth}>
+          <View style={styles.row}>
+            <View style={styles.halfWidth}>
                 <StateDropdown
                   open={stateDropdownOpen}
                   setOpen={(open) => {
@@ -1588,9 +1686,9 @@ const CreateJobScreen: React.FC = () => {
                   }))}
                   styles={styles}
                   error={validationErrors.facilityState}
-                />
-              </View>
-              <View style={styles.halfWidth}>
+              />
+            </View>
+            <View style={styles.halfWidth}>
                 <CityDropdown
                   open={cityDropdownOpen}
                   setOpen={(open) => {
@@ -1616,21 +1714,21 @@ const CreateJobScreen: React.FC = () => {
                   styles={styles}
                   error={validationErrors.facilityCity}
                   disabled={!formData.facilityState}
-                />
-              </View>
+              />
             </View>
+          </View>
 
-            <View style={styles.row}>
-              <View style={styles.halfWidth}>
-                <InputField
-                  label="ZIP Code"
-                  value={formData.facilityZipCode}
-                  onChangeText={(text) => handleInputChange('facilityZipCode', text)}
-                  keyboardType="numeric"
+          <View style={styles.row}>
+            <View style={styles.halfWidth}>
+              <InputField
+                label="ZIP Code"
+                value={formData.facilityZipCode}
+                onChangeText={(text) => handleInputChange('facilityZipCode', text)}
+                keyboardType="numeric"
                   error={validationErrors.facilityZipCode}
-                />
-              </View>
-              <View style={styles.halfWidth}>
+              />
+            </View>
+            <View style={styles.halfWidth}>
                 <CountryDropdown
                   open={countryDropdownOpen}
                   setOpen={(open) => {
@@ -1644,7 +1742,7 @@ const CreateJobScreen: React.FC = () => {
                       setCityDropdownOpen(false);
                     }
                   }}
-                  value={formData.facilityCountry}
+                value={formData.facilityCountry}
                   setValue={(callback) => {
                     const newValue = callback(formData.facilityCountry);
                     handleInputChange('facilityCountry', newValue);
@@ -1654,9 +1752,9 @@ const CreateJobScreen: React.FC = () => {
                     value: country,
                   }))}
                   styles={styles}
-                />
-              </View>
+              />
             </View>
+          </View>
           </AccordionSection>
 
           {/* Contact Information Section */}
@@ -1666,38 +1764,38 @@ const CreateJobScreen: React.FC = () => {
             isExpanded={expandedSections.contactInfo}
             onToggle={() => toggleSection('contactInfo')}
             isComplete={isSectionComplete('contactInfo')}>
-            <InputField
-              label="Contact Name"
-              value={formData.contactName}
-              onChangeText={(text) => handleInputChange('contactName', text)}
+          <InputField
+            label="Contact Name"
+            value={formData.contactName}
+            onChangeText={(text) => handleInputChange('contactName', text)}
               error={validationErrors.contactName}
-            />
+          />
 
-            <View style={styles.row}>
-              <View style={styles.halfWidth}>
-                <InputField
-                  label="Contact Phone"
-                  value={formData.contactPhone}
-                  onChangeText={(text) => handleInputChange('contactPhone', text)}
-                  keyboardType="phone-pad"
+          <View style={styles.row}>
+            <View style={styles.halfWidth}>
+              <InputField
+                label="Contact Phone"
+                value={formData.contactPhone}
+                onChangeText={(text) => handleInputChange('contactPhone', text)}
+                keyboardType="phone-pad"
                   error={validationErrors.contactPhone}
-                />
-              </View>
-              <View style={styles.halfWidth}>
-                <InputField
-                  label="Contact Email"
-                  value={formData.contactEmail}
-                  onChangeText={(text) => handleInputChange('contactEmail', text)}
-                  keyboardType="email-address"
-                  error={validationErrors.contactEmail}
-                />
-              </View>
+              />
             </View>
+            <View style={styles.halfWidth}>
+              <InputField
+                label="Contact Email"
+                value={formData.contactEmail}
+                onChangeText={(text) => handleInputChange('contactEmail', text)}
+                keyboardType="email-address"
+                  error={validationErrors.contactEmail}
+              />
+            </View>
+          </View>
 
-            <InputField
-              label="Contact Position"
-              value={formData.contactPosition}
-              onChangeText={(text) => handleInputChange('contactPosition', text)}
+          <InputField
+            label="Contact Position"
+            value={formData.contactPosition}
+            onChangeText={(text) => handleInputChange('contactPosition', text)}
               error={validationErrors.contactPosition}
             />
           </AccordionSection>
@@ -1709,46 +1807,68 @@ const CreateJobScreen: React.FC = () => {
             isExpanded={expandedSections.requirementsBenefits}
             onToggle={() => toggleSection('requirementsBenefits')}
             isComplete={isSectionComplete('requirementsBenefits')}>
-            <InputField
-              label="Experience Required"
-              value={formData.experience}
-              onChangeText={(text) => handleInputChange('experience', text)}
+          <InputField
+            label="Experience Required"
+            value={formData.experience}
+            onChangeText={(text) => handleInputChange('experience', text)}
               maxWords={150}
-            />
+              error={validationErrors.experience}
+          />
 
-            <InputField
-              label="Required Skills (comma-separated)"
-              value={formData.skills}
-              onChangeText={(text) => handleInputChange('skills', text)}
+          <InputField
+            label="Required Skills (comma-separated)"
+            value={formData.skills}
+            onChangeText={(text) => handleInputChange('skills', text)}
               maxWords={150}
-            />
+              error={validationErrors.skills}
+          />
 
-            <View style={styles.checkboxSection}>
-              <Text style={styles.inputLabel}>Benefits</Text>
-              <CheckboxField
-                label="Meal Allowance"
-                value={formData.mealAllowance}
-                onValueChange={(value) => handleInputChange('mealAllowance', value)}
-              />
-              <CheckboxField
-                label="Parking"
-                value={formData.parking}
-                onValueChange={(value) => handleInputChange('parking', value)}
-              />
-              <CheckboxField
-                label="Malpractice Insurance"
-                value={formData.malpractice}
-                onValueChange={(value) => handleInputChange('malpractice', value)}
-              />
-            </View>
-
-            {formData.requiredRole === 'DOCTOR' && (
-              <CheckboxField
-                label="Board Certification Required"
-                value={formData.boardCertified}
-                onValueChange={(value) => handleInputChange('boardCertified', value)}
-              />
+          <View style={styles.checkboxSection}>
+            <Text style={styles.inputLabel}>Benefits</Text>
+            {formData.requiredRole === 'DOCTOR' ? (
+              <>
+                <CheckboxField
+                  label="Malpractice Insurance"
+                  value={formData.malpractice}
+                  onValueChange={(value) => handleInputChange('malpractice', value)}
+                />
+                <CheckboxField
+                  label="Board Certification Required"
+                  value={formData.boardCertified}
+                  onValueChange={(value) => handleInputChange('boardCertified', value)}
+                />
+                <CheckboxField
+                  label="Meal Allowance"
+                  value={formData.mealAllowance}
+                  onValueChange={(value) => handleInputChange('mealAllowance', value)}
+                />
+                <CheckboxField
+                  label="Parking"
+                  value={formData.parking}
+                  onValueChange={(value) => handleInputChange('parking', value)}
+                />
+              </>
+            ) : (
+              <>
+                <CheckboxField
+                  label="Meal Allowance"
+                  value={formData.mealAllowance}
+                  onValueChange={(value) => handleInputChange('mealAllowance', value)}
+                />
+                <CheckboxField
+                  label="Parking"
+                  value={formData.parking}
+                  onValueChange={(value) => handleInputChange('parking', value)}
+                />
+                <CheckboxField
+                  label="Malpractice Insurance"
+                  value={formData.malpractice}
+                  onValueChange={(value) => handleInputChange('malpractice', value)}
+                />
+              </>
             )}
+          </View>
+          
           </AccordionSection>
 
           {/* Additional Information Section */}
@@ -1758,13 +1878,14 @@ const CreateJobScreen: React.FC = () => {
             isExpanded={expandedSections.additionalInfo}
             onToggle={() => toggleSection('additionalInfo')}
             isComplete={isSectionComplete('additionalInfo')}>
-            <InputField
-              label="Additional Notes"
-              value={formData.notes}
-              onChangeText={(text) => handleInputChange('notes', text)}
-              multiline={true}
-              numberOfLines={3}
-            />
+          <InputField
+            label="Additional Notes"
+            value={formData.notes}
+            onChangeText={(text) => handleInputChange('notes', text)}
+            multiline={true}
+            numberOfLines={3}
+              error={validationErrors.notes}
+          />
           </AccordionSection>
 
           <TouchableOpacity
@@ -1886,25 +2007,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 0,
   },
   flex1: {
     flex: 1,
   },
   formContainer: {
     padding: Spacing.lg,
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
   },
   // Accordion styles
   accordionSection: {
     backgroundColor: Colors.white,
     borderRadius: BorderRadius.lg,
     marginBottom: Spacing.md,
-    overflow: 'visible',
-    ...Shadow.sm,
+    overflow: 'hidden',
+    // Remove shadow to avoid patchy edges and rely on border only
+    // Shadow removed for a crisp border
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   accordionSectionExpanded: {
-    zIndex: 5000,
-    elevation: 16,
+    // keep same look when expanded
+    zIndex: 1,
+    elevation: 0,
   },
   accordionHeader: {
     flexDirection: 'row',
@@ -2050,6 +2178,22 @@ const styles = StyleSheet.create({
   checkboxSection: {
     marginBottom: Spacing.lg,
   },
+  checkboxGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+  },
+  checkboxRowSpacing: {
+    marginBottom: Spacing.md,
+  },
+  checkboxItem: {
+    width: '48%',
+  },
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2094,17 +2238,22 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     borderWidth: 1,
     borderRadius: BorderRadius.lg,
-    minHeight: 50,
+    height: 44,
+    paddingVertical: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   dropdownTextStyle: {
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.regular,
     color: Colors.textPrimary,
+    lineHeight: 20,
   },
   dropdownPlaceholderStyle: {
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.regular,
     color: Colors.textTertiary,
+    lineHeight: 20,
   },
   dropdownContainerStyle: {
     backgroundColor: Colors.white,
@@ -2123,6 +2272,15 @@ const styles = StyleSheet.create({
   dropdownListItemStyle: {
     fontSize: Typography.fontSize.base,
     color: Colors.textPrimary,
+  },
+  dropdownArrowContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100%',
+  },
+  dropdownArrowIcon: {
+    marginTop: 0,
+    marginBottom: 0,
   },
   inputWithClear: {
     flexDirection: 'row',

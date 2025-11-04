@@ -93,7 +93,7 @@ class ApiService {
       
       return response.data;
     } catch (error: any) {
-      console.error('❌ Login failed:', error.response?.data || error.message);
+      // Silenced login error logging to avoid noisy console output; caller handles UX
       throw error;
     }
   }
@@ -1553,8 +1553,13 @@ class ApiService {
       const q: string[] = [`startDate=${encodeURIComponent(startDate)}`, `endDate=${encodeURIComponent(endDate)}`];
       if (userId) q.push(`userId=${encodeURIComponent(userId)}`);
       if (jobId) q.push(`jobId=${encodeURIComponent(jobId)}`);
+      const fullUrl = `${this.api.defaults.baseURL}/hr/reports/payout?${q.join('&')}`;
+      console.log('📡 Calling payout report:', fullUrl);
       const response = await this.api.get(`/hr/reports/payout?${q.join('&')}`);
-      return response.data?.data || response.data;
+      console.log('✅ Payout report response status:', response.status);
+      const payload = response.data?.data || response.data;
+      console.log('✅ Payout report lines:', Array.isArray(payload?.lines) ? payload.lines.length : 0, 'grandTotal:', payload?.totals?.grandTotal);
+      return payload;
     } catch (error: any) {
       console.error('❌ Failed to fetch payout report:', error?.response?.data || error?.message || error);
       throw error;

@@ -17,6 +17,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -50,7 +51,33 @@ const HRJobsScreen: React.FC = () => {
   const [filterTo, setFilterTo] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterPriority, setFilterPriority] = useState<string>('');
+  const [filterDepartment, setFilterDepartment] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showSearch, setShowSearch] = useState(false);
+
+  // Hardcoded departments (same as registration)
+  const medicalSpecialties = [
+    'Emergency Medicine',
+    'General Medicine',
+    'General Surgery',
+    'Obstetrics & Gynecology',
+    'Pediatrics',
+    'Orthopedics',
+    'Cardiology',
+    'Neurology',
+    'Urology',
+    'Nephrology',
+    'Gastroenterology',
+    'Oncology',
+    'ENT',
+    'Ophthalmology',
+    'Dermatology',
+    'Psychiatry',
+    'Radiology',
+    'Pathology',
+    'Anesthesiology',
+    'Physiotherapy',
+  ];
 
   // Success bottom-sheet modal state (registration-style)
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -168,9 +195,46 @@ const HRJobsScreen: React.FC = () => {
         return Colors.info;
       case 'FILLED':
         return Colors.warning;
+      case 'ASSIGNED':
+        return Colors.primary;
+      case 'IN_PROGRESS':
+        return Colors.warning;
       default:
         return Colors.textTertiary;
     }
+  };
+
+  // Compute display status based on assignments
+  const getDisplayStatus = (job: Job): string => {
+    const assignments = (job as any).assignments || [];
+    
+    // If no assignments, return job's original status
+    if (assignments.length === 0) {
+      return job.status || 'ACTIVE';
+    }
+
+    // Check if all assignments are completed
+    const allCompleted = assignments.every((a: any) => a.status === 'COMPLETED');
+    if (allCompleted) {
+      return 'COMPLETED';
+    }
+
+    // Check if any assignment is in progress
+    const hasInProgress = assignments.some((a: any) => a.status === 'IN_PROGRESS');
+    if (hasInProgress) {
+      return 'IN_PROGRESS';
+    }
+
+    // Check if any assignment is accepted or assigned
+    const hasAcceptedOrAssigned = assignments.some((a: any) => 
+      a.status === 'ACCEPTED' || a.status === 'ASSIGNED'
+    );
+    if (hasAcceptedOrAssigned) {
+      return 'ASSIGNED';
+    }
+
+    // Otherwise return job's original status
+    return job.status || 'ACTIVE';
   };
 
   const formatDate = (dateString: string) => {
@@ -197,6 +261,52 @@ const HRJobsScreen: React.FC = () => {
 
   const handleCreateJob = () => {
     (navigation as any).navigate('CreateJob');
+  };
+
+  const handleRecreateJob = (job: Job) => {
+    // Prepare job data for recreation (excluding dates and times)
+    const jobAny = job as any;
+    const recreateData = {
+      title: job.title || '',
+      description: job.description || '',
+      department: job.department || '',
+      location: job.location || '',
+      requiredRole: job.requiredRole || 'DOCTOR',
+      specialization: job.specialization || '',
+      hourlyRate: job.hourlyRate?.toString() || '',
+      priority: job.priority || 'MEDIUM',
+      maxAssignments: job.maxAssignments?.toString() || '',
+      hospitalId: jobAny.hospitalId?.toString() || '',
+      unitCode: jobAny.unitCode || '',
+      facilityName: job.facilityName || '',
+      facilityStreet: job.facilityAddress?.street || '',
+      facilityCity: job.facilityAddress?.city || '',
+      facilityState: job.facilityAddress?.state || '',
+      facilityZipCode: job.facilityAddress?.zipCode || '',
+      facilityCountry: job.facilityAddress?.country || '',
+      // Contact information
+      contactName: job.contactPerson?.name || '',
+      contactPhone: job.contactPerson?.phone || '',
+      contactEmail: job.contactPerson?.email || '',
+      contactPosition: job.contactPerson?.position || '',
+      // Requirements
+      experience: job.requirements?.experience || '',
+      skills: job.requirements?.skills?.join(', ') || '',
+      boardCertified: job.requirements?.boardCertified || false,
+      // Benefits
+      mealAllowance: job.benefits?.mealAllowance || false,
+      parking: job.benefits?.parking || false,
+      malpractice: job.benefits?.malpractice || false,
+      // Additional information
+      notes: job.notes || '',
+      // Start and end dates/times are NOT included - they will be empty
+      startDate: '',
+      endDate: '',
+      startTime: '',
+      endTime: '',
+    };
+    
+    (navigation as any).navigate('CreateJob', { recreateJobData: recreateData });
   };
 
   const handleAssignJobToStaff = async (job: Job) => {
@@ -241,16 +351,18 @@ const HRJobsScreen: React.FC = () => {
   };
 
   const JobCard = ({ job }: { job: Job }) => {
-    const currentAssignments = job.assignments?.length || 0;
-    const pendingAssignments = job.assignments?.filter(a => a.status === 'PENDING').length || 0;
-    const acceptedAssignments = job.assignments?.filter(a => a.status === 'ACCEPTED').length || 0;
-    const assignedAssignments = job.assignments?.filter(a => a.status === 'ASSIGNED').length || 0;
+    const assignments = (job as any).assignments || [];
+    const currentAssignments = assignments.length || 0;
+    const pendingAssignments = assignments.filter((a: any) => a.status === 'PENDING').length || 0;
+    const acceptedAssignments = assignments.filter((a: any) => a.status === 'ACCEPTED').length || 0;
+    const assignedAssignments = assignments.filter((a: any) => a.status === 'ASSIGNED').length || 0;
 
     const initials = (job.title || 'J').trim().slice(0, 2).toUpperCase();
     const timeRange = `${formatTime(job.startTime)} - ${formatTime(job.endTime)}`;
     const dateRange = `${formatDate(job.startDate)} - ${formatDate(job.endDate)}`;
     const subtitleLeft = job.location || '—';
     const subtitleRight = timeRange;
+    const displayStatus = getDisplayStatus(job);
     
     return (
       <TouchableOpacity 
@@ -258,14 +370,18 @@ const HRJobsScreen: React.FC = () => {
         onPress={() => handleReviewCandidates(job)}
         activeOpacity={0.8}
       >
-        {/* Date header with edit button */}
+        {/* Date header with recreate button */}
         <View style={styles.cardTopRow}>
           <Text style={styles.cardTimeText}>{dateRange}</Text>
-          <TouchableOpacity 
-            style={styles.editTopButton}
-            disabled={true}>
-            <FontAwesomeIcon icon="edit" size={Responsive.iconSize(16)} color={Colors.textSecondary} />
+          {displayStatus === 'COMPLETED' && (
+            <TouchableOpacity 
+              style={styles.recreateButton}
+              onPress={() => handleRecreateJob(job)}
+              activeOpacity={0.7}>
+              <FontAwesomeIcon icon="edit" size={Responsive.iconSize(14)} color={Colors.primary} />
+              <Text style={styles.recreateButtonText}>Edit</Text>
           </TouchableOpacity>
+          )}
         </View>
         <View style={styles.cardDivider} />
 
@@ -278,9 +394,9 @@ const HRJobsScreen: React.FC = () => {
               <Text style={styles.subtitleDot}> • </Text>
               <Text style={styles.subtitleText} numberOfLines={1}>{subtitleRight}</Text>
               <Text style={styles.subtitleDot}> • </Text>
-              <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor(job.status) + '1A' }]}>
-                <Text style={[styles.inlineStatusText, { color: getStatusColor(job.status) }]} numberOfLines={1}>
-                  {job.status}
+              <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor(displayStatus) + '1A' }]}>
+                <Text style={[styles.inlineStatusText, { color: getStatusColor(displayStatus) }]} numberOfLines={1}>
+                  {displayStatus}
                 </Text>
               </View>
             </View>
@@ -309,8 +425,8 @@ const HRJobsScreen: React.FC = () => {
             <View style={styles.departmentRow}>
               <Text style={styles.infoLabel}>Department</Text>
               <Text style={styles.infoValue}>{job.department || '—'}</Text>
-            </View>
-            </View>
+          </View>
+        </View>
           </View>
       </TouchableOpacity>
     );
@@ -329,16 +445,39 @@ const HRJobsScreen: React.FC = () => {
   // Compute filtered jobs for display
   const displayJobs = jobs.filter((j) => {
     try {
-      // Text search (title only)
+      // Broad text search across job card fields
       if (searchQuery && searchQuery.trim().length > 0) {
         const q = searchQuery.trim().toLowerCase();
-        const title = (j.title || '').toLowerCase();
-        if (!title.includes(q)) return false;
+        const addr = (j as any)?.facilityAddress || {};
+        const bucket = [
+          j.id?.toString() || '',
+          j.title || '',
+          j.description || '',
+          j.department || '',
+          j.location || '',
+          j.requiredRole || '',
+          j.specialization || '',
+          j.priority || '',
+          j.status || '',
+          j.facilityName || '',
+          addr.street || '', addr.city || '', addr.state || '', addr.country || '', addr.zipCode || '',
+          (j as any)?.unitCode || '',
+          j.hourlyRate != null ? String(j.hourlyRate) : '',
+          j.startTime || '', j.endTime || '',
+          j.startDate ? new Date(j.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '',
+          j.endDate ? new Date(j.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '',
+        ].join(' ').toLowerCase();
+        if (!bucket.includes(q)) return false;
       }
-      // Status filter
-      if (filterStatus && (j.status || '').toUpperCase() !== filterStatus.toUpperCase()) return false;
+      // Status filter (use computed display status so COMPLETED works based on assignments)
+      if (filterStatus) {
+        const computed = getDisplayStatus(j).toUpperCase();
+        if (computed !== filterStatus.toUpperCase()) return false;
+      }
       // Priority filter
       if (filterPriority && (j.priority || '').toUpperCase() !== filterPriority.toUpperCase()) return false;
+      // Department filter
+      if (filterDepartment && (j.department || '').toLowerCase() !== filterDepartment.toLowerCase()) return false;
       // Date range filter (by startDate)
       if (filterFrom) {
         const from = new Date(filterFrom);
@@ -371,9 +510,14 @@ const HRJobsScreen: React.FC = () => {
         onBackPress={() => navigation.goBack()}
         headerStyle={{ paddingTop: 10, paddingHorizontal: 20, paddingBottom: 16 }}
         rightComponent={
-          <TouchableOpacity onPress={() => setFilterVisible(true)} style={styles.headerIconButton}>
-            <FontAwesomeIcon icon="filter" size={20} color="#111827" />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <TouchableOpacity onPress={() => setShowSearch(prev => !prev)} style={styles.headerIconButton}>
+              <FontAwesomeIcon icon="search" size={20} color="#111827" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setFilterVisible(true)} style={styles.headerIconButton}>
+              <FontAwesomeIcon icon="filter" size={20} color="#111827" />
+            </TouchableOpacity>
+          </View>
         }
       />
 
@@ -381,23 +525,26 @@ const HRJobsScreen: React.FC = () => {
       {isLoading && jobs.length === 0 ? (
         <SkeletonSearchBar />
       ) : (
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <FontAwesomeIcon icon="search" size={16} color={Colors.textSecondary} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by title"
-            placeholderTextColor={Colors.textTertiary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <FontAwesomeIcon icon="times" size={16} color={Colors.textTertiary} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
+        showSearch ? (
+          <View style={styles.searchContainer}>
+            <View style={styles.searchBar}>
+              <FontAwesomeIcon icon="search" size={16} color={Colors.textSecondary} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search jobs (title, location, department, etc.)"
+                placeholderTextColor={Colors.textTertiary}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoFocus
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <FontAwesomeIcon icon="times" size={16} color={Colors.textTertiary} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        ) : null
       )}
 
       {/* Jobs List */}
@@ -431,8 +578,15 @@ const HRJobsScreen: React.FC = () => {
       )}
 
       {/* Floating Action Button */}
-      <TouchableOpacity style={styles.fab} onPress={handleCreateJob}>
-        <FontAwesomeIcon icon="plus" size={24} color={Colors.white}  />
+      <TouchableOpacity 
+        style={styles.fab} 
+        onPress={handleCreateJob} 
+        activeOpacity={0.8}
+      >
+        <View style={styles.fabContent}>
+          <FontAwesomeIcon icon="plus" size={Responsive.iconSize(20)} color={Colors.white} />
+          <Text style={styles.fabText}>Add Job</Text>
+        </View>
       </TouchableOpacity>
       
       <HRFooterNavigation 
@@ -477,15 +631,19 @@ const HRJobsScreen: React.FC = () => {
         to={filterTo}
         status={filterStatus}
         priority={filterPriority}
+        department={filterDepartment}
         onChangeFrom={setFilterFrom}
         onChangeTo={setFilterTo}
         onChangeStatus={setFilterStatus}
         onChangePriority={setFilterPriority}
+        onChangeDepartment={setFilterDepartment}
+        departments={medicalSpecialties}
         onClear={() => {
           setFilterFrom('');
           setFilterTo('');
           setFilterStatus('');
           setFilterPriority('');
+          setFilterDepartment('');
         }}
       />
 
@@ -588,13 +746,52 @@ const AssignBottomSheet = ({
         return Colors.info;
       case 'FILLED':
         return Colors.warning;
+      case 'ASSIGNED':
+        return Colors.primary;
+      case 'IN_PROGRESS':
+        return Colors.warning;
       default:
         return Colors.textTertiary;
     }
   };
 
+  // Compute display status based on assignments
+  const getDisplayStatus = (job: Job | null): string => {
+    if (!job) return 'ACTIVE';
+    const assignments = (job as any).assignments || [];
+    
+    // If no assignments, return job's original status
+    if (assignments.length === 0) {
+      return job.status || 'ACTIVE';
+    }
+
+    // Check if all assignments are completed
+    const allCompleted = assignments.every((a: any) => a.status === 'COMPLETED');
+    if (allCompleted) {
+      return 'COMPLETED';
+    }
+
+    // Check if any assignment is in progress
+    const hasInProgress = assignments.some((a: any) => a.status === 'IN_PROGRESS');
+    if (hasInProgress) {
+      return 'IN_PROGRESS';
+    }
+
+    // Check if any assignment is accepted or assigned
+    const hasAcceptedOrAssigned = assignments.some((a: any) => 
+      a.status === 'ACCEPTED' || a.status === 'ASSIGNED'
+    );
+    if (hasAcceptedOrAssigned) {
+      return 'ASSIGNED';
+    }
+
+    // Otherwise return job's original status
+    return job.status || 'ACTIVE';
+  };
+
   const accepted = (assignments || []).filter(a => a?.status === 'ACCEPTED');
   const [isSelecting, setIsSelecting] = React.useState(false);
+  const displayStatus = getDisplayStatus(job);
 
   const handleSelectCandidate = async (assignment: any) => {
     if (!job) return;
@@ -730,7 +927,7 @@ const AssignBottomSheet = ({
                         </View>
                           </View>
                       </View>
-                        )}
+                    )}
                         {job.department && (
                           <View style={styles.modalCol}>
                             <View style={styles.modalInfoRow}>
@@ -740,11 +937,11 @@ const AssignBottomSheet = ({
                                 <Text style={styles.modalInfoValue} numberOfLines={1}>{job.department}</Text>
               </View>
             </View>
-          </View>
-        )}
+                      </View>
+                    )}
       </View>
-                    </View>
-                  )}
+                      </View>
+                    )}
 
                   {/* Role & Candidates (two columns) */}
                   {(job.requiredRole) && (
@@ -769,8 +966,8 @@ const AssignBottomSheet = ({
               </View>
               </View>
             </View>
-                    </View>
-                  )}
+                      </View>
+                    )}
 
                   {/* Rate & Status (two columns) */}
                   <View style={styles.modalSection}>
@@ -781,7 +978,7 @@ const AssignBottomSheet = ({
                           <View style={styles.modalInfoContent}>
                             <Text style={styles.modalInfoLabel}>Rate</Text>
                             <Text style={styles.modalInfoValue}>₹{job.hourlyRate || '—'}/hr</Text>
-              </View>
+                    </View>
               </View>
               </View>
                       <View style={styles.modalCol}>
@@ -789,17 +986,17 @@ const AssignBottomSheet = ({
                           <FontAwesomeIcon icon="info-circle" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
                           <View style={styles.modalInfoContent}>
                             <Text style={styles.modalInfoLabel}>Status</Text>
-                            <View style={[styles.modalStatusBadge, { backgroundColor: getStatusColor(job.status || '') + '1A' }]}> 
-                              <Text style={[styles.modalStatusBadgeText, { color: getStatusColor(job.status || '') }]}>
-                                {job.status || '—'}
-                              </Text>
+                            <View style={[styles.modalStatusBadge, { backgroundColor: getStatusColor(displayStatus) + '1A' }]}> 
+                              <Text style={[styles.modalStatusBadgeText, { color: getStatusColor(displayStatus) }]}>
+                                {displayStatus}
+                      </Text>
               </View>
             </View>
               </View>
                       </View>
               </View>
-            </View>
-
+                    </View>
+                    
                   {/* Priority */}
                   {job.priority && (
                     <View style={styles.modalSection}>
@@ -810,9 +1007,9 @@ const AssignBottomSheet = ({
                           <View style={[styles.modalPriorityBadge, { backgroundColor: getPriorityColor(job.priority) + '1A' }]}> 
                             <Text style={[styles.modalPriorityBadgeText, { color: getPriorityColor(job.priority) }]}>
                               {job.priority}
-                            </Text>
-              </View>
-              </View>
+                      </Text>
+                    </View>
+                    </View>
             </View>
                     </View>
                   )}
@@ -825,20 +1022,20 @@ const AssignBottomSheet = ({
                         <View style={styles.modalInfoContent}>
                           <Text style={styles.modalInfoLabel}>Description</Text>
                           <Text style={styles.modalInfoValue}>{job.description}</Text>
+                  </View>
+                </View>
                     </View>
-                    </View>
-                    </View>
-                  )}
+              )}
 
                   {/* Candidates Section */}
                   <View style={styles.modalCandidatesSection}>
                     <Text style={styles.modalCandidatesTitle}>Candidates</Text>
-                    {accepted.length === 0 ? (
+                {accepted.length === 0 ? (
                       <View style={styles.modalEmptyCandidates}>
-                        <Text style={styles.sheetInfoText}>No accepted candidates yet.</Text>
+                  <Text style={styles.sheetInfoText}>No accepted candidates yet.</Text>
                     </View>
-                    ) : (
-                      accepted.map((a, idx) => {
+                ) : (
+                  accepted.map((a, idx) => {
                     const firstName = a?.user?.firstName || 'Unknown';
                     const lastName = a?.user?.lastName || '';
                     const fullName = `${firstName} ${lastName}`.trim();
@@ -858,8 +1055,8 @@ const AssignBottomSheet = ({
                                 <Text style={styles.modalInfoValue} numberOfLines={1}>{fullName}</Text>
                     </View>
                     </View>
-                            <Text style={[styles.assignmentStatus, { color: Colors.success }]}>ACCEPTED</Text>
-                    </View>
+                          <Text style={[styles.assignmentStatus, { color: Colors.success }]}>ACCEPTED</Text>
+                        </View>
                           
                           <View style={styles.modalCandidateDetails}>
                             <View style={styles.modalInfoRow}>
@@ -867,8 +1064,8 @@ const AssignBottomSheet = ({
                               <View style={styles.modalInfoContent}>
                                 <Text style={styles.modalInfoLabel}>Role</Text>
                                 <Text style={styles.modalInfoValue} numberOfLines={1}>{displayRole}</Text>
-                </View>
-                            </View>
+                        </View>
+                        </View>
                             
                             <View style={styles.modalInfoRow}>
                               <FontAwesomeIcon icon="phone" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
@@ -886,39 +1083,39 @@ const AssignBottomSheet = ({
                     </View>
                     </View>
                             
-                            {acceptedAt && (
+                        {acceptedAt && (
                               <View style={styles.modalInfoRow}>
                                 <FontAwesomeIcon icon="calendar-check" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
                                 <View style={styles.modalInfoContent}>
                                   <Text style={styles.modalInfoLabel}>Accepted</Text>
                                   <Text style={styles.modalInfoValue}>{new Date(acceptedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
                 </View>
-                              </View>
-                            )}
+                          </View>
+                        )}
                           </View>
                           
-                          <TouchableOpacity 
+                        <TouchableOpacity 
                             style={styles.modalSelectButton}
-                            onPress={() => handleSelectCandidate(a)}
-                            disabled={isSelecting}
-                          >
-                            {isSelecting ? (
-                              <ActivityIndicator size="small" color={Colors.white} />
-                            ) : (
+                          onPress={() => handleSelectCandidate(a)}
+                          disabled={isSelecting}
+                        >
+                          {isSelecting ? (
+                            <ActivityIndicator size="small" color={Colors.white} />
+                          ) : (
                               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                 <FontAwesomeIcon icon="check" size={16} color={Colors.white} style={{ marginRight: 8 }} />
                                 <Text style={styles.modalSelectButtonText}>Select Candidate</Text>
                 </View>
-              )}
-                          </TouchableOpacity>
-                </View>
+                          )}
+                        </TouchableOpacity>
+                      </View>
                     );
-                      })
-              )}
-            </View>
+                  })
+                )}
+              </View>
                 </>
               )}
-          </ScrollView>
+            </ScrollView>
           )}
 
           {!loading && (
@@ -941,10 +1138,13 @@ const FilterBottomSheet = ({
   to,
   status,
   priority,
+  department,
+  departments,
   onChangeFrom,
   onChangeTo,
   onChangeStatus,
   onChangePriority,
+  onChangeDepartment,
   onClear,
 }: {
   visible: boolean;
@@ -953,14 +1153,28 @@ const FilterBottomSheet = ({
   to: string;
   status: string;
   priority: string;
+  department: string;
+  departments: string[];
   onChangeFrom: (v: string) => void;
   onChangeTo: (v: string) => void;
   onChangeStatus: (v: string) => void;
   onChangePriority: (v: string) => void;
+  onChangeDepartment: (v: string) => void;
   onClear: () => void;
 }) => {
-  const statuses = ['ACTIVE', 'COMPLETED', 'CANCELLED', 'FILLED'];
+  const statuses = ['ACTIVE', 'COMPLETED'];
   const priorities = ['URGENT', 'HIGH', 'MEDIUM', 'LOW'];
+
+  const [showFromPicker, setShowFromPicker] = React.useState(false);
+  const [showToPicker, setShowToPicker] = React.useState(false);
+  const [deptOpen, setDeptOpen] = React.useState(false);
+
+  const formatYMD = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -974,20 +1188,70 @@ const FilterBottomSheet = ({
           <ScrollView contentContainerStyle={styles.sheetContent}>
             <Text style={styles.filterLabel}>Date Range</Text>
             <View style={styles.filterRow}>
-              <TextInput
-                value={from}
-                onChangeText={onChangeFrom}
-                placeholder="From (YYYY-MM-DD)"
-                placeholderTextColor={Colors.textSecondary}
-                style={styles.input}
+              <TouchableOpacity style={[styles.input, { flexDirection: 'row', alignItems: 'center' }]}
+                activeOpacity={0.7}
+                onPress={() => setShowFromPicker(true)}>
+                <FontAwesomeIcon icon="calendar" size={16} color={Colors.textSecondary} />
+                <Text style={{ marginLeft: 8, color: from ? Colors.textPrimary : Colors.textSecondary, fontFamily: Typography.fontFamily.regular, fontSize: Typography.fontSize.sm }}>
+                  {from || 'From date'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.input, { flexDirection: 'row', alignItems: 'center' }]}
+                activeOpacity={0.7}
+                onPress={() => setShowToPicker(true)}>
+                <FontAwesomeIcon icon="calendar" size={16} color={Colors.textSecondary} />
+                <Text style={{ marginLeft: 8, color: to ? Colors.textPrimary : Colors.textSecondary, fontFamily: Typography.fontFamily.regular, fontSize: Typography.fontSize.sm }}>
+                  {to || 'To date'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            {showFromPicker && (
+              <DateTimePicker
+                value={from ? new Date(from) : new Date()}
+                mode="date"
+                display="default"
+                onChange={(e, date) => {
+                  setShowFromPicker(false);
+                  if (date) onChangeFrom(formatYMD(date));
+                }}
               />
-              <TextInput
-                value={to}
-                onChangeText={onChangeTo}
-                placeholder="To (YYYY-MM-DD)"
-                placeholderTextColor={Colors.textSecondary}
-                style={styles.input}
+            )}
+            {showToPicker && (
+              <DateTimePicker
+                value={to ? new Date(to) : new Date()}
+                mode="date"
+                display="default"
+                onChange={(e, date) => {
+                  setShowToPicker(false);
+                  if (date) onChangeTo(formatYMD(date));
+                }}
               />
+            )}
+
+            <Text style={[styles.filterLabel, { marginTop: 12 }]}>Department</Text>
+            <View>
+              <TouchableOpacity
+                onPress={() => setDeptOpen(prev => !prev)}
+                style={[styles.input, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+                activeOpacity={0.7}
+              >
+                <Text style={{ color: department ? Colors.textPrimary : Colors.textSecondary, fontFamily: Typography.fontFamily.regular }}>
+                  {department || 'All departments'}
+                </Text>
+                <FontAwesomeIcon icon={deptOpen ? 'chevron-up' : 'chevron-down'} size={14} color={Colors.textSecondary} />
+              </TouchableOpacity>
+              {deptOpen && (
+                <View style={styles.dropdownList}>
+                  <TouchableOpacity onPress={() => { onChangeDepartment(''); setDeptOpen(false); }} style={styles.dropdownOption}>
+                    <Text style={styles.dropdownOptionText}>All</Text>
+                  </TouchableOpacity>
+                  {departments.map((d, idx) => (
+                    <TouchableOpacity key={`${d}-${idx}`} onPress={() => { onChangeDepartment(d); setDeptOpen(false); }} style={styles.dropdownOption}>
+                      <Text style={styles.dropdownOptionText}>{d}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
 
             <Text style={[styles.filterLabel, { marginTop: 12 }]}>Status</Text>
@@ -1078,8 +1342,8 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingHorizontal: Responsive.scale(Spacing.md),
-    paddingTop: Responsive.verticalScale(Spacing.xs),
-    paddingBottom: Responsive.verticalScale(80),
+    paddingTop: Responsive.verticalScale(Spacing.md),
+    paddingBottom: Responsive.verticalScale(12),
   },
   searchContainer: {
     paddingHorizontal: Responsive.scale(Spacing.md),
@@ -1129,6 +1393,7 @@ const styles = StyleSheet.create({
   cardDivider: {
     height: 1,
     backgroundColor: Colors.borderLight,
+    marginTop: Spacing.sm,
     marginBottom: Spacing.sm,
   },
   cardTopRow: {
@@ -1139,6 +1404,22 @@ const styles = StyleSheet.create({
   editTopButton: {
     paddingHorizontal: 8,
     paddingVertical: 6,
+  },
+  recreateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: Colors.white,
+    borderRadius: 6,
+    gap: 6,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+  },
+  recreateButtonText: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.primary,
   },
   profileRow: {
     flexDirection: 'row',
@@ -1389,15 +1670,27 @@ const styles = StyleSheet.create({
   // removed action button variants
   fab: {
     position: 'absolute',
-    bottom: Responsive.verticalScale(Spacing['2xl']),
-    right: Responsive.scale(Spacing.lg),
-    width: Responsive.scale(56),
-    height: Responsive.verticalScale(56),
-    borderRadius: Responsive.scale(28),
+    bottom: Responsive.verticalScale(60),
+    right: Responsive.scale(Spacing.md),
+    height: Responsive.verticalScale(50),
+    minWidth: Responsive.scale(50),
+    paddingHorizontal: Responsive.scale(16),
+    borderRadius: Responsive.scale(25),
     backgroundColor: Colors.primary,
+    ...Shadow.lg,
     justifyContent: 'center',
     alignItems: 'center',
-    ...Shadow.lg,
+    overflow: 'hidden',
+  },
+  fabContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Responsive.scale(8),
+  },
+  fabText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.white,
   },
   footerLoader: {
     paddingVertical: Spacing.lg,
@@ -1660,6 +1953,25 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     backgroundColor: Colors.white,
     marginHorizontal: 4,
+  },
+  dropdownList: {
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    borderRadius: 10,
+    backgroundColor: Colors.white,
+    marginTop: 6,
+    overflow: 'hidden',
+  },
+  dropdownOption: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  dropdownOptionText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.textPrimary,
   },
   chipsRow: {
     flexDirection: 'row',

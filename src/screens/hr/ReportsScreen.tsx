@@ -304,6 +304,23 @@ const ReportsScreen: React.FC = () => {
   const [loadingPayout, setLoadingPayout] = useState(false);
   const [showPayoutStartPicker, setShowPayoutStartPicker] = useState(false);
   const [showPayoutEndPicker, setShowPayoutEndPicker] = useState(false);
+  const [showPayoutExportMenu, setShowPayoutExportMenu] = useState(false);
+  const [showPayoutExportMenuForId, setShowPayoutExportMenuForId] = useState<string | number | null>(null);
+  // Local (frontend-only) filters for payout tab
+  const [showPayoutFilterModal, setShowPayoutFilterModal] = useState(false);
+  const [payoutLocalFilters, setPayoutLocalFilters] = useState<{
+    search: string;
+    startDate: string;
+    endDate: string;
+    userId: string;
+    jobId: string;
+    minAmount: string;
+    maxAmount: string;
+  }>({ search: '', startDate: '', endDate: '', userId: '', jobId: '', minAmount: '', maxAmount: '' });
+  const [showPayoutLocalStartPicker, setShowPayoutLocalStartPicker] = useState(false);
+  const [showPayoutLocalEndPicker, setShowPayoutLocalEndPicker] = useState(false);
+  const [showPayoutDetailModal, setShowPayoutDetailModal] = useState(false);
+  const [selectedPayoutDetails, setSelectedPayoutDetails] = useState<any>(null);
 
   const buildPdfUrlForJob = (jobId: number) => `${getFinalApiUrl()}/reports/jobs/${jobId}.pdf`;
   const buildPdfUrlForAssignment = (assignmentId: number) => `${getFinalApiUrl()}/reports/assignments/${assignmentId}.pdf`;
@@ -314,13 +331,75 @@ const ReportsScreen: React.FC = () => {
     { key: 'job-lists', label: 'Jobs', icon: 'list' },
     { key: 'assigned', label: 'Assigned', icon: 'users' },
     { key: 'checkin-out', label: 'Check-In/Out', icon: 'clock' },
-    { key: 'payout', label: 'Check-In/Out Payout', icon: 'dollar-sign' },
+    { key: 'payout', label: 'Payout', icon: 'rupee-sign' },
     // { key: 'job-postings', label: 'Job Postings', icon: 'briefcase' },
     // { key: 'assignments', label: 'Assignments', icon: 'users' },
     // { key: 'attendance', label: 'Attendance', icon: 'clock' },
     // { key: 'no-shows', label: 'No-Shows', icon: 'times-circle' },
     // { key: 'financial', label: 'Financial', icon: 'dollar-sign' },
   ];
+
+  // Derived list: apply frontend-only filters to payout lines
+  const getFilteredPayoutLines = () => {
+    const lines = payoutData.lines || [];
+    const {
+      search,
+      startDate: fStart,
+      endDate: fEnd,
+      userId: fUserId,
+      jobId: fJobId,
+      minAmount,
+      maxAmount,
+    } = payoutLocalFilters;
+
+    const s = (search || '').trim().toLowerCase();
+    const start = (fStart || '').trim();
+    const end = (fEnd || '').trim();
+    const uid = (fUserId || '').trim();
+    const jid = (fJobId || '').trim();
+    const minA = minAmount ? parseFloat(minAmount) : undefined;
+    const maxA = maxAmount ? parseFloat(maxAmount) : undefined;
+
+    return lines.filter((line: any) => {
+      // text search on staffName or jobTitle
+      const byText = s.length === 0 ||
+        ((line.staffName || '').toLowerCase().includes(s)) ||
+        ((line.jobTitle || '').toLowerCase().includes(s));
+
+      // userId/jobId exact matches if provided
+      const byUser = uid.length === 0 || String(line.userId || '').toLowerCase() === uid.toLowerCase();
+      const byJob = jid.length === 0 || String(line.jobId || '').toLowerCase() === jid.toLowerCase();
+
+      // amount range
+      const amt = Number(line.amount || 0);
+      const byMin = typeof minA === 'undefined' || amt >= minA;
+      const byMax = typeof maxA === 'undefined' || amt <= maxA;
+
+      // date range: support multiple shapes
+      const nestedCheckInTime: string | undefined = (line as any)?.checkIn?.checkInTime;
+      const flatCheckInTime: string | undefined = (line as any)?.checkInTime;
+      const assignmentStartedAt: string | undefined = (line as any)?.assignment?.startedAt;
+      const jobStartDate: string | undefined = (line as any)?.job?.startDate;
+      const shiftDatesArr: string[] = Array.isArray((line as any)?.shiftDates) ? (line as any).shiftDates : [];
+      const candidateDates: string[] = [
+        ...shiftDatesArr,
+        ...(flatCheckInTime ? [flatCheckInTime] : []),
+        ...(nestedCheckInTime ? [nestedCheckInTime] : []),
+        ...(assignmentStartedAt ? [assignmentStartedAt] : []),
+        ...(jobStartDate ? [jobStartDate] : []),
+      ];
+      const byDates = (start.length === 0 && end.length === 0) || (candidateDates.length === 0
+        ? true
+        : candidateDates.some((d) => {
+            const ds = String(d).slice(0, 10);
+            if (start.length > 0 && ds < start) return false;
+            if (end.length > 0 && ds > end) return false;
+            return true;
+          }));
+
+      return byText && byUser && byJob && byMin && byMax && byDates;
+    });
+  };
 
   // Hardcoded departments used in registration page
   const hardcodedDepartments = [
@@ -361,6 +440,7 @@ const ReportsScreen: React.FC = () => {
 
   // Load realtime dashboard data when Check-In/Out tab is selected
   useEffect(() => {
+    console.log('🧭 Selected report tab:', selectedReportType);
     if (selectedReportType === 'checkin-out') {
       loadRealtimeData();
     }
@@ -378,6 +458,7 @@ const ReportsScreen: React.FC = () => {
   const fetchPayoutWith = async (startDate: string, endDate: string, userId?: string, jobId?: string) => {
     try {
       setLoadingPayout(true);
+      console.log('▶️ fetchPayoutWith called with:', { startDate, endDate, userId, jobId });
       const resp = await ApiService.getPayoutReport({
         startDate,
         endDate,
@@ -385,6 +466,7 @@ const ReportsScreen: React.FC = () => {
         jobId: jobId || undefined,
       });
       const data = (resp as any)?.data || resp;
+      console.log('✅ Payout data received. lines:', Array.isArray(data?.lines) ? data.lines.length : 0, 'grandTotal:', data?.totals?.grandTotal);
       setPayoutData({
         lines: data?.lines || [],
         totals: data?.totals || { byUser: [], grandTotal: 0 },
@@ -403,6 +485,33 @@ const ReportsScreen: React.FC = () => {
     const end = payoutFilters.endDate || today;
     await fetchPayoutWith(start, end, payoutFilters.userId, payoutFilters.jobId);
   };
+
+  // Ensure payout filters have sensible defaults on mount (today -> today)
+  useEffect(() => {
+    setPayoutFilters(prev => {
+      const today = formatDate(new Date());
+      console.log('🗓️ Initializing payout dates to today:', today);
+      return {
+        ...prev,
+        startDate: prev.startDate || today,
+        endDate: prev.endDate || today,
+      };
+    });
+  }, []);
+
+  // Auto-fetch payout data when the Payout tab is active and filters change
+  useEffect(() => {
+    if (selectedReportType !== 'payout') return;
+    const { startDate, endDate, userId, jobId } = payoutFilters;
+    if (!startDate || !endDate) return;
+    // Guard: skip invalid ranges
+    if (startDate > endDate) {
+      console.log('⛔ Skipping payout fetch due to invalid range:', { startDate, endDate });
+      return;
+    }
+    console.log('🔄 Triggering payout fetch due to filters change:', { startDate, endDate, userId, jobId });
+    fetchPayoutWith(startDate, endDate, userId, jobId);
+  }, [selectedReportType, payoutFilters.startDate, payoutFilters.endDate, payoutFilters.userId, payoutFilters.jobId]);
 
   const loadRealtimeData = async () => {
     try {
@@ -1747,30 +1856,53 @@ const ReportsScreen: React.FC = () => {
         ) : selectedReportType === 'payout' ? (
           <View style={styles.jobListsContainer}>
             <View style={styles.exportHeaderContainer}>
-              <Text style={styles.sectionTitle}>Check-In/Out Payout</Text>
-              <View style={styles.globalExportButtons}>
-                <Text style={styles.grandTotalText}>Total: ₹{(payoutData.totals?.grandTotal || 0).toLocaleString()}</Text>
+              <Text style={styles.sectionTitle}>Payout</Text>
+              <View style={styles.headerActionsRow}>
                 <TouchableOpacity
-                  style={[styles.exportButtonSmall, styles.pdfButton, { marginLeft: Spacing.sm }]}
-                  onPress={() => handleExportPayout('pdf')}
-                  disabled={isGenerating || (payoutData.lines?.length || 0) === 0}
+                  style={styles.exportDropdownButton}
+                  onPress={() => setShowPayoutExportMenu(v => !v)}
+                  disabled={isGenerating || getFilteredPayoutLines().length === 0}
                 >
-                  {isGenerating ? (
-                    <ActivityIndicator size="small" color={Colors.white} />
-                  ) : (
-                    <FontAwesomeIcon icon="file-pdf" size={Responsive.iconSize(18)} color={Colors.white} />
-                  )}
+                  <FontAwesomeIcon icon="file-export" size={Responsive.iconSize(16)} color={Colors.white} />
+                  <Text style={styles.exportDropdownText}>Export All</Text>
+                  <FontAwesomeIcon icon={showPayoutExportMenu ? 'chevron-up' : 'chevron-down'} size={12} color={Colors.white} />
                 </TouchableOpacity>
+
+                {showPayoutExportMenu && (
+                  <View style={styles.exportDropdownMenu}>
+                    <TouchableOpacity
+                      style={styles.exportDropdownItem}
+                      onPress={() => { setShowPayoutExportMenu(false); handleExportPayout('pdf'); }}
+                    >
+                      <FontAwesomeIcon icon="file-pdf" size={14} color={Colors.error} />
+                      <Text style={styles.exportDropdownItemText}>PDF</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.exportDropdownItem}
+                      onPress={() => { setShowPayoutExportMenu(false); handleExportPayout('excel'); }}
+                    >
+                      <FontAwesomeIcon icon="file-excel" size={14} color={Colors.success} />
+                      <Text style={styles.exportDropdownItemText}>Excel</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
                 <TouchableOpacity
-                  style={[styles.exportButtonSmall, styles.excelButton, { marginLeft: Spacing.sm }]}
-                  onPress={() => handleExportPayout('excel')}
-                  disabled={isGenerating || (payoutData.lines?.length || 0) === 0}
+                  style={styles.filterOutlineButton}
+                  onPress={() => {
+                    console.log('🧮 Opening payout filter with current API filters:', payoutFilters);
+                    setPayoutLocalFilters((prev) => ({
+                      ...prev,
+                      startDate: payoutFilters.startDate || prev.startDate,
+                      endDate: payoutFilters.endDate || prev.endDate,
+                      userId: (prev.userId || payoutFilters.userId || ''),
+                      jobId: (prev.jobId || payoutFilters.jobId || ''),
+                    }));
+                    setShowPayoutFilterModal(true);
+                  }}
                 >
-                  {isGenerating ? (
-                    <ActivityIndicator size="small" color={Colors.white} />
-                  ) : (
-                    <FontAwesomeIcon icon="file-excel" size={Responsive.iconSize(18)} color={Colors.white} />
-                  )}
+                  <FontAwesomeIcon icon="filter" size={14} color={Colors.textPrimary} />
+                  <Text style={styles.filterOutlineText}>Filter</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -1780,74 +1912,171 @@ const ReportsScreen: React.FC = () => {
             {/* List */}
             {loadingPayout ? (
               <ActivityIndicator size="small" color={Colors.primary} />
-            ) : payoutData.lines.length === 0 ? (
-              <View style={styles.emptyState}>
-                <FontAwesomeIcon icon="dollar-sign" size={Responsive.iconSize(48)} color={Colors.textTertiary} />
-                <Text style={styles.emptyStateText}>
-                  {payoutFilters.startDate && payoutFilters.endDate ? 'No payout lines in this range' : 'Select both dates to generate'}
-                </Text>
-              </View>
+            ) : getFilteredPayoutLines().length === 0 ? (
+              <View />
             ) : (
               <FlatList
-                data={payoutData.lines}
+                data={getFilteredPayoutLines()}
                 keyExtractor={(item, idx) => String(item.assignmentId || idx)}
-                renderItem={({ item }) => (
-                  <View style={styles.jobCardContainer}>
-                    <View style={styles.jobCard}>
-                      <View style={styles.jobCardHeader}>
-                        <View style={styles.jobCardTitleSection}>
-                          <Text style={styles.jobCardTitle} numberOfLines={2}>
-                            {item.staffName} • {item.jobTitle}
-                          </Text>
+                renderItem={({ item, index }) => {
+                  const job = item.job || {};
+                  const assignment = item.assignment || {};
+                  const user = item.user || {};
+                  const checkIn = item.checkIn || {};
+                  const payout = item.payout || item;
+                  const status = assignment.status || item.approvalStatus || 'APPROVED';
+                  const shiftDatesArr = Array.isArray(item.shiftDates) ? item.shiftDates : [];
+                  const dates = shiftDatesArr.join(', ');
+                  const dateRange = dates || (checkIn.checkInTime ? `${formatDateShort(checkIn.checkInTime)}${checkIn.checkOutTime ? ` - ${formatDateShort(checkIn.checkOutTime)}` : ''}` : '');
+                  const uniqueId = assignment.id || item.assignmentId || index;
+                  const onOpenDetails = () => {
+                    const details = {
+                      job,
+                      assignment,
+                      user,
+                      checkIn,
+                      payout,
+                      flat: item,
+                    };
+                    setSelectedPayoutDetails(details);
+                    setShowPayoutDetailModal(true);
+                  };
+                  return (
+                    <View style={styles.jobCardContainer}>
+                      <View style={[styles.jobCard, showPayoutExportMenuForId === uniqueId && { zIndex: 2000, elevation: 16 }]}>
+                        {/* Top row: dates + export */}
+                        <View style={styles.cardTopRow}>
+                          <Text style={styles.cardTimeText}>{dateRange}</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <TouchableOpacity
+                              style={styles.inlineIconButton}
+                              onPress={() => setShowPayoutExportMenuForId((prev) => prev === uniqueId ? null : uniqueId)}
+                            >
+                              <FontAwesomeIcon icon="file-export" size={22} color={Colors.primary} />
+                            </TouchableOpacity>
+                          </View>
                         </View>
-                      </View>
-                      <Text style={styles.jobCardDepartment}>
-                        Assignment #{item.assignmentId} • Job #{item.jobId}
-                      </Text>
-                      <Text style={styles.jobCardLocation}>
-                        Dates: {(item.shiftDates || []).join(', ')}
-                      </Text>
-                      <Text style={styles.jobCardDates}>
-                        Worked: {item.minutesWorked}m ({Number(item.hoursWorked || 0).toFixed(2)}h)
-                      </Text>
-                      <Text style={styles.jobCardLocation}>
-                        Rate: ₹{item.hourlyRate} • Amount: <Text style={{ fontFamily: Typography.fontFamily.bold, color: Colors.primary }}>₹{item.amount}</Text>
-                      </Text>
-                      <View style={styles.jobCardExportButtonsInside}>
-                        <TouchableOpacity
-                          style={[styles.cardExportBtn, { backgroundColor: Colors.error }]}
-                          onPress={() => handleExportSinglePayout(item, 'pdf')}
-                        >
-                          <FontAwesomeIcon icon="file-pdf" size={16} color={Colors.white} />
+                        <View style={styles.cardDivider} />
+
+                        {/* Main content (like other tabs) */}
+                        <TouchableOpacity onPress={onOpenDetails} activeOpacity={0.8}>
+                        <View style={styles.profileRow}>
+                          <View style={styles.profileContent}>
+                            <Text style={styles.cardTitle} numberOfLines={1}>{item.staffName || `${user.firstName || ''} ${user.lastName || ''}`.trim()}</Text>
+                            <View style={styles.subtitleRow}>
+                              {!!(item.jobTitle || job.title) && (
+                                <Text style={styles.subtitleText} numberOfLines={1}>{item.jobTitle || job.title}</Text>
+                              )}
+                              {!!(item.jobTitle || job.title) && !!(item.department || job.department) ? (
+                                <Text style={styles.subtitleDot}> • </Text>
+                              ) : null}
+                              {!!(item.department || job.department) && (
+                                <Text style={styles.subtitleText} numberOfLines={1}>{item.department || job.department}</Text>
+                              )}
+                              {!!(item.department || job.department || item.jobTitle || job.title) && !!status ? (
+                                <Text style={styles.subtitleDot}> • </Text>
+                              ) : null}
+                              {!!status && (
+                                <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor(status) }]}>
+                                  <Text style={[styles.inlineStatusText, { color: Colors.white }]}>
+                                    {formatStatusLabel(status)}
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
+
+                            <View style={styles.assignmentRow}>
+                              <View style={styles.infoCol}>
+                                <Text style={styles.infoLabel}>Required Role</Text>
+                                <Text style={styles.infoValue}>{job.requiredRole || '—'}</Text>
+                              </View>
+                              <View style={styles.infoCol}>
+                                <Text style={styles.infoLabel}>Priority</Text>
+                                <Text style={styles.infoValue}>{job.priority || '—'}</Text>
+                              </View>
+                              <View style={styles.infoCol}>
+                                <Text style={styles.infoLabel}>Worked</Text>
+                                <Text style={styles.infoValue} numberOfLines={1}>{(payout.minutesWorked ?? item.minutesWorked) || 0}m ({Number((payout.hoursWorked ?? item.hoursWorked) || 0).toFixed(2)}h)</Text>
+                              </View>
+                            </View>
+
+                            <View style={styles.assignmentRow}>
+                              <View style={styles.infoCol}>
+                                <Text style={styles.infoLabel}>Rate</Text>
+                                <Text style={styles.infoValue}>₹{(payout.hourlyRate ?? item.hourlyRate) || job.hourlyRate}/hr</Text>
+                              </View>
+                              <View style={styles.infoCol}>
+                                <Text style={styles.infoLabel}>Amount</Text>
+                                <Text style={[styles.infoValue, { color: Colors.primary }]}>₹{(payout.amount ?? item.amount) || 0}</Text>
+                              </View>
+                              <View style={styles.infoCol}>
+                                <Text style={styles.infoLabel}>Facility</Text>
+                                <Text style={styles.infoValue} numberOfLines={1}>{job.facilityName || item.facilityName || job.location || item.location || '—'}</Text>
+                              </View>
+                            </View>
+
+                          </View>
+                        </View>
                         </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.cardExportBtn, { backgroundColor: Colors.success }]}
-                          onPress={() => handleExportSinglePayout(item, 'excel')}
-                        >
-                          <FontAwesomeIcon icon="file-excel" size={16} color={Colors.white} />
-                        </TouchableOpacity>
+
+                        {showPayoutExportMenuForId === uniqueId && (
+                          <View style={[styles.exportDropdownMenu, { right: 8, top: 36, position: 'absolute' }]}>
+                            <TouchableOpacity
+                              style={styles.exportDropdownItem}
+                              onPress={() => {
+                                setShowPayoutExportMenuForId(null);
+                                const exportItem = {
+                                  jobId: job.id || item.jobId,
+                                  jobTitle: job.title || item.jobTitle,
+                                  assignmentId: assignment.id || item.assignmentId,
+                                  userId: user.id || item.userId,
+                                  staffName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || item.staffName,
+                                  shiftDates: shiftDatesArr,
+                                  minutesWorked: payout.minutesWorked ?? item.minutesWorked,
+                                  hoursWorked: payout.hoursWorked ?? item.hoursWorked,
+                                  hourlyRate: (payout.hourlyRate ?? item.hourlyRate) || job.hourlyRate,
+                                  amount: payout.amount ?? item.amount,
+                                };
+                                handleExportSinglePayout(exportItem, 'pdf');
+                              }}
+                            >
+                              <FontAwesomeIcon icon="file-pdf" size={14} color={Colors.error} />
+                              <Text style={styles.exportDropdownItemText}>PDF</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.exportDropdownItem}
+                              onPress={() => {
+                                setShowPayoutExportMenuForId(null);
+                                const exportItem = {
+                                  jobId: job.id || item.jobId,
+                                  jobTitle: job.title || item.jobTitle,
+                                  assignmentId: assignment.id || item.assignmentId,
+                                  userId: user.id || item.userId,
+                                  staffName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || item.staffName,
+                                  shiftDates: shiftDatesArr,
+                                  minutesWorked: payout.minutesWorked ?? item.minutesWorked,
+                                  hoursWorked: payout.hoursWorked ?? item.hoursWorked,
+                                  hourlyRate: (payout.hourlyRate ?? item.hourlyRate) || job.hourlyRate,
+                                  amount: payout.amount ?? item.amount,
+                                };
+                                handleExportSinglePayout(exportItem, 'excel');
+                              }}
+                            >
+                              <FontAwesomeIcon icon="file-excel" size={14} color={Colors.success} />
+                              <Text style={styles.exportDropdownItemText}>Excel</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
                       </View>
                     </View>
-                  </View>
-                )}
+                  );
+                }}
                 scrollEnabled={false}
               />
             )}
 
             {/* Optional totals by user */}
-            {payoutData.totals?.byUser && payoutData.totals.byUser.length > 0 && (
-              <View style={[styles.jobCardContainer, { marginTop: Spacing.md }]}> 
-                <View style={styles.jobCard}>
-                  <Text style={styles.jobCardTitle} numberOfLines={1}>Totals by User</Text>
-                  {payoutData.totals.byUser.map((u: any, i: number) => (
-                    <View key={`u-${i}`} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 }}>
-                      <Text style={styles.jobCardDepartment} numberOfLines={1}>{u.staffName}</Text>
-                      <Text style={[styles.jobCardDepartment, { fontFamily: Typography.fontFamily.bold }]}>₹{(u.amount || 0).toLocaleString()}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
+            {/* Totals by User card removed as requested */}
           </View>
         ) : (
           <>
@@ -2412,6 +2641,83 @@ const ReportsScreen: React.FC = () => {
               minimumDate={checkinFilterStartDate ? parseDateString(checkinFilterStartDate) : undefined}
             />
           )}
+        </View>
+      )}
+
+      {/* Payout Filter Bottom Sheet */}
+      {showPayoutFilterModal && (
+        <View style={styles.sheetBackdrop}>
+          <TouchableOpacity style={styles.sheetBackdropTouchable} onPress={() => setShowPayoutFilterModal(false)} />
+          <View style={styles.sheetContainer}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Filter Payout</Text>
+            <View style={styles.sheetDivider} />
+
+            <View style={styles.dateContainer}>
+              <View style={styles.dateInputContainer}>
+                <Text style={styles.inputLabel}>Start Date</Text>
+                <TouchableOpacity style={styles.dateButton} onPress={() => setShowPayoutLocalStartPicker(true)}>
+                  <Text style={styles.dateButtonText} numberOfLines={1}>{payoutLocalFilters.startDate || 'Start Date'}</Text>
+                  <View style={styles.startDateButtonIcon}>
+                    <FontAwesomeIcon icon="calendar" size={16} color={Colors.textPrimary} />
+                  </View>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.dateInputContainer}>
+                <Text style={styles.inputLabel}>End Date</Text>
+                <TouchableOpacity style={styles.dateButton} onPress={() => setShowPayoutLocalEndPicker(true)}>
+                  <Text style={styles.dateButtonText} numberOfLines={1}>{payoutLocalFilters.endDate || 'End Date'}</Text>
+                  <View style={styles.dateButtonIcon}>
+                    <FontAwesomeIcon icon="calendar" size={16} color={Colors.textPrimary} />
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {showPayoutLocalStartPicker && (
+              <DateTimePicker
+                value={payoutLocalFilters.startDate ? parseDateString(payoutLocalFilters.startDate) : new Date()}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(e, d) => { if (Platform.OS === 'android') setShowPayoutLocalStartPicker(false); if (d) setPayoutLocalFilters({ ...payoutLocalFilters, startDate: formatDate(d) }); }}
+                maximumDate={payoutLocalFilters.endDate ? parseDateString(payoutLocalFilters.endDate) : undefined}
+              />
+            )}
+            {showPayoutLocalEndPicker && (
+              <DateTimePicker
+                value={payoutLocalFilters.endDate ? parseDateString(payoutLocalFilters.endDate) : new Date()}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(e, d) => { if (Platform.OS === 'android') setShowPayoutLocalEndPicker(false); if (d) setPayoutLocalFilters({ ...payoutLocalFilters, endDate: formatDate(d) }); }}
+                minimumDate={payoutLocalFilters.startDate ? parseDateString(payoutLocalFilters.startDate) : undefined}
+              />
+            )}
+
+            <View style={styles.filterActionsRow}>
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={() => setPayoutLocalFilters({ search: '', startDate: '', endDate: '', userId: '', jobId: '', minAmount: '', maxAmount: '' })}
+              >
+                <Text style={styles.clearButtonText}>Clear</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.applyButton}
+                onPress={() => {
+                  console.log('🧮 Applying payout filters (local → API):', payoutLocalFilters);
+                  setPayoutFilters((prev) => ({
+                    ...prev,
+                    startDate: payoutLocalFilters.startDate || prev.startDate,
+                    endDate: payoutLocalFilters.endDate || prev.endDate,
+                    userId: payoutLocalFilters.userId || prev.userId,
+                    jobId: payoutLocalFilters.jobId || prev.jobId,
+                  }));
+                  setShowPayoutFilterModal(false);
+                }}
+              >
+                <Text style={styles.applyButtonText}>Apply</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       )}
 
@@ -3307,6 +3613,151 @@ const ReportsScreen: React.FC = () => {
             ) : (
               <Text style={styles.emptyStateText}>No timesheet data available</Text>
             )}
+          </View>
+        </View>
+      )}
+
+      {/* Payout Detail Modal */}
+      {showPayoutDetailModal && (
+        <View style={styles.jobDetailModalOverlay}>
+          <View style={[styles.jobDetailModalContainer, { width: '100%' }]}>
+            <View style={styles.jobDetailModalHeader}>
+              <Text style={styles.jobDetailModalTitle}>Payout Details</Text>
+              <TouchableOpacity
+                style={styles.jobDetailModalCloseButton}
+                onPress={() => setShowPayoutDetailModal(false)}
+              >
+                <FontAwesomeIcon icon="times" size={20} color={Colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.jobDetailModalContent}>
+              {/* Staff */}
+              <View style={styles.jobDetailSection}>
+                <Text style={styles.jobDetailSectionTitle}>Staff</Text>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>Name:</Text>
+                  <Text style={styles.jobDetailValue}>
+                    {(selectedPayoutDetails?.flat?.staffName) ||
+                      `${selectedPayoutDetails?.user?.firstName || ''} ${selectedPayoutDetails?.user?.lastName || ''}`.trim() || '—'}
+                  </Text>
+                </View>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>Role:</Text>
+                  <Text style={styles.jobDetailValue}>{selectedPayoutDetails?.user?.role || selectedPayoutDetails?.job?.requiredRole || '—'}</Text>
+                </View>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>Department:</Text>
+                  <Text style={styles.jobDetailValue}>{selectedPayoutDetails?.user?.department || selectedPayoutDetails?.job?.department || '—'}</Text>
+                </View>
+              </View>
+
+              {/* Job */}
+              <View style={styles.jobDetailSection}>
+                <Text style={styles.jobDetailSectionTitle}>Job</Text>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>Title:</Text>
+                  <Text style={styles.jobDetailValue}>{selectedPayoutDetails?.job?.title || selectedPayoutDetails?.flat?.jobTitle || '—'}</Text>
+                </View>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>Priority:</Text>
+                  <Text style={styles.jobDetailValue}>{selectedPayoutDetails?.job?.priority || '—'}</Text>
+                </View>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>Facility:</Text>
+                  <Text style={styles.jobDetailValue}>{selectedPayoutDetails?.job?.facilityName || selectedPayoutDetails?.flat?.facilityName || '—'}</Text>
+                </View>
+                {!!selectedPayoutDetails?.job?.facilityAddress && (
+                  <>
+                    <View style={styles.jobDetailRow}>
+                      <Text style={styles.jobDetailLabel}>Address:</Text>
+                      <Text style={styles.jobDetailValue}>{selectedPayoutDetails?.job?.facilityAddress?.street}</Text>
+                    </View>
+                    <View style={styles.jobDetailRow}>
+                      <Text style={styles.jobDetailLabel}>City:</Text>
+                      <Text style={styles.jobDetailValue}>{selectedPayoutDetails?.job?.facilityAddress?.city}</Text>
+                    </View>
+                    <View style={styles.jobDetailRow}>
+                      <Text style={styles.jobDetailLabel}>State:</Text>
+                      <Text style={styles.jobDetailValue}>{selectedPayoutDetails?.job?.facilityAddress?.state}</Text>
+                    </View>
+                    <View style={styles.jobDetailRow}>
+                      <Text style={styles.jobDetailLabel}>Country:</Text>
+                      <Text style={styles.jobDetailValue}>{selectedPayoutDetails?.job?.facilityAddress?.country}</Text>
+                    </View>
+                    <View style={styles.jobDetailRow}>
+                      <Text style={styles.jobDetailLabel}>ZIP Code:</Text>
+                      <Text style={styles.jobDetailValue}>{selectedPayoutDetails?.job?.facilityAddress?.zipCode}</Text>
+                    </View>
+                  </>
+                )}
+              </View>
+
+              {/* Assignment */}
+              <View style={styles.jobDetailSection}>
+                <Text style={styles.jobDetailSectionTitle}>Assignment</Text>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>Status:</Text>
+                  <View style={styles.jobDetailValueChip}>
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(selectedPayoutDetails?.assignment?.status || 'ASSIGNED') }]}>
+                      <Text style={styles.statusText}>{formatStatusLabel(selectedPayoutDetails?.assignment?.status || 'ASSIGNED')}</Text>
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>Accepted At:</Text>
+                  <Text style={styles.jobDetailValue}>{selectedPayoutDetails?.assignment?.acceptedAt ? new Date(selectedPayoutDetails.assignment.acceptedAt).toLocaleString() : 'N/A'}</Text>
+                </View>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>Completed At:</Text>
+                  <Text style={styles.jobDetailValue}>{selectedPayoutDetails?.assignment?.completedAt ? new Date(selectedPayoutDetails.assignment.completedAt).toLocaleString() : 'N/A'}</Text>
+                </View>
+              </View>
+
+              {/* Check-In */}
+              <View style={styles.jobDetailSection}>
+                <Text style={styles.jobDetailSectionTitle}>Check-In</Text>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>Check-in Time:</Text>
+                  <Text style={styles.jobDetailValue}>{selectedPayoutDetails?.checkIn?.checkInTime ? new Date(selectedPayoutDetails.checkIn.checkInTime).toLocaleString() : '—'}</Text>
+                </View>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>Check-out Time:</Text>
+                  <Text style={styles.jobDetailValue}>{selectedPayoutDetails?.checkIn?.checkOutTime ? new Date(selectedPayoutDetails.checkIn.checkOutTime).toLocaleString() : '—'}</Text>
+                </View>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>Status:</Text>
+                  <View style={styles.jobDetailValueChip}>
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(selectedPayoutDetails?.checkIn?.status || 'CHECKED_IN') }]}>
+                      <Text style={styles.statusText}>{formatStatusLabel(selectedPayoutDetails?.checkIn?.status || 'CHECKED_IN')}</Text>
+                    </View>
+                  </View>
+                </View>
+                {!!selectedPayoutDetails?.checkIn?.notes && (
+                  <View style={styles.jobDetailRow}>
+                    <Text style={styles.jobDetailLabel}>Notes:</Text>
+                    <Text style={styles.jobDetailValue}>{selectedPayoutDetails?.checkIn?.notes}</Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Payout */}
+              <View style={styles.jobDetailSection}>
+                <Text style={styles.jobDetailSectionTitle}>Payout</Text>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>Worked:</Text>
+                  <Text style={styles.jobDetailValue}>{(selectedPayoutDetails?.payout?.minutesWorked ?? selectedPayoutDetails?.flat?.minutesWorked) || 0} minutes ({Number((selectedPayoutDetails?.payout?.hoursWorked ?? selectedPayoutDetails?.flat?.hoursWorked) || 0).toFixed(2)} hours)</Text>
+                </View>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>Rate:</Text>
+                  <Text style={styles.jobDetailValue}>₹{(selectedPayoutDetails?.payout?.hourlyRate ?? selectedPayoutDetails?.flat?.hourlyRate) || selectedPayoutDetails?.job?.hourlyRate || 0}/hr</Text>
+                </View>
+                <View style={styles.jobDetailRow}>
+                  <Text style={styles.jobDetailLabel}>Amount:</Text>
+                  <Text style={styles.jobDetailValue}>₹{(selectedPayoutDetails?.payout?.amount ?? selectedPayoutDetails?.flat?.amount) || 0}</Text>
+                </View>
+              </View>
+            </ScrollView>
           </View>
         </View>
       )}
