@@ -130,8 +130,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   rightSection: {
-    width: 40,
+    minWidth: 40,
     alignItems: 'flex-end',
+    flexDirection: 'row',
   },
   headerSpacer: {
     width: 40,

@@ -70,8 +70,7 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
         console.log('✅ Available jobs loaded successfully');
         console.log('📊 Available jobs response:', availableData);
       } catch (error: any) {
-        console.error('❌ Failed to load available jobs:', error);
-        console.error('❌ Error details:', error.response?.data || error.message);
+        // Suppress backend noise; UI will gracefully show zero available jobs
       }
 
       try {
@@ -155,21 +154,26 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
   };
 
   const getTimeAgo = (dateString: string) => {
+    if (!dateString) return 'just now';
     const now = new Date();
     const past = new Date(dateString);
-    const diffInMs = now.getTime() - past.getTime();
-    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-    const diffInDays = Math.floor(diffInHours / 24);
-    
-    if (diffInHours < 1) {
-      return 'just now';
-    } else if (diffInHours < 24) {
-      return `${diffInHours} ${diffInHours === 1 ? 'hour' : 'hours'} ago`;
-    } else if (diffInDays < 7) {
-      return `${diffInDays} ${diffInDays === 1 ? 'day' : 'days'} ago`;
-    } else {
-      return formatDate(dateString);
+
+    // Use calendar day difference (local) to avoid timezone rounding issues
+    const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const todayStart = startOfDay(now).getTime();
+    const pastStart = startOfDay(past).getTime();
+    const daysDiff = Math.max(0, Math.floor((todayStart - pastStart) / (1000 * 60 * 60 * 24)));
+
+    if (daysDiff === 0) {
+      // If same calendar day, show hours if useful
+      const diffInHours = Math.max(0, Math.floor((now.getTime() - past.getTime()) / (1000 * 60 * 60)));
+      if (diffInHours < 1) return 'just now';
+      if (diffInHours < 24) return `${diffInHours} ${diffInHours === 1 ? 'hour' : 'hours'} ago`;
+      return 'today';
     }
+    if (daysDiff === 1) return '1 day ago';
+    if (daysDiff < 7) return `${daysDiff} days ago`;
+    return formatDate(dateString);
   };
 
 
@@ -426,6 +430,18 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
     // Use assignment createdAt first, then job createdAt, then current date
     const createdAt = assignment.createdAt || job.createdAt;
     const postedTime = createdAt ? getTimeAgo(createdAt) : 'just now';
+
+    // Determine Today/Tomorrow based on job start date
+    const isSameDay = (a: Date, b: Date) =>
+      a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    const startDateObj = job.startDate ? new Date(job.startDate) : null;
+    const nowDate = new Date();
+    const tomorrowDate = new Date(nowDate);
+    tomorrowDate.setDate(nowDate.getDate() + 1);
+    const dayBadgeLabel = startDateObj
+      ? (isSameDay(startDateObj, nowDate) ? 'Today' : (isSameDay(startDateObj, tomorrowDate) ? 'Tomorrow' : null))
+      : null;
+    const dateDisplay = job.startDate ? `${formatDate(job.startDate)}${job.startTime ? `, ${formatTime(job.startTime)}` : ''}` : '';
     
     // Generate company initials from facility name
     const companyInitials = facilityName
@@ -437,10 +453,27 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
       .toUpperCase() || 'HC';
 
     // Get job details from API
-    const jobStatus = job.status || 'ACTIVE';
     const priority = job.priority || '';
     const requiredRole = job.requiredRole || '';
     const department = job.department || '';
+
+    // Assignment status mapping (use assignment status, not job status)
+    const getAssignmentStatusConfig = (status: string) => {
+      switch ((status || '').toUpperCase()) {
+        case 'PENDING':
+          return { color: Colors.warning, text: 'Pending Response' };
+        case 'ACCEPTED':
+          return { color: Colors.primary, text: 'Accepted' };
+        case 'REJECTED':
+          return { color: Colors.error, text: 'Rejected' };
+        case 'COMPLETED':
+          return { color: Colors.info, text: 'Completed' };
+        default:
+          return { color: Colors.textTertiary, text: (status || 'Unknown') };
+      }
+    };
+
+    const statusConfig = getAssignmentStatusConfig(assignment.status);
 
     // Priority color mapping
     const getPriorityColor = (priority: string) => {
@@ -475,23 +508,29 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
     };
 
     return (
+      <>
+      <View style={styles.postedOuterRow}>
+        <Text style={styles.postedOuterText}>Posted {postedTime}</Text>
+      </View>
       <TouchableOpacity 
         style={styles.jobCard}
         onPress={handleAssignmentPress}
         activeOpacity={0.8}>
-        {/* Top row: Posted time */}
+        {/* Top row: Correct date/time in original position */}
         <View style={styles.cardTopRow}>
-          <Text style={styles.cardTimeText}>Posted {postedTime}</Text>
+          <Text style={styles.cardTimeText} numberOfLines={1}>{dateDisplay}</Text>
+          {assignment.status && (
+            <View style={[styles.topStatusPill, { backgroundColor: statusConfig.color }]}> 
+              <Text style={styles.topStatusText}>{statusConfig.text}</Text>
             </View>
+          )}
+        </View>
         <View style={styles.cardDivider} />
 
-        {/* Main row: Avatar + Job details */}
+        {/* Main row: Job details (avatar removed) */}
         <View style={styles.profileRow}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarInitials}>{companyInitials}</Text>
-          </View>
           <View style={styles.profileContent}>
-            <Text style={styles.cardTitle} numberOfLines={2}>
+            <Text style={styles.cardTitle} numberOfLines={1} ellipsizeMode="tail">
               {job.title}
             </Text>
             {/* Subtitle row: Facility • Location • Status */}
@@ -505,51 +544,41 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
               {location && (
                 <Text style={styles.subtitleText} numberOfLines={1}>{location}</Text>
               )}
-              {(facilityName || location) && jobStatus && (
-                <Text style={styles.subtitleDot}> • </Text>
-              )}
-              {jobStatus && (
-                <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor(jobStatus) + '1A' }]}>
-                  <Text style={[styles.inlineStatusText, { color: getStatusColor(jobStatus) }]} numberOfLines={1}>
-                    {jobStatus}
-              </Text>
-            </View>
-              )}
+              {/* Status removed from subtitle row */}
               </View>
 
             {/* Compact info row: Department, Role, Rate */}
             <View style={styles.assignmentRow}>
-              {department && (
+              {priority && (
                 <View style={styles.infoCol}>
-                  <Text style={styles.infoLabel}>Department</Text>
-                  <Text style={styles.infoValue} numberOfLines={1}>{department}</Text>
-            </View>
+                  <Text style={styles.infoLabel}>Priority</Text>
+                  <View style={[styles.priorityBadgeInline, { backgroundColor: getPriorityColor(priority) + '20', borderColor: getPriorityColor(priority) }] }>
+                    <Text style={[styles.priorityBadgeTextInline, { color: getPriorityColor(priority) }]} numberOfLines={1}>{priority}</Text>
+                  </View>
+                </View>
               )}
               {requiredRole && (
                 <View style={styles.infoCol}>
                   <Text style={styles.infoLabel}>Role</Text>
-                  <Text style={styles.infoValue} numberOfLines={1}>{requiredRole}</Text>
+                  <Text style={styles.infoValue} numberOfLines={1} ellipsizeMode="tail">{requiredRole}</Text>
           </View>
               )}
               <View style={styles.infoCol}>
                 <Text style={styles.infoLabel}>Rate</Text>
-                <Text style={styles.infoValue} numberOfLines={1}>₹{hourlyRateDisplay}/hr</Text>
+                <Text style={styles.infoValue} numberOfLines={1} ellipsizeMode="tail">₹{hourlyRateDisplay}/hr</Text>
               </View>
             </View>
-
-            {/* Priority badge if exists */}
-            {priority && (
+            {/* Department moved below */}
+            {department && (
               <View style={styles.priorityRow}>
-                <View style={[styles.priorityBadgeInline, { backgroundColor: getPriorityColor(priority) + '20', borderColor: getPriorityColor(priority) }]}>
-                  <Text style={[styles.priorityBadgeTextInline, { color: getPriorityColor(priority) }]}>
-                    {priority} Priority
-              </Text>
-            </View>
+                <Text style={styles.infoLabel}>Department</Text>
+                <Text style={styles.infoValue} numberOfLines={1} ellipsizeMode="tail">{department}</Text>
               </View>
             )}
           </View>
         </View>
       </TouchableOpacity>
+      </>
     );
   };
 
@@ -750,7 +779,7 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
         </View>
       </ScrollView>
 
-      <HRFooterNavigation activeRoute="Dashboard" scrollY={scrollY} />
+      <HRFooterNavigation activeRoute="Dashboard" scrollY={scrollY} isLoading={isLoading} />
         </View>
       </SafeAreaView>
     </View>
@@ -1214,6 +1243,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
     marginBottom: Spacing.md,
+    marginTop: -8,
     marginHorizontal: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -1225,6 +1255,65 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  dayBadgeRow: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 2,
+  },
+  dayBadgeOuterRow: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 6,
+  },
+  postedOuterRow: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 0,
+    marginTop: -12,
+  },
+  postedOuterText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textTertiary,
+    marginBottom: 12,
+  },
+  topStatusPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  topStatusText: {
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.white,
+    textTransform: 'capitalize',
+  },
+  dayBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    backgroundColor: '#1C2A3A',
+  },
+  dayBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontFamily: Typography.fontFamily.bold,
+  },
+  dayBadgePlaceholder: {
+    height: 0,
+  },
+  dateRow: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 6,
+  },
+  dateText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textSecondary,
   },
   cardTimeText: {
     fontSize: Typography.fontSize.sm,

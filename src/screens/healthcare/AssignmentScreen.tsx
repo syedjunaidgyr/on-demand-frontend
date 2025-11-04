@@ -361,16 +361,12 @@ const AssignmentScreen: React.FC = () => {
         </View>
           </View>
           
-            {/* Department inline badge with label */}
+            {/* Department label on one line, value on next (match Dashboard) */}
             {department ? (
-              <View style={[styles.priorityRow, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}> 
+              <View style={styles.priorityRow}>
                 <Text style={styles.infoLabel}>Department</Text>
-                <View style={[styles.priorityBadgeInline, { backgroundColor: Colors.backgroundSecondary, borderColor: Colors.border }]}> 
-                  <Text style={[styles.priorityBadgeTextInline, { color: Colors.textPrimary }]} numberOfLines={1}>
-                    {department}
-            </Text>
-          </View>
-          </View>
+                <Text style={styles.infoValue} numberOfLines={1} ellipsizeMode="tail">{department}</Text>
+              </View>
             ) : null}
 
             {/* Card-level action buttons removed per request (actions stay in modal) */}
@@ -643,14 +639,12 @@ const AssignmentScreen: React.FC = () => {
             {selectedAssignment && (
               <View style={styles.sheetActionsRow}>
                 <TouchableOpacity style={[styles.sheetRejectButton]} onPress={() => { setDetailsVisible(false); handleRejectAssignment(selectedAssignment); }}>
-                  <FontAwesomeIcon icon="times" size={16} color={Colors.white} />
-                  <Text style={styles.sheetButtonText}>Reject</Text>
-              </TouchableOpacity>
+                  <Text style={[styles.sheetButtonText, { color: Colors.error, marginLeft: 0 }]}>Reject</Text>
+                </TouchableOpacity>
                 <TouchableOpacity style={[styles.sheetAcceptButton]} onPress={() => { setDetailsVisible(false); handleAcceptAssignment(selectedAssignment); }}>
-                  <FontAwesomeIcon icon="check" size={16} color={Colors.white} />
                   <Text style={styles.sheetButtonText}>Accept</Text>
-              </TouchableOpacity>
-            </View>
+                </TouchableOpacity>
+              </View>
             )}
           </View>
         </View>
@@ -1189,9 +1183,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.error,
+    backgroundColor: Colors.white,
     borderRadius: BorderRadius.md,
     paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: Colors.error,
     gap: 8,
   },
   sheetButtonText: {

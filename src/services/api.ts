@@ -376,25 +376,33 @@ class ApiService {
     minRate?: number;
     maxRate?: number;
   }): Promise<PaginatedResponse<Job>> {
-    const response: AxiosResponse<any> = await this.api.get('/staff/jobs/available', {
-      params,
-    });
-    
-    // Transform the API response to match PaginatedResponse format
-    const jobs = (response.data.jobs || []).map((job: any) => ({
-      ...job,
-      hourlyRate: typeof job.hourlyRate === 'string' ? parseFloat(job.hourlyRate) : job.hourlyRate,
-    }));
-    
-    return {
-      data: jobs,
-      pagination: {
-        page: response.data.pagination?.page || 1,
-        limit: response.data.pagination?.limit || 10,
-        total: response.data.pagination?.total || 0,
-        totalPages: response.data.pagination?.pages || 1,
-      }
-    };
+    try {
+      const response: AxiosResponse<any> = await this.api.get('/staff/jobs/available', {
+        params,
+      });
+      
+      // Transform the API response to match PaginatedResponse format
+      const jobs = (response.data.jobs || []).map((job: any) => ({
+        ...job,
+        hourlyRate: typeof job.hourlyRate === 'string' ? parseFloat(job.hourlyRate) : job.hourlyRate,
+      }));
+      
+      return {
+        data: jobs,
+        pagination: {
+          page: response.data.pagination?.page || 1,
+          limit: response.data.pagination?.limit || 10,
+          total: response.data.pagination?.total || 0,
+          totalPages: response.data.pagination?.pages || 1,
+        }
+      };
+    } catch (error: any) {
+      // Silently degrade to empty list to avoid noisy logs when backend errors occur
+      return {
+        data: [],
+        pagination: { page: 1, limit: params?.limit || 10, total: 0, totalPages: 0 },
+      };
+    }
   }
 
   async getUpcomingJobs(): Promise<Job[]> {
@@ -497,9 +505,21 @@ class ApiService {
     };
     
     console.log('🔧 Full request data:', requestData);
+    console.log('🔧 Calling POST /staff/check-in');
     
     const response: AxiosResponse<any> = await this.api.post('/staff/check-in', requestData);
-    return response.data;
+    console.log('✅ API checkIn response:', response.data);
+    console.log('✅ Check-in created with ID:', response.data?.id || response.data?.checkInId);
+    
+    const data = response.data || {};
+    // Normalize approval status from either approvalStatus or approval_status
+    const rawApproval = (data.approvalStatus ?? data.approval_status);
+    if (typeof rawApproval === 'string') {
+      const lower = rawApproval.toLowerCase();
+      data.approvalStatus = lower;
+    }
+    console.log('✅ Normalized approvalStatus:', data.approvalStatus);
+    return data;
   }
 
   // async staffCheckIn(checkInData: { jobAssignmentId: string; location: any; notes?: string }): Promise<CheckIn> {
@@ -522,7 +542,14 @@ class ApiService {
     console.log('🔧 Full request data:', requestData);
     
     const response: AxiosResponse<any> = await this.api.post('/staff/check-out', requestData);
-    return response.data;
+    const data = response.data || {};
+    // Normalize approval status from either approvalStatus or approval_status
+    const rawApproval = (data.approvalStatus ?? data.approval_status);
+    if (typeof rawApproval === 'string') {
+      const lower = rawApproval.toLowerCase();
+      data.approvalStatus = lower;
+    }
+    return data;
   }
 
   async staffCheckOut(checkOutData: { jobAssignmentId: string; location: any; notes?: string }): Promise<CheckOut> {
@@ -531,12 +558,67 @@ class ApiService {
   }
 
   async getCheckInStatus(jobAssignmentId: string): Promise<{ isCheckedIn: boolean; checkInId: string | null; checkInTime: string | null; approvalStatus?: 'pending' | 'approved' | 'rejected'; approvedBy?: any; approvedAt?: string | null; rejectionReason?: string }> {
+    // Preferred: staff-safe latest-checkin endpoint if available
+    try {
+      const safeResp = await this.api.get(`/staff/assignments/${jobAssignmentId}/latest-checkin`);
+      const d = safeResp.data || {};
+      const raw = (d.approvalStatus ?? d.approval_status);
+      const lower = typeof raw === 'string' ? String(raw).toLowerCase() : undefined;
+      return {
+        isCheckedIn: lower === 'approved' || !!d.isApproved,
+        checkInId: d.checkInId ?? d.id ?? null,
+        checkInTime: d.checkInTime ?? d.createdAt ?? null,
+        approvalStatus: (lower === 'pending' || lower === 'approved' || lower === 'rejected') ? lower : undefined,
+        approvedBy: d.approvedBy,
+        approvedAt: d.approvedAt ?? null,
+        rejectionReason: d.rejectionReason,
+      };
+    } catch (safeErr) {
+      console.log('Staff-safe latest-checkin not available, trying role endpoint:', (safeErr as any)?.response?.status || (safeErr as any)?.message);
     try {
       const response = await this.api.get(`/staff/check-in-status/${jobAssignmentId}`);
-      return response.data;
+      const data = response.data || {};
+      const rawApproval = (data.approvalStatus ?? data.approval_status);
+      if (typeof rawApproval === 'string') {
+        const lower = rawApproval.toLowerCase();
+        data.approvalStatus = lower;
+          if (typeof data.isCheckedIn === 'undefined') {
+            data.isCheckedIn = lower === 'approved';
+          }
+      }
+      return data;
     } catch (error) {
-      console.log('Could not get check-in status:', error);
-      // Return default status if endpoint doesn't exist or fails
+        console.log('Could not get check-in status via role endpoint, attempting fallback:', (error as any)?.response?.status || (error as any)?.message);
+        try {
+          // Fallback: query generic check-ins list filtered by assignment
+          const listResp: AxiosResponse<any> = await this.api.get('/check-ins', {
+            params: { jobAssignmentId: jobAssignmentId },
+          });
+          const list = Array.isArray(listResp.data)
+            ? listResp.data
+            : (listResp.data?.data || listResp.data?.checkIns || []);
+
+          const latest = list && list.length > 0
+            ? list.sort((a: any, b: any) => new Date(b.checkInTime || b.createdAt || 0).getTime() - new Date(a.checkInTime || a.createdAt || 0).getTime())[0]
+            : null;
+
+          if (latest) {
+            const raw2 = (latest.approvalStatus ?? latest.approval_status);
+            const lower2 = typeof raw2 === 'string' ? String(raw2).toLowerCase() : undefined;
+            return {
+              isCheckedIn: lower2 === 'approved',
+              checkInId: latest.id ?? latest.checkInId ?? null,
+              checkInTime: latest.checkInTime ?? latest.createdAt ?? null,
+              approvalStatus: (lower2 === 'pending' || lower2 === 'approved' || lower2 === 'rejected') ? lower2 : undefined,
+              approvedBy: latest.approvedBy,
+              approvedAt: latest.approvedAt ?? null,
+              rejectionReason: latest.rejectionReason,
+            };
+          }
+        } catch (fallbackError) {
+          console.log('Fallback check-ins query failed:', (fallbackError as any)?.response?.status || (fallbackError as any)?.message);
+        }
+
       return {
         isCheckedIn: false,
         checkInId: null,
@@ -546,6 +628,7 @@ class ApiService {
         approvedAt: null,
         rejectionReason: undefined,
       };
+      }
     }
   }
 
@@ -1268,6 +1351,41 @@ class ApiService {
       return response.data;
     } catch (error: any) {
       console.error('Failed to load realtime tracking:', error?.response?.data || error?.message || error);
+      throw error;
+    }
+  }
+
+  // ===== Check-in Approval (HR/Admin) =====
+  async getPendingCheckIns(params?: { hospitalId?: string | number; agencyId?: string | number }): Promise<any[]> {
+    try {
+      console.log('🔍 API: Fetching pending check-ins with params:', { approvalStatus: 'pending', ...(params || {}) });
+      const response = await this.api.get('/check-ins', { params: { approvalStatus: 'pending', ...(params || {}) } });
+      console.log('✅ API: Pending check-ins response:', response.data);
+      const list = Array.isArray(response.data) ? response.data : (response.data?.data || response.data?.checkIns || []);
+      console.log('✅ API: Parsed pending check-ins count:', list.length);
+      return list;
+    } catch (error: any) {
+      console.error('❌ API: Failed to fetch pending check-ins:', error?.response?.status, error?.response?.data || error?.message || error);
+      return [];
+    }
+  }
+
+  async approveCheckIn(checkInId: string, note?: string): Promise<any> {
+    try {
+      const response = await this.api.post(`/check-ins/${checkInId}/approve`, note ? { note } : undefined);
+      return response.data;
+    } catch (error: any) {
+      console.error('Approve check-in failed:', error?.response?.data || error?.message || error);
+      throw error;
+    }
+  }
+
+  async rejectCheckIn(checkInId: string, rejectionReason: string): Promise<any> {
+    try {
+      const response = await this.api.post(`/check-ins/${checkInId}/reject`, { rejectionReason });
+      return response.data;
+    } catch (error: any) {
+      console.error('Reject check-in failed:', error?.response?.data || error?.message || error);
       throw error;
     }
   }

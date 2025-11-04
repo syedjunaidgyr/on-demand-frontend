@@ -269,7 +269,7 @@ const ReportDetailsScreen: React.FC = () => {
       </ScrollView>
 
       {/* Footer Navigation */}
-      <HRFooterNavigation activeRoute="Reports" />
+      <HRFooterNavigation activeRoute="Users" isLoading={loading} />
     </View>
   );
 };

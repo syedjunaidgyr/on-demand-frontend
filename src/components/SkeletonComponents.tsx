@@ -5,6 +5,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import useShimmer from '../hooks/useShimmer';
 import { Colors } from '../constants/colors';
 import { Spacing, BorderRadius } from '../constants/spacing';
+import Responsive from '../utils/responsive';
 
 // Premium shimmer skeleton view component
 const SkeletonView = ({
@@ -227,6 +228,28 @@ export const SkeletonUserCard = () => (
   </View>
 );
 
+export const SkeletonFooter = () => (
+  <View style={styles.skeletonFooterContainer}>
+    <View style={styles.footerWrapper}>
+      <View style={styles.footerRow}>
+        {/* Three footer buttons */}
+        <View style={styles.footerButton}>
+          <SkeletonView width={24} height={24} borderRadius={12} style={{ marginBottom: 4 }} />
+          <SkeletonView width={50} height={10} borderRadius={5} />
+        </View>
+        <View style={styles.footerButton}>
+          <SkeletonView width={24} height={24} borderRadius={12} style={{ marginBottom: 4 }} />
+          <SkeletonView width={50} height={10} borderRadius={5} />
+        </View>
+        <View style={styles.footerButton}>
+          <SkeletonView width={24} height={24} borderRadius={12} style={{ marginBottom: 4 }} />
+          <SkeletonView width={50} height={10} borderRadius={5} />
+        </View>
+      </View>
+    </View>
+  </View>
+);
+
 const styles = StyleSheet.create({
   // Header styles
   skeletonHeaderContainer: {
@@ -420,5 +443,36 @@ const styles = StyleSheet.create({
   userInfoRow: {
     flexDirection: 'row',
     marginTop: 6,
+  },
+  // Footer styles
+  skeletonFooterContainer: {
+    position: 'absolute',
+    bottom: Responsive.verticalScale(-60),
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+  },
+  footerWrapper: {
+    backgroundColor: '#1C2A3A',
+    width: '100%',
+    paddingBottom: Responsive.verticalScale(50),
+  },
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
+    backgroundColor: '#1C2A3A',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    paddingTop: Responsive.verticalScale(4),
+    paddingBottom: Responsive.verticalScale(10),
+    paddingHorizontal: Responsive.scale(10),
+    minHeight: Responsive.verticalScale(50),
+  },
+  footerButton: {
+    padding: Responsive.scale(8),
+    justifyContent: 'center',
+    alignItems: 'center',
+    flex: 1,
   },
 });

@@ -436,6 +436,7 @@ const AgencyJobsScreen: React.FC = () => {
       <HRFooterNavigation 
         activeRoute="Jobs" 
         scrollY={scrollY}
+        isLoading={isLoading}
         todaysJobsCount={jobs.filter(j => {
           try {
             if (!j.startDate) return false;

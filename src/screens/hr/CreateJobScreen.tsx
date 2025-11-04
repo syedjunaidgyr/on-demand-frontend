@@ -711,7 +711,7 @@ const AccordionSection = ({
   isComplete: boolean;
 }) => {
   return (
-    <View style={styles.accordionSection}>
+    <View style={[styles.accordionSection, isExpanded && styles.accordionSectionExpanded]}>
       <TouchableOpacity 
         style={styles.accordionHeader} 
         onPress={onToggle}
@@ -1899,8 +1899,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     borderRadius: BorderRadius.lg,
     marginBottom: Spacing.md,
-    overflow: 'hidden',
+    overflow: 'visible',
     ...Shadow.sm,
+  },
+  accordionSectionExpanded: {
+    zIndex: 5000,
+    elevation: 16,
   },
   accordionHeader: {
     flexDirection: 'row',
@@ -1935,7 +1939,7 @@ const styles = StyleSheet.create({
   accordionContent: {
     padding: Spacing.lg,
     paddingTop: 0,
-    overflow: 'hidden',
+    overflow: 'visible',
   },
   inputContainer: {
     marginBottom: Spacing.lg,
