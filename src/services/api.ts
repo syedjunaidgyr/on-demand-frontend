@@ -637,6 +637,16 @@ class ApiService {
     return response.data;
   }
 
+  async getStaffCheckIns(params?: { startDate?: string; endDate?: string }): Promise<any> {
+    try {
+      const response: AxiosResponse<any> = await this.api.get('/staff/check-ins', { params });
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Failed to get staff check-ins:', error?.response?.data || error?.message || error);
+      throw error;
+    }
+  }
+
   async requestJobExtension(assignmentId: string, reason: string, requestedHours: number): Promise<void> {
     await this.api.post(`/staff/assignments/${assignmentId}/request-extension`, {
       reason,
@@ -1353,6 +1363,74 @@ class ApiService {
     activeJobsToday: number;
   }> {
     try {
+      const role = (await AsyncStorage.getItem('user_role')) || '';
+      const upper = role.toUpperCase();
+      // Staff roles do not have access to HR realtime route; synthesize from staff endpoints
+      if (upper === 'DOCTOR' || upper === 'NURSE') {
+        try {
+          // 1) Today's status for the logged-in user
+          const statusResp = await this.api.get('/staff/status');
+          const statusData = statusResp.data || {};
+          const today = (statusData.today || statusData) as any;
+          const todayCheckInsRaw = today.checkIns || today.checkins || statusData.checkIns || statusData.checkins || [];
+          const todayCheckOutsRaw = today.checkOuts || today.checkouts || statusData.checkOuts || statusData.checkouts || [];
+
+          // 2) Active assignments (ongoing)
+          const activeResp = await this.api.get('/staff/assignments/active');
+          const activeList = Array.isArray(activeResp.data) ? activeResp.data : (activeResp.data?.assignments || activeResp.data?.data || []);
+
+          // Map active assignments to realtime active items
+          const activeStaffDetails = (activeList || []).map((a: any) => ({
+            userId: a.userId || a.user?.id,
+            userName: a.user ? `${a.user.firstName || ''} ${a.user.lastName || ''}`.trim() : undefined,
+            userRole: a.user?.role,
+            jobTitle: a.job?.title,
+            jobDepartment: a.job?.department,
+            department: a.job?.department,
+            facilityName: a.job?.facilityName || a.job?.location,
+            checkInTime: a.startedAt || a.acceptedAt || a.confirmedAt || a.createdAt,
+            status: a.status || 'ASSIGNED',
+          }));
+
+          // Map today's check-ins to the shape used by the UI
+          const mapCheck = (c: any) => ({
+            id: c.id,
+            checkInTime: c.checkInTime || c.createdAt,
+            checkOutTime: c.checkOutTime,
+            status: c.status || (c.checkOutTime ? 'CHECKED_OUT' : 'CHECKED_IN'),
+            totalWorkTime: c.totalWorkTime || c.workTime || c.minutesWorked,
+            totalBreakTime: c.totalBreakTime || c.breakTime || 0,
+            isLate: !!c.isLate,
+            isEarlyCheckout: !!c.isEarlyCheckout,
+            notes: c.notes,
+            user: c.user || undefined,
+            job: c.job || undefined,
+            department: c.department || c.job?.department,
+            specialization: c.specialization || undefined,
+            hospitalId: c.hospitalId || c.job?.hospitalId,
+            unitCode: c.unitCode || c.job?.unitCode,
+          });
+          const allCheckIns = (todayCheckInsRaw || []).map(mapCheck);
+          const allCheckOuts = (todayCheckOutsRaw || []).map(mapCheck);
+          // Minimal mapping for activeStaff: 1 if current assignment exists and not checked out today
+          const currentAssignment = statusData.currentAssignment || statusData.activeAssignment;
+          const hasActive = !!currentAssignment && !(todayCheckInsRaw || []).every((ci: any) => !!ci.checkOutTime);
+
+          return {
+            activeStaff: hasActive ? 1 : 0,
+            activeStaffDetails,
+            allCheckIns,
+            allCheckOuts,
+            todayCheckIns: allCheckIns.length,
+            todayLateArrivals: 0,
+            activeJobsToday: activeStaffDetails.length,
+          } as any;
+        } catch (e) {
+          // Fallback empty payload
+          return { activeStaff: [], activeStaffDetails: [], allCheckIns: [], allCheckOuts: [], todayCheckIns: 0, todayLateArrivals: 0, activeJobsToday: 0 } as any;
+        }
+      }
+      // HR/ADMIN route
       const response = await this.api.get('/tracking/dashboard/realtime');
       return response.data;
     } catch (error: any) {
@@ -1430,11 +1508,31 @@ class ApiService {
   async getAllJobsForReports(): Promise<any[]> {
     try {
       console.log('📊 Fetching all jobs for report generation');
+      // Role-aware routing: staff should not call HR endpoints
+      const role = (await AsyncStorage.getItem('user_role')) || '';
+      const upper = role.toUpperCase();
+      if (upper === 'DOCTOR' || upper === 'NURSE') {
+        console.log('👤 Staff role detected, loading own assignments to derive jobs');
+        const assResp = await this.api.get('/staff/assignments');
+        const assignments = assResp.data?.assignments || assResp.data?.data || assResp.data || [];
+        const jobs = assignments
+          .map((a: any) => {
+            const job = a?.job;
+            if (!job) return null;
+            // Attach a minimal assignments array so downstream filters can link userId
+            return {
+              ...job,
+              assignments: [{ userId: a.userId, status: a.status }],
+            };
+          })
+          .filter((j: any) => !!j);
+        console.log('✅ Derived jobs from staff assignments (with linkage):', jobs.length);
+        return jobs;
+      }
+
       console.log('🔗 Full API URL:', `${this.api.defaults.baseURL}/hr/jobs`);
-      
-      // Call the API directly to get all jobs
       const response = await this.api.get('/hr/jobs');
-      console.log('✅ Jobs fetched:', response.data);
+      console.log('✅ Jobs fetched (HR):', response.data);
       console.log('📊 Response status:', response.status);
       console.log('📊 Response headers:', response.headers);
       
@@ -1462,11 +1560,19 @@ class ApiService {
   async getAllAssignments(): Promise<any[]> {
     try {
       console.log('📊 Fetching all assignments for report generation');
+      const role = (await AsyncStorage.getItem('user_role')) || '';
+      const upper = role.toUpperCase();
+      if (upper === 'DOCTOR' || upper === 'NURSE') {
+        console.log('👤 Staff role detected, loading only my assignments');
+        const response = await this.api.get('/staff/assignments');
+        const list = response.data?.assignments || response.data?.data || response.data || [];
+        console.log('✅ Staff assignments fetched:', Array.isArray(list) ? list.length : 0);
+        return Array.isArray(list) ? list : [];
+      }
+
       console.log('🔗 Full API URL:', `${this.api.defaults.baseURL}/hr/assignments`);
-      
-      // Call the API directly to get all assignments
       const response = await this.api.get('/hr/assignments');
-      console.log('✅ Assignments fetched:', response.data);
+      console.log('✅ Assignments fetched (HR):', response.data);
       console.log('📊 Response status:', response.status);
       console.log('📊 Response headers:', response.headers);
       
@@ -1493,14 +1599,15 @@ class ApiService {
   async getAssignmentById(assignmentId: string): Promise<any> {
     try {
       console.log('📊 Fetching assignment details for ID:', assignmentId);
-      console.log('🔗 Full API URL:', `${this.api.defaults.baseURL}/hr/assignments/${assignmentId}`);
-      
-      // Call the API directly to get assignment details
+      const role = (await AsyncStorage.getItem('user_role')) || '';
+      const upper = role.toUpperCase();
+      if (upper === 'DOCTOR' || upper === 'NURSE') {
+        console.log('👤 Staff role detected, using staff endpoint');
+        const response = await this.api.get(`/staff/assignments/${assignmentId}`);
+        return response.data;
+      }
+      console.log('🔗 Full API URL (HR):', `${this.api.defaults.baseURL}/hr/assignments/${assignmentId}`);
       const response = await this.api.get(`/hr/assignments/${assignmentId}`);
-      console.log('✅ Assignment details fetched:', response.data);
-      console.log('📊 Response status:', response.status);
-      console.log('📊 Response headers:', response.headers);
-      
       return response.data;
     } catch (error: any) {
       console.error('❌ Failed to fetch assignment details:', error);
@@ -1527,8 +1634,18 @@ class ApiService {
       const q: string[] = [`startDate=${encodeURIComponent(startDate)}`, `endDate=${encodeURIComponent(endDate)}`];
       if (userId) q.push(`userId=${encodeURIComponent(userId)}`);
       if (jobId) q.push(`jobId=${encodeURIComponent(jobId)}`);
+      const role = (await AsyncStorage.getItem('user_role')) || '';
+      const upper = role.toUpperCase();
+      if (upper === 'DOCTOR' || upper === 'NURSE') {
+        const staffUrl = `/staff/reports/payout?${q.join('&')}`;
+        console.log('📡 Staff payout report:', `${this.api.defaults.baseURL}${staffUrl}`);
+        const resp = await this.api.get(staffUrl);
+        const payload = resp.data?.data || resp.data;
+        console.log('✅ Staff payout lines:', Array.isArray(payload?.lines) ? payload.lines.length : 0);
+        return payload;
+      }
       const fullUrl = `${this.api.defaults.baseURL}/hr/reports/payout?${q.join('&')}`;
-      console.log('📡 Calling payout report:', fullUrl);
+      console.log('📡 HR payout report:', fullUrl);
       const response = await this.api.get(`/hr/reports/payout?${q.join('&')}`);
       console.log('✅ Payout report response status:', response.status);
       const payload = response.data?.data || response.data;

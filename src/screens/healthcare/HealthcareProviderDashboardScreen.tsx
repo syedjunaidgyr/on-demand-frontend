@@ -10,6 +10,9 @@ import {
   StatusBar,
   Platform,
   Animated,
+  Image,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -44,6 +47,8 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedAssignment, setSelectedAssignment] = useState<JobAssignment | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
   
   const scrollY = React.useRef(new Animated.Value(0)).current;
 
@@ -413,7 +418,8 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
 
   const AssignmentCard = ({ assignment }: { assignment: JobAssignment }) => {
     const handleAssignmentPress = () => {
-      (navigation as any).navigate('Assignments');
+      setSelectedAssignment(assignment);
+      setModalVisible(true);
     };
 
     const job = assignment.job;
@@ -647,7 +653,7 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
       {/* Scrollable Content */}
       <ScrollView
         style={styles.scrollableContent}
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={true}
           contentContainerStyle={styles.scrollContentContainer}
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -779,6 +785,372 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
         </View>
       </ScrollView>
 
+      {/* Assignment Details Modal */}
+      <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => setModalVisible(false)}>
+        <View style={styles.sheetBackdrop}>
+          <Pressable style={styles.sheetBackdropTouchable} onPress={() => setModalVisible(false)} />
+          <View style={styles.sheetContainer}>
+            <View style={styles.sheetHandle} />
+            {selectedAssignment && selectedAssignment.job && (
+              <ScrollView 
+                contentContainerStyle={styles.sheetContent}
+                showsVerticalScrollIndicator={false}>
+                {/* Header */}
+                <View style={styles.modalHeader}>
+                  <View style={styles.modalHeaderTop}>
+                    <Text style={styles.modalTitle} numberOfLines={2}>
+                      {selectedAssignment.job.title || 'Assignment Details'}
+                    </Text>
+                    <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.modalCloseIcon}>
+                      <FontAwesomeIcon icon="times" size={20} color={Colors.textSecondary} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Assignment Status */}
+                <View style={styles.modalSection}>
+                  <View style={styles.modalInfoRow}>
+                    <FontAwesomeIcon icon="info-circle" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                    <View style={styles.modalInfoContent}>
+                      <Text style={styles.modalInfoLabel}>Assignment Status</Text>
+                      <View style={[styles.modalStatusBadge, { backgroundColor: (() => {
+                        const status = (selectedAssignment.status || '').toUpperCase();
+                        switch (status) {
+                          case 'PENDING': return Colors.warning + '1A';
+                          case 'ACCEPTED': return Colors.primary + '1A';
+                          case 'REJECTED': return Colors.error + '1A';
+                          case 'COMPLETED': return Colors.info + '1A';
+                          case 'IN_PROGRESS': return Colors.warning + '1A';
+                          default: return Colors.textTertiary + '1A';
+                        }
+                      })() }]}> 
+                        <Text style={[styles.modalStatusBadgeText, { color: (() => {
+                          const status = (selectedAssignment.status || '').toUpperCase();
+                          switch (status) {
+                            case 'PENDING': return Colors.warning;
+                            case 'ACCEPTED': return Colors.primary;
+                            case 'REJECTED': return Colors.error;
+                            case 'COMPLETED': return Colors.info;
+                            case 'IN_PROGRESS': return Colors.warning;
+                            default: return Colors.textTertiary;
+                          }
+                        })() }]}>
+                          {(() => {
+                            const status = (selectedAssignment.status || '').toUpperCase();
+                            switch (status) {
+                              case 'PENDING': return 'Pending Response';
+                              case 'ACCEPTED': return 'Accepted';
+                              case 'REJECTED': return 'Rejected';
+                              case 'COMPLETED': return 'Completed';
+                              case 'IN_PROGRESS': return 'In Progress';
+                              default: return status || 'Unknown';
+                            }
+                          })()}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Time Details */}
+                <View style={styles.modalSection}>
+                  <View style={styles.modalTwoColRow}>
+                    <View style={styles.modalCol}>
+                      <View style={styles.modalInfoRow}>
+                        <FontAwesomeIcon icon="calendar" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                        <View style={styles.modalInfoContent}>
+                          <Text style={styles.modalInfoLabel}>Start Date & Time</Text>
+                          <Text style={styles.modalInfoValue}>
+                            {selectedAssignment.job.startDate ? formatDate(selectedAssignment.job.startDate) : '—'}, {selectedAssignment.job.startTime ? formatTime(selectedAssignment.job.startTime) : '—'}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                    <View style={styles.modalCol}>
+                      <View style={styles.modalInfoRow}>
+                        <FontAwesomeIcon icon="calendar-check" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                        <View style={styles.modalInfoContent}>
+                          <Text style={styles.modalInfoLabel}>End Date & Time</Text>
+                          <Text style={styles.modalInfoValue}>
+                            {selectedAssignment.job.endDate ? formatDate(selectedAssignment.job.endDate) : '—'}, {selectedAssignment.job.endTime ? formatTime(selectedAssignment.job.endTime) : '—'}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                  <View style={styles.modalInfoRow}>
+                    <FontAwesomeIcon icon="clock" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                    <View style={styles.modalInfoContent}>
+                      <Text style={styles.modalInfoLabel}>Duration</Text>
+                      <Text style={styles.modalInfoValue}>
+                        {selectedAssignment.job.startTime && selectedAssignment.job.endTime ? 
+                          `${formatTime(selectedAssignment.job.startTime)} - ${formatTime(selectedAssignment.job.endTime)}` : '—'}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Facility & Location */}
+                {(selectedAssignment.job.facilityName || selectedAssignment.job.location) && (
+                  <View style={styles.modalSection}>
+                    <View style={styles.modalTwoColRow}>
+                      {selectedAssignment.job.facilityName && (
+                        <View style={styles.modalCol}>
+                          <View style={styles.modalInfoRow}>
+                            <FontAwesomeIcon icon="hospital" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                            <View style={styles.modalInfoContent}>
+                              <Text style={styles.modalInfoLabel}>Facility</Text>
+                              <Text style={styles.modalInfoValue} numberOfLines={2}>{selectedAssignment.job.facilityName}</Text>
+                            </View>
+                          </View>
+                        </View>
+                      )}
+                      {selectedAssignment.job.location && (
+                        <View style={styles.modalCol}>
+                          <View style={styles.modalInfoRow}>
+                            <FontAwesomeIcon icon="map-marker-alt" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                            <View style={styles.modalInfoContent}>
+                              <Text style={styles.modalInfoLabel}>Location</Text>
+                              <Text style={styles.modalInfoValue} numberOfLines={2}>{selectedAssignment.job.location}</Text>
+                            </View>
+                          </View>
+                        </View>
+                      )}
+                    </View>
+                    {selectedAssignment.job.facilityAddress && (
+                      <View style={styles.modalInfoRow}>
+                        <FontAwesomeIcon icon="map-marker-alt" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                        <View style={styles.modalInfoContent}>
+                          <Text style={styles.modalInfoLabel}>Address</Text>
+                          <Text style={styles.modalInfoValue}>
+                            {selectedAssignment.job.facilityAddress.street || ''}{selectedAssignment.job.facilityAddress.city ? `, ${selectedAssignment.job.facilityAddress.city}` : ''}{selectedAssignment.job.facilityAddress.state ? `, ${selectedAssignment.job.facilityAddress.state}` : ''}{selectedAssignment.job.facilityAddress.zipCode ? ` ${selectedAssignment.job.facilityAddress.zipCode}` : ''}
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                )}
+
+                {/* Department & Role & Rate */}
+                <View style={styles.modalSection}>
+                  <View style={styles.modalTwoColRow}>
+                    {selectedAssignment.job.department && (
+                      <View style={styles.modalCol}>
+                        <View style={styles.modalInfoRow}>
+                          <FontAwesomeIcon icon="building" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                          <View style={styles.modalInfoContent}>
+                            <Text style={styles.modalInfoLabel}>Department</Text>
+                            <Text style={styles.modalInfoValue} numberOfLines={1}>{selectedAssignment.job.department}</Text>
+                          </View>
+                        </View>
+                      </View>
+                    )}
+                    {selectedAssignment.job.requiredRole && (
+                      <View style={styles.modalCol}>
+                        <View style={styles.modalInfoRow}>
+                          <FontAwesomeIcon icon="user-md" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                          <View style={styles.modalInfoContent}>
+                            <Text style={styles.modalInfoLabel}>Role</Text>
+                            <Text style={styles.modalInfoValue} numberOfLines={1}>{selectedAssignment.job.requiredRole}</Text>
+                          </View>
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                  {selectedAssignment.job.specialization && (
+                    <View style={styles.modalInfoRow}>
+                      <FontAwesomeIcon icon="stethoscope" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                      <View style={styles.modalInfoContent}>
+                        <Text style={styles.modalInfoLabel}>Specialization</Text>
+                        <Text style={styles.modalInfoValue}>{selectedAssignment.job.specialization}</Text>
+                      </View>
+                    </View>
+                  )}
+                  <View style={styles.modalInfoRow}>
+                    <FontAwesomeIcon icon="rupee-sign" size={16} color={Colors.success} style={styles.modalIcon} />
+                    <View style={styles.modalInfoContent}>
+                      <Text style={styles.modalInfoLabel}>Hourly Rate</Text>
+                      <Text style={styles.modalInfoValue}>
+                        ₹{selectedAssignment.hourlyRate || selectedAssignment.job.hourlyRate || '0'}/hour
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Priority */}
+                {selectedAssignment.job.priority && (
+                  <View style={styles.modalSection}>
+                    <View style={styles.modalInfoRow}>
+                      <FontAwesomeIcon icon="exclamation-triangle" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                      <View style={styles.modalInfoContent}>
+                        <Text style={styles.modalInfoLabel}>Priority</Text>
+                        <View style={[styles.modalPriorityBadge, { backgroundColor: (() => {
+                          const priority = selectedAssignment.job.priority || '';
+                          switch (priority) {
+                            case 'URGENT': return '#EF4444' + '1A';
+                            case 'HIGH': return '#F59E0B' + '1A';
+                            case 'MEDIUM': return '#3B82F6' + '1A';
+                            case 'LOW': return '#10B981' + '1A';
+                            default: return Colors.textTertiary + '1A';
+                          }
+                        })() }]}> 
+                          <Text style={[styles.modalPriorityBadgeText, { color: (() => {
+                            const priority = selectedAssignment.job.priority || '';
+                            switch (priority) {
+                              case 'URGENT': return '#EF4444';
+                              case 'HIGH': return '#F59E0B';
+                              case 'MEDIUM': return '#3B82F6';
+                              case 'LOW': return '#10B981';
+                              default: return Colors.textTertiary;
+                            }
+                          })() }]}>
+                            {selectedAssignment.job.priority}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                )}
+
+                {/* Contact Person */}
+                {selectedAssignment.job.contactPerson && (
+                  <View style={styles.modalSection}>
+                    <Text style={styles.modalSectionTitle}>Contact Information</Text>
+                    <View style={styles.modalInfoRow}>
+                      <FontAwesomeIcon icon="user" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                      <View style={styles.modalInfoContent}>
+                        <Text style={styles.modalInfoLabel}>Contact Person</Text>
+                        <Text style={styles.modalInfoValue}>{selectedAssignment.job.contactPerson.name || '—'}</Text>
+                      </View>
+                    </View>
+                    {selectedAssignment.job.contactPerson.position && (
+                      <View style={styles.modalInfoRow}>
+                        <FontAwesomeIcon icon="briefcase" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                        <View style={styles.modalInfoContent}>
+                          <Text style={styles.modalInfoLabel}>Position</Text>
+                          <Text style={styles.modalInfoValue}>{selectedAssignment.job.contactPerson.position}</Text>
+                        </View>
+                      </View>
+                    )}
+                    {selectedAssignment.job.contactPerson.phone && (
+                      <View style={styles.modalInfoRow}>
+                        <FontAwesomeIcon icon="phone" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                        <View style={styles.modalInfoContent}>
+                          <Text style={styles.modalInfoLabel}>Phone</Text>
+                          <Text style={styles.modalInfoValue}>{selectedAssignment.job.contactPerson.phone}</Text>
+                        </View>
+                      </View>
+                    )}
+                    {selectedAssignment.job.contactPerson.email && (
+                      <View style={styles.modalInfoRow}>
+                        <FontAwesomeIcon icon="envelope" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                        <View style={styles.modalInfoContent}>
+                          <Text style={styles.modalInfoLabel}>Email</Text>
+                          <Text style={styles.modalInfoValue}>{selectedAssignment.job.contactPerson.email}</Text>
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                )}
+
+                {/* Requirements */}
+                {selectedAssignment.job.requirements && (
+                  <View style={styles.modalSection}>
+                    <Text style={styles.modalSectionTitle}>Requirements</Text>
+                    {selectedAssignment.job.requirements.experience && (
+                      <View style={styles.modalInfoRow}>
+                        <FontAwesomeIcon icon="graduation-cap" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                        <View style={styles.modalInfoContent}>
+                          <Text style={styles.modalInfoLabel}>Experience</Text>
+                          <Text style={styles.modalInfoValue}>{selectedAssignment.job.requirements.experience}</Text>
+                        </View>
+                      </View>
+                    )}
+                    {selectedAssignment.job.requirements.skills && Array.isArray(selectedAssignment.job.requirements.skills) && selectedAssignment.job.requirements.skills.length > 0 && (
+                      <View style={styles.modalInfoRow}>
+                        <FontAwesomeIcon icon="check-circle" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                        <View style={styles.modalInfoContent}>
+                          <Text style={styles.modalInfoLabel}>Skills Required</Text>
+                          <Text style={styles.modalInfoValue}>{selectedAssignment.job.requirements.skills.join(', ')}</Text>
+                        </View>
+                      </View>
+                    )}
+                    {selectedAssignment.job.requirements.boardCertified !== undefined && (
+                      <View style={styles.modalInfoRow}>
+                        <FontAwesomeIcon icon="star" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                        <View style={styles.modalInfoContent}>
+                          <Text style={styles.modalInfoLabel}>Board Certified</Text>
+                          <Text style={styles.modalInfoValue}>{selectedAssignment.job.requirements.boardCertified ? 'Yes' : 'No'}</Text>
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                )}
+
+                {/* Benefits */}
+                {selectedAssignment.job.benefits && (
+                  <View style={styles.modalSection}>
+                    <Text style={styles.modalSectionTitle}>Benefits</Text>
+                    <View style={styles.modalBenefitsRow}>
+                      {selectedAssignment.job.benefits.parking && (
+                        <View style={styles.modalBenefitBadge}>
+                          <FontAwesomeIcon icon="parking" size={14} color={Colors.primary} />
+                          <Text style={styles.modalBenefitText}>Parking</Text>
+                        </View>
+                      )}
+                      {selectedAssignment.job.benefits.malpractice && (
+                        <View style={styles.modalBenefitBadge}>
+                          <FontAwesomeIcon icon="shield-alt" size={14} color={Colors.primary} />
+                          <Text style={styles.modalBenefitText}>Malpractice</Text>
+                        </View>
+                      )}
+                      {selectedAssignment.job.benefits.mealAllowance && (
+                        <View style={styles.modalBenefitBadge}>
+                          <FontAwesomeIcon icon="utensils" size={14} color={Colors.primary} />
+                          <Text style={styles.modalBenefitText}>Meal Allowance</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                )}
+
+                {/* Description */}
+                {selectedAssignment.job.description && (
+                  <View style={styles.modalSection}>
+                    <View style={styles.modalInfoRow}>
+                      <FontAwesomeIcon icon="file-alt" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                      <View style={styles.modalInfoContent}>
+                        <Text style={styles.modalInfoLabel}>Description</Text>
+                        <Text style={styles.modalInfoValue}>{selectedAssignment.job.description}</Text>
+                      </View>
+                    </View>
+                  </View>
+                )}
+
+                {/* Notes */}
+                {selectedAssignment.job.notes && (
+                  <View style={styles.modalSection}>
+                    <View style={styles.modalInfoRow}>
+                      <FontAwesomeIcon icon="clipboard-list" size={16} color={Colors.textSecondary} style={styles.modalIcon} />
+                      <View style={styles.modalInfoContent}>
+                        <Text style={styles.modalInfoLabel}>Additional Notes</Text>
+                        <Text style={styles.modalInfoValue}>{selectedAssignment.job.notes}</Text>
+                      </View>
+                    </View>
+                  </View>
+                )}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Powered By */}
+      <View style={styles.poweredByContainer}>
+        <Text style={styles.poweredByText}>Powered by</Text>
+        <Image source={require('../../assets/footer_logo.png')} style={styles.companyLogo} resizeMode="contain" />
+      </View>
+
       <HRFooterNavigation activeRoute="Dashboard" scrollY={scrollY} isLoading={isLoading} />
         </View>
       </SafeAreaView>
@@ -900,7 +1272,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContentContainer: {
-    paddingBottom: 8,
+    paddingBottom: 70,
   },
   dashboardTitleSection: {
     paddingHorizontal: 20,
@@ -938,7 +1310,7 @@ const styles = StyleSheet.create({
   },
   section: {
     paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -1111,8 +1483,8 @@ const styles = StyleSheet.create({
   },
   iconStatTitle: {
     fontSize: 12,
-    fontFamily: Typography.fontFamily.regular,
-    color: Colors.textSecondary,
+    fontFamily: Typography.fontFamily.bold,
+    color: "#000000",
     textAlign: 'center',
     lineHeight: 15,
     maxWidth: 80,
@@ -1242,7 +1614,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.lg,
     marginTop: -8,
     marginHorizontal: 0,
     shadowColor: '#000',
@@ -1271,6 +1643,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingBottom: 0,
     marginTop: -12,
+    marginBottom: 4,
   },
   postedOuterText: {
     fontSize: Typography.fontSize.sm,
@@ -1570,6 +1943,171 @@ const styles = StyleSheet.create({
     color: Colors.textTertiary,
     marginTop: Spacing.md,
     textAlign: 'center',
+  },
+  poweredByContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingVertical: 6,
+    paddingHorizontal: 20,
+    marginTop: 0,
+  },
+  poweredByText: {
+    fontSize: 12,
+    fontFamily: Typography.fontFamily.medium,
+    color: '#6B7280',
+    marginRight: -2,
+  },
+  companyLogo: {
+    height: 15,
+    width: 80,
+    marginLeft: -12,
+  },
+  // Modal Styles
+  sheetBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  sheetBackdropTouchable: {
+    flex: 1,
+  },
+  sheetContainer: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 20,
+    maxHeight: '85%',
+  },
+  sheetHandle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.borderLight,
+    marginBottom: 8,
+  },
+  sheetContent: {
+    paddingBottom: 24,
+  },
+  modalHeader: {
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  modalHeaderTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  modalTitle: {
+    flex: 1,
+    fontSize: Typography.fontSize.xl,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+    marginRight: 12,
+  },
+  modalCloseIcon: {
+    padding: 4,
+  },
+  modalSection: {
+    marginBottom: 20,
+  },
+  modalSectionTitle: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+    marginBottom: 12,
+    marginTop: 4,
+  },
+  modalInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  modalIcon: {
+    marginRight: 12,
+    marginTop: 3,
+    width: 20,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  modalInfoContent: {
+    flex: 1,
+    paddingTop: 0,
+  },
+  modalInfoLabel: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.textTertiary,
+    marginBottom: 6,
+    lineHeight: 18,
+  },
+  modalInfoValue: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.textPrimary,
+    lineHeight: 22,
+    flexWrap: 'wrap',
+  },
+  modalTwoColRow: {
+    flexDirection: 'row',
+    marginHorizontal: -8,
+    marginBottom: 12,
+  },
+  modalCol: {
+    flex: 1,
+    marginHorizontal: 8,
+  },
+  modalStatusBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  modalStatusBadgeText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  modalPriorityBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  modalPriorityBadgeText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.bold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  modalBenefitsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
+  modalBenefitBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary + '15',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  modalBenefitText: {
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.primary,
   },
 });
 

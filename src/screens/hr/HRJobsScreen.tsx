@@ -197,6 +197,10 @@ const HRJobsScreen: React.FC = () => {
         return Colors.warning;
       case 'ASSIGNED':
         return Colors.primary;
+      case 'ACCEPTED':
+        return Colors.primary;
+      case 'CHECKED_OUT':
+        return Colors.info;
       case 'IN_PROGRESS':
         return Colors.warning;
       default:
@@ -214,26 +218,41 @@ const HRJobsScreen: React.FC = () => {
     }
 
     // Check if all assignments are completed
-    const allCompleted = assignments.every((a: any) => a.status === 'COMPLETED');
+    const allCompleted = assignments.every((a: any) => {
+      const s = String(a.status || '').toUpperCase();
+      return s === 'COMPLETED' || s === 'CHECKED_OUT';
+    });
     if (allCompleted) {
       return 'COMPLETED';
     }
 
     // Check if any assignment is in progress
-    const hasInProgress = assignments.some((a: any) => a.status === 'IN_PROGRESS');
+    const hasInProgress = assignments.some((a: any) => String(a.status || '').toUpperCase() === 'IN_PROGRESS');
     if (hasInProgress) {
       return 'IN_PROGRESS';
     }
 
     // Check if any assignment is accepted or assigned
     const hasAcceptedOrAssigned = assignments.some((a: any) => 
-      a.status === 'ACCEPTED' || a.status === 'ASSIGNED'
+      ['ACCEPTED', 'ASSIGNED'].includes(String(a.status || '').toUpperCase())
     );
     if (hasAcceptedOrAssigned) {
       return 'ASSIGNED';
     }
 
     // Otherwise return job's original status
+    return job.status || 'ACTIVE';
+  };
+
+  // Assignment-focused status (prefers the current user's assignment when available)
+  const getAssignmentDisplayStatus = (job: Job): string => {
+    const assignments = (job as any).assignments || [];
+    if (assignments.length === 0) return job.status || 'ACTIVE';
+    // Prefer any decisive terminal state first
+    if (assignments.some((a: any) => ['COMPLETED', 'CHECKED_OUT'].includes(String(a.status || '').toUpperCase()))) return 'COMPLETED';
+    if (assignments.some((a: any) => String(a.status || '').toUpperCase() === 'IN_PROGRESS')) return 'IN_PROGRESS';
+    if (assignments.some((a: any) => String(a.status || '').toUpperCase() === 'ACCEPTED')) return 'ACCEPTED';
+    if (assignments.some((a: any) => String(a.status || '').toUpperCase() === 'ASSIGNED')) return 'ASSIGNED';
     return job.status || 'ACTIVE';
   };
 
@@ -363,6 +382,7 @@ const HRJobsScreen: React.FC = () => {
     const subtitleLeft = job.location || '—';
     const subtitleRight = timeRange;
     const displayStatus = getDisplayStatus(job);
+    const assignmentStatus = getAssignmentDisplayStatus(job);
     
     return (
       <TouchableOpacity 
@@ -375,12 +395,12 @@ const HRJobsScreen: React.FC = () => {
           <Text style={styles.cardTimeText}>{dateRange}</Text>
           {displayStatus === 'COMPLETED' && (
             <TouchableOpacity 
-              style={styles.recreateButton}
+              style={[styles.recreateButton, { marginTop: -10 }]}
               onPress={() => handleRecreateJob(job)}
-              activeOpacity={0.7}>
-              <FontAwesomeIcon icon="edit" size={Responsive.iconSize(14)} color={Colors.primary} />
-              <Text style={styles.recreateButtonText}>Edit</Text>
-          </TouchableOpacity>
+              activeOpacity={0.7}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+              <FontAwesomeIcon icon="edit" size={Responsive.iconSize(16)} color={Colors.primary} />
+            </TouchableOpacity>
           )}
         </View>
         <View style={styles.cardDivider} />
@@ -394,7 +414,14 @@ const HRJobsScreen: React.FC = () => {
               <Text style={styles.subtitleDot}> • </Text>
               <Text style={styles.subtitleText} numberOfLines={1}>{subtitleRight}</Text>
               <Text style={styles.subtitleDot}> • </Text>
-              <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor(displayStatus) + '1A' }]}>
+              {/* Assignment status pill (primary) */}
+              <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor(assignmentStatus) + '1A', marginRight: 6 }]}>
+                <Text style={[styles.inlineStatusText, { color: getStatusColor(assignmentStatus) }]} numberOfLines={1}>
+                  {assignmentStatus}
+                </Text>
+              </View>
+              {/* Job status pill (secondary) */}
+              <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor(displayStatus) + '14' }]}> 
                 <Text style={[styles.inlineStatusText, { color: getStatusColor(displayStatus) }]} numberOfLines={1}>
                   {displayStatus}
                 </Text>
@@ -674,7 +701,7 @@ const HRJobsScreen: React.FC = () => {
                 <FontAwesomeIcon icon="check-circle" size={Responsive.iconSize(64)} color="#4CAF50" />
               </Animated.View>
             </View>
-            <Text style={styles.modalTitle}>Success</Text>
+            <Text style={styles.successModalTitle}>Success</Text>
             <Text style={styles.modalMessage}>{successText}</Text>
             <TouchableOpacity style={styles.modalDoneButton} onPress={() => setShowSuccessModal(false)}>
               <Text style={styles.modalDoneButtonText}>Done</Text>
@@ -1406,20 +1433,14 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   recreateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: Colors.white,
-    borderRadius: 6,
-    gap: 6,
     borderWidth: 1.5,
     borderColor: Colors.primary,
-  },
-  recreateButtonText: {
-    fontSize: Typography.fontSize.xs,
-    fontFamily: Typography.fontFamily.medium,
-    color: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   profileRow: {
     flexDirection: 'row',
@@ -2172,7 +2193,7 @@ const styles = StyleSheet.create({
     elevation: 8,
     width: '100%',
   },
-  modalTitle: {
+  successModalTitle: {
     fontSize: 24,
     fontFamily: Typography.fontFamily.bold,
     color: '#333333',

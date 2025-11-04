@@ -368,22 +368,6 @@ const AssignmentScreen: React.FC = () => {
                 <Text style={styles.infoValue} numberOfLines={1} ellipsizeMode="tail">{department}</Text>
               </View>
             ) : null}
-
-            {/* Card-level action buttons removed per request (actions stay in modal) */}
-
-            {/* Status info for non-pending assignments */}
-        {!isPending && (
-          <View style={styles.assignmentInfo}>
-            <Text style={styles.assignmentInfoText}>
-              {assignment.status === 'ACCEPTED' 
-                ? 'Congratulations! You have been selected for this job. HR will contact you with further details.'
-                : assignment.status === 'REJECTED' 
-                ? `Rejected: ${assignment.rejectionReason || 'No reason provided'}`
-                : 'Assignment status: ' + statusConfig.text
-              }
-            </Text>
-          </View>
-        )}
           </View>
         </View>
       </TouchableOpacity>
