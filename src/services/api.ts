@@ -796,6 +796,38 @@ class ApiService {
     return response.data;
   }
 
+  // Specialization Management APIs (Admin/Hospital Admin)
+  async listSpecializations(params?: { page?: number; limit?: number; search?: string }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get('/admin/specializations', { params });
+    return response.data;
+  }
+
+  async createSpecialization(data: { name: string; code?: string; description?: string; department?: string }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post('/admin/specializations', data);
+    return response.data;
+  }
+
+  async updateSpecialization(id: string | number, data: { name?: string; code?: string; description?: string; department?: string; isActive?: boolean }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.put(`/admin/specializations/${id}`, data);
+    return response.data;
+  }
+
+  async deleteSpecialization(id: string | number): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.delete(`/admin/specializations/${id}`);
+    return response.data;
+  }
+
+  // Hospital Admin specialization APIs (hospital-scoped)
+  async listHospitalSpecializations(params?: { page?: number; limit?: number; search?: string }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get('/hospital-admin/specializations', { params });
+    return response.data;
+  }
+
+  async createHospitalSpecialization(data: { name: string; code?: string; description?: string; department?: string }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post('/hospital-admin/specializations', data);
+    return response.data;
+  }
+
   async getUrgentJobs(): Promise<Job[]> {
     const response: AxiosResponse<any> = await this.api.get('/jobs/featured/urgent');
     const jobs = Array.isArray(response.data) ? response.data : (response.data.jobs || []);
@@ -959,6 +991,21 @@ class ApiService {
     return response.data;
   }
 
+  async getHospitalPermissions(hospitalId: number, params?: { page?: number; limit?: number }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get(`/permissions/hospitals/${hospitalId}`, { params });
+    return response.data;
+  }
+
+  async getUnitPermissions(hospitalId: number, unitCode: string, params?: { page?: number; limit?: number }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get(`/permissions/hospitals/${hospitalId}/units/${unitCode}`, { params });
+    return response.data;
+  }
+
+  async getGlobalPermissions(params?: { page?: number; limit?: number }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get('/permissions/global', { params });
+    return response.data;
+  }
+
   // Admin Hospital Management APIs
   async createHospital(data: any, logo?: FormData): Promise<any> {
     if (logo) {
@@ -1002,6 +1049,63 @@ class ApiService {
 
   async getAdminDashboard(): Promise<any> {
     const response: AxiosResponse<any> = await this.api.get('/admin/dashboard');
+    return response.data;
+  }
+
+  async listHospitals(): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get('/admin/hospitals');
+    return response.data;
+  }
+
+  async getHospitalDetails(hospitalId: number): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get(`/admin/hospitals/${hospitalId}`);
+    return response.data;
+  }
+
+  // Admin Unit Management APIs
+  async createUnitForHospital(hospitalId: number, data: { unitCode: string; unitName: string }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post(`/admin/hospitals/${hospitalId}/units`, data);
+    return response.data;
+  }
+
+  async updateUnitForHospital(hospitalId: number, unitCode: string, data: { unitName?: string; isActive?: boolean }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.put(`/admin/hospitals/${hospitalId}/units/${unitCode}`, data);
+    return response.data;
+  }
+
+  async deleteUnitForHospital(hospitalId: number, unitCode: string): Promise<void> {
+    await this.api.delete(`/admin/hospitals/${hospitalId}/units/${unitCode}`);
+  }
+
+  // Admin Theme Management APIs
+  async getHospitalThemes(hospitalId: number): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get(`/admin/hospitals/${hospitalId}/themes`);
+    return response.data;
+  }
+
+  async createHospitalTheme(hospitalId: number, data: {
+    name: string;
+    primaryColor: string;
+    secondaryColor: string;
+    backgroundColor: string;
+    textColor: string;
+    accentTextColor: string;
+  }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post(`/admin/hospitals/${hospitalId}/themes`, data);
+    return response.data;
+  }
+
+  async updateHospitalTheme(hospitalId: number, themeId: string, data: any): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.put(`/admin/hospitals/${hospitalId}/themes/${themeId}`, data);
+    return response.data;
+  }
+
+  async deleteHospitalTheme(hospitalId: number, themeId: string): Promise<void> {
+    await this.api.delete(`/admin/hospitals/${hospitalId}/themes/${themeId}`);
+  }
+
+  async setHospitalDefaultTheme(hospitalId: number, themeId: string): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.put(`/admin/hospitals/${hospitalId}/themes/default/${themeId}`);
     return response.data;
   }
 

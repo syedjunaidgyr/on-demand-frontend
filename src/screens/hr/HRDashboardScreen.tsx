@@ -21,9 +21,11 @@ import LinearGradient from 'react-native-linear-gradient';
 import HRFooterNavigation from '../../components/HRFooterNavigation';
 
 import ApiService from '../../services/api';
+import { useAuth } from '../../navigation/AppNavigator';
 import { Typography } from '../../constants/typography';
 import { useNotifications } from '../../contexts/NotificationContext';
 import Responsive from '../../utils/responsive';
+import { usePermissions } from '../../hooks/usePermissions';
 import {
   SkeletonHeader,
   SkeletonStatCard,
@@ -72,6 +74,9 @@ const HRDashboardScreen: React.FC = () => {
   const navigation = useNavigation();
   const g = useGlobalStyles();
   const { unreadCount } = useNotifications();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
+  const { hasPermission, loading: permissionsLoading } = usePermissions();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -287,10 +292,10 @@ const HRDashboardScreen: React.FC = () => {
         activeOpacity={1}>
         <Animated.View style={[styles.quickActionCard, { transform: [{ scale: scaleAnim }] }]}>
           <LinearGradient colors={gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.quickActionGradient}>
-            <FontAwesomeIcon icon={icon} size={Responsive.iconSize(22)} color="#FFFFFF" />
+            <FontAwesomeIcon icon={icon} size={Responsive.iconSize(18)} color="#FFFFFF" />
           </LinearGradient>
-          <Text style={styles.quickActionTitle}>{title}</Text>
-          <Text style={styles.quickActionSubtitle}>{subtitle}</Text>
+          <Text style={styles.quickActionTitle} numberOfLines={2} ellipsizeMode="tail">{title}</Text>
+          <Text style={styles.quickActionSubtitle} numberOfLines={2} ellipsizeMode="tail">{subtitle}</Text>
         </Animated.View>
       </TouchableOpacity>
     );
@@ -513,10 +518,25 @@ const HRDashboardScreen: React.FC = () => {
               </View>
             ) : (
               <View style={styles.quickActionsGrid}>
-                <QuickAction title="Create Job" subtitle="Post new opening" icon="plus" gradient={['#3B82F6', '#2563EB']} onPress={() => (navigation as any).navigate('CreateJob')} />
-                <QuickAction title="Assign Jobs" subtitle="View & edit" icon="briefcase" gradient={['#8B5CF6', '#7C3AED']} onPress={() => (navigation as any).navigate('HRJobs')} />
-                <QuickAction title="Staff" subtitle="Manage users" icon="users" gradient={['#10B981', '#059669']} onPress={() => (navigation as any).navigate('HRUsers')} />
-                <QuickAction title="Reports" subtitle="View insights" icon="chart-line" gradient={['#F59E0B', '#D97706']} onPress={() => (navigation as any).navigate('Reports')} />
+                {!permissionsLoading && hasPermission('JOB_CREATE') && (
+                  <QuickAction title="Create Job" subtitle="Post new opening" icon="plus" gradient={['#3B82F6', '#2563EB']} onPress={() => (navigation as any).navigate('CreateJob')} />
+                )}
+                {!permissionsLoading && hasPermission('JOB_READ') && (
+                  <QuickAction title="Assign Jobs" subtitle="View & edit" icon="briefcase" gradient={['#8B5CF6', '#7C3AED']} onPress={() => (navigation as any).navigate('HRJobs')} />
+                )}
+                {!permissionsLoading && hasPermission('USER_READ') && (
+                  <QuickAction title="Staff" subtitle="Manage users" icon="users" gradient={['#10B981', '#059669']} onPress={() => (navigation as any).navigate('HRUsers')} />
+                )}
+                {!permissionsLoading && hasPermission('REPORT_VIEW') && (
+                  <QuickAction title="Reports" subtitle="View insights" icon="chart-line" gradient={['#F59E0B', '#D97706']} onPress={() => (navigation as any).navigate('Reports')} />
+                )}
+                {isAdmin && (
+                  <>
+                    <QuickAction title="Hospitals" subtitle="Manage hospitals" icon="hospital" gradient={['#EF4444', '#DC2626']} onPress={() => (navigation as any).navigate('AdminHospitalManagement')} />
+                    <QuickAction title="Permissions" subtitle="Manage permissions" icon="shield-alt" gradient={['#6366F1', '#4F46E5']} onPress={() => (navigation as any).navigate('PermissionManagement')} />
+                    <QuickAction title="Specializations" subtitle="Manage specializations" icon="stethoscope" gradient={['#14B8A6', '#0D9488']} onPress={() => (navigation as any).navigate('SpecializationManagement')} />
+                  </>
+                )}
               </View>
             )}
           </View>
@@ -966,9 +986,11 @@ const styles = StyleSheet.create({
   quickActionCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    padding: 24,
+    padding: 16,
+    paddingTop: 20,
+    paddingBottom: 20,
     alignItems: 'center',
-    minHeight: 120,
+    minHeight: 130,
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
@@ -977,14 +999,15 @@ const styles = StyleSheet.create({
     elevation: 6,
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.04)',
+    width: '100%',
   },
   quickActionGradient: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
@@ -992,18 +1015,23 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   quickActionTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: Typography.fontFamily.bold,
     color: '#111827',
-    marginBottom: 1,
+    marginBottom: 2,
     textAlign: 'center',
     letterSpacing: -0.2,
+    lineHeight: 18,
+    paddingHorizontal: 4,
   },
   quickActionSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: Typography.fontFamily.medium,
     color: '#6B7280',
     textAlign: 'center',
+    lineHeight: 16,
+    paddingHorizontal: 4,
+    marginTop: 2,
   },
   section: {
     paddingHorizontal: 20,

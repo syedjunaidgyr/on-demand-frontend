@@ -1,12 +1,30 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, RefreshControl, Alert, Switch, Modal, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, RefreshControl, Alert, Switch, Modal, ScrollView, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { Colors } from '../../constants/colors';
 import HospitalAdminApi from '../../services/hospitalAdminApi';
+import ApiService from '../../services/api';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Typography } from '../../constants/typography';
+import { useGlobalStyles } from '../../theme/globalStyles';
+import { useAppColors } from '../../hooks/useAppColors';
+import { useAuth } from '../../navigation/AppNavigator';
+import GlobalHeader from '../../components/GlobalHeader';
+
+type ThemeScreenRouteProp = RouteProp<{ Themes: { hospitalId?: number } }, 'Themes'>;
 
 const HospitalAdminThemeManageScreen: React.FC = () => {
+  const route = useRoute<ThemeScreenRouteProp>();
+  const navigation = useNavigation();
+  const { user } = useAuth();
+  const g = useGlobalStyles();
+  const appColors = useAppColors();
+  const isAdmin = user?.role === 'ADMIN';
+  const hospitalId = route.params?.hospitalId;
+  
   const { loadAndApplyDefaultTheme, setTheme } = useTheme();
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [themes, setThemes] = useState<any[]>([]);
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -20,6 +38,21 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
   const [selectedKey, setSelectedKey] = useState<string | number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rgb, setRgb] = useState<{ r: string; g: string; b: string }>({ r: '0', g: '0', b: '0' });
+  
+  // Get user profile to determine actual hospitalId for Hospital Admin
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const profile = await ApiService.getProfile();
+        setUserProfile(profile);
+      } catch (e) {
+        console.error('Failed to load profile:', e);
+      }
+    };
+    if (!isAdmin) loadProfile();
+  }, [isAdmin]);
+  
+  const effectiveHospitalId = isAdmin ? hospitalId : userProfile?.hospitalId;
 
   // Try to use a richer color picker if installed; otherwise fallback to presets
   const ColorPickerComp = useMemo(() => {
@@ -79,7 +112,7 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
     // Pinks & Reds
     '#DB2777','#EC4899','#F472B6','#FDA4AF','#EF4444','#F87171','#FB7185','#FCA5A5',
     // Oranges & Ambers
-    '#F59E0B','#D97706','#FB923C','#FDBA74','#FCD34D','#FBBF24','#F59E0B','#FEF3C7',
+    '#F59E0B','#D97706','#FB923C','#FDBA74','#FCD34D','#FBBF24','#FEF3C7',
     // Neutrals
     '#111827','#374151','#9CA3AF','#D1D5DB','#E5E7EB','#F3F4F6','#FFFFFF'
   ];
@@ -90,8 +123,12 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
     if (!v.startsWith('#')) v = `#${v}`;
     return v;
   };
-  const isValidHex = (value: string) => /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/.test(value.trim());
+  const isValidHex = (value: string) => {
+    if (!value || typeof value !== 'string') return false;
+    return /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/.test(value.trim());
+  };
   const getSafeHex = (value: string, fallback: string = '#3B82F6') => {
+    if (!value || typeof value !== 'string') return fallback;
     const nv = normalizeHex(value || '');
     return isValidHex(nv) ? nv : fallback;
   };
@@ -121,16 +158,34 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
   };
 
   const load = async () => {
-    const res = await HospitalAdminApi.getThemes();
-    setThemes(res?.themes || res || []);
-    const current = res?.current;
-    const cid = current ? current.id || current : null;
-    setCurrentId(cid || null);
+    try {
+      if (isAdmin && effectiveHospitalId) {
+        // Admin: Get themes for specific hospital
+        const res = await ApiService.getHospitalThemes(effectiveHospitalId);
+        setThemes(res?.themes || res || []);
+        const current = res?.defaultTheme;
+        const cid = current ? current.id || current : null;
+        setCurrentId(cid || null);
+      } else if (!isAdmin) {
+        // Hospital Admin: Use their API
+        const res = await HospitalAdminApi.getThemes();
+        setThemes(res?.themes || res || []);
+        const current = res?.current;
+        const cid = current ? current.id || current : null;
+        setCurrentId(cid || null);
+      } else {
+        setThemes([]);
+      }
+    } catch (e: any) {
+      console.error('Failed to load themes:', e);
+      Alert.alert('Error', e?.response?.data?.message || 'Failed to load themes');
+      setThemes([]);
+    }
   };
 
   useEffect(() => {
     load();
-  }, []);
+  }, [effectiveHospitalId]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -140,15 +195,28 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
 
   const create = async () => {
     if (isSubmitting) return;
+    if (isAdmin && !effectiveHospitalId) {
+      Alert.alert('Error', 'Hospital ID is required');
+      return;
+    }
     try {
       setIsSubmitting(true);
       const { setAsDefault, ...themeData } = form;
-      const created = await HospitalAdminApi.createTheme({ ...themeData });
+      let created;
+      if (isAdmin && effectiveHospitalId) {
+        created = await ApiService.createHospitalTheme(effectiveHospitalId, themeData);
+      } else {
+        created = await HospitalAdminApi.createTheme(themeData);
+      }
       await load();
       if (setAsDefault) {
         const newId = created?.id || created?.theme?.id || created?.name || themeData.name;
-        if (newId) {
-          await HospitalAdminApi.setDefaultTheme(newId);
+        if (newId && effectiveHospitalId) {
+          if (isAdmin) {
+            await ApiService.setHospitalDefaultTheme(effectiveHospitalId, String(newId));
+          } else {
+            await HospitalAdminApi.setDefaultTheme(newId);
+          }
           await loadAndApplyDefaultTheme();
           setCurrentId(String(newId));
           setSelectedKey(newId);
@@ -182,14 +250,26 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
 
   const update = async () => {
     if (!form.id && !selectedKey) return Alert.alert('Validation', 'Select a theme to update');
+    if (isAdmin && !effectiveHospitalId) {
+      Alert.alert('Error', 'Hospital ID is required');
+      return;
+    }
     try {
       setIsSubmitting(true);
       const { id, ...updates } = form as any;
       const key = selectedKey ?? id;
-      await HospitalAdminApi.updateTheme(key, updates);
+      if (isAdmin && effectiveHospitalId) {
+        await ApiService.updateHospitalTheme(effectiveHospitalId, String(key), updates);
+      } else {
+        await HospitalAdminApi.updateTheme(key, updates);
+      }
       await load();
-      if (form.setAsDefault && key) {
-        await HospitalAdminApi.setDefaultTheme(key);
+      if (form.setAsDefault && key && effectiveHospitalId) {
+        if (isAdmin) {
+          await ApiService.setHospitalDefaultTheme(effectiveHospitalId, String(key));
+        } else {
+          await HospitalAdminApi.setDefaultTheme(key);
+        }
         await loadAndApplyDefaultTheme();
         setCurrentId(String(key));
       }
@@ -208,9 +288,17 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
   };
 
   const setDefault = async (id: string | number) => {
+    if (isAdmin && !effectiveHospitalId) {
+      Alert.alert('Error', 'Hospital ID is required');
+      return;
+    }
     try {
       setIsSubmitting(true);
-      await HospitalAdminApi.setDefaultTheme(id);
+      if (isAdmin && effectiveHospitalId) {
+        await ApiService.setHospitalDefaultTheme(effectiveHospitalId, String(id));
+      } else {
+        await HospitalAdminApi.setDefaultTheme(id);
+      }
       await load();
       await loadAndApplyDefaultTheme();
       setSelectedKey(id);
@@ -221,6 +309,10 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
 
   const remove = async (id: string | number) => {
     if (currentId === id) return Alert.alert('Blocked', 'Select a different default before deleting this theme.');
+    if (isAdmin && !effectiveHospitalId) {
+      Alert.alert('Error', 'Hospital ID is required');
+      return;
+    }
     try {
       setIsSubmitting(true);
       if (id === undefined || id === null || String(id).trim() === '') {
@@ -231,7 +323,11 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
         Alert.alert('Blocked', 'At least one theme must remain. Create another theme before deleting this one.');
         return;
       }
-      await HospitalAdminApi.deleteTheme(id);
+      if (isAdmin && effectiveHospitalId) {
+        await ApiService.deleteHospitalTheme(effectiveHospitalId, String(id));
+      } else {
+        await HospitalAdminApi.deleteTheme(id);
+      }
       await load();
     } catch (e: any) {
       const apiMsg = e?.response?.data?.message || e?.response?.data?.error || e?.message;
@@ -297,10 +393,10 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
           autoCapitalize="none"
         />
         <TouchableOpacity
-          style={[styles.swatch, { backgroundColor: (form as any)[key] }]}
+          style={[styles.swatch, { backgroundColor: getSafeHex((form as any)[key] || '#3B82F6') }]}
           onPress={() => {
             setActiveColorKey(key);
-            const current = (form as any)[key];
+            const current = getSafeHex((form as any)[key] || '#3B82F6');
             setTempColor(current);
             const { r, g, b } = hexToRgb(current);
             setRgb({ r: String(r), g: String(g), b: String(b) });
@@ -309,20 +405,38 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
         />
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.presetRow}>
-        {presetColors.map((c) => (
-          <TouchableOpacity key={`${key}-${c}`} style={[styles.preset, { backgroundColor: c }]} onPress={() => setColorField(key, c)} />
+        {presetColors.map((c, idx) => (
+          <TouchableOpacity key={`${key}-${c}-${idx}`} style={[styles.preset, { backgroundColor: c }]} onPress={() => setColorField(key, c)} />
         ))}
       </ScrollView>
     </View>
   );
 
   return (
-    <View style={styles.container}>
-      {/* Single Accordion: Manage Theme (Create or Update) */}
-      <TouchableOpacity style={styles.accordionHeader} onPress={() => setShowManage(!showManage)}>
-        <Text style={styles.accordionTitle}>Manage Theme</Text>
-        <Text style={styles.accordionToggle}>{showManage ? '−' : '+'}</Text>
-      </TouchableOpacity>
+    <SafeAreaView style={g.appBackground}>
+      <StatusBar backgroundColor={appColors.background} barStyle={appColors.background === '#FFFFFF' ? 'dark-content' : 'light-content'} />
+      <GlobalHeader
+        title={isAdmin && effectiveHospitalId ? `Manage Themes (Hospital ${effectiveHospitalId})` : "Manage Themes"}
+        showBackButton={true}
+        backgroundColor={appColors.accentText}
+        titleColor={appColors.textPrimary}
+        onBackPress={() => (navigation as any).goBack()}
+        headerStyle={{ paddingTop: 10, paddingHorizontal: 20, paddingBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 8 }}
+        backButtonStyle={{ backgroundColor: appColors.accentText, borderWidth: 1, borderColor: appColors.border }}
+      />
+      
+      {isAdmin && !effectiveHospitalId && (
+        <View style={[styles.infoBox, { backgroundColor: '#FEF3C7' }]}>
+          <Text style={[styles.infoText, { color: '#92400E' }]}>Please select a hospital to manage themes</Text>
+        </View>
+      )}
+      
+      <ScrollView style={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={appColors.primary} />}>
+        {/* Single Accordion: Manage Theme (Create or Update) */}
+        <TouchableOpacity style={[styles.accordionHeader, { backgroundColor: appColors.accentText }]} onPress={() => setShowManage(!showManage)}>
+          <Text style={[styles.accordionTitle, { color: appColors.textPrimary }]}>Manage Theme</Text>
+          <Text style={[styles.accordionToggle, { color: appColors.textPrimary }]}>{showManage ? '−' : '+'}</Text>
+        </TouchableOpacity>
       {showManage && (
         <View style={styles.accordionBody}>
           {/* Theme selector */}
@@ -391,13 +505,11 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
         <Text style={styles.title}>All Themes</Text>
         <TouchableOpacity onPress={onRefresh}><Text style={styles.refreshText}>Refresh</Text></TouchableOpacity>
       </View>
-      <FlatList
-        data={themes}
-        keyExtractor={(item) => String(item.id || item.name)}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        renderItem={renderItem}
-        ListEmptyComponent={<Text style={styles.subtitle}>No themes</Text>}
-      />
+      {themes.length === 0 ? (
+        <Text style={styles.subtitle}>No themes</Text>
+      ) : (
+        themes.map((item) => renderItem({ item }))
+      )}
 
       {/* Theme selection modal */}
       <Modal visible={selectModalVisible} animationType="slide" transparent>
@@ -457,7 +569,14 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
                 style={[styles.input, styles.inputLarge]}
                 placeholder="#RRGGBB"
                 value={tempColor}
-                onChangeText={(v) => setTempColor(normalizeHex(v))}
+                onChangeText={(v) => {
+                  const normalized = normalizeHex(v);
+                  setTempColor(normalized);
+                  if (isValidHex(normalized)) {
+                    const { r, g, b } = hexToRgb(normalized);
+                    setRgb({ r: String(r), g: String(g), b: String(b) });
+                  }
+                }}
                 placeholderTextColor={Colors.textSecondary}
                 autoCapitalize="none"
               />
@@ -513,40 +632,95 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
                 <View style={[styles.previewSwatch, { backgroundColor: tempColor }]} />
               </View>
             </View>
-            {TriangleColorPickerComp && toHsv && fromHsv ? (
-              <View style={{ height: 260, marginBottom: 12 }}>
-                <TriangleColorPickerComp
-                  style={{ flex: 1 }}
-                  color={toHsv(getSafeHex(tempColor))}
-                  onColorChange={(hsv: any) => {
-                    const hex = fromHsv(hsv);
-                    setTempColor(getSafeHex(hex));
-                    const { r, g, b } = hexToRgb(hex);
-                    setRgb({ r: String(r), g: String(g), b: String(b) });
-                  }}
-                />
-              </View>
-            ) : ColorPickerComp ? (
-              <View style={{ height: 220, marginBottom: 10 }}>
-                <ColorPickerComp
-                  style={{ flex: 1 }}
-                  defaultColor={getSafeHex(tempColor)}
-                  onColorChange={(hsv: any) => {
-                    const hex = fromHsv(hsv);
-                    setTempColor(getSafeHex(hex));
-                    const { r, g, b } = hexToRgb(hex);
-                    setRgb({ r: String(r), g: String(g), b: String(b) });
-                  }}
-                />
-              </View>
-            ) : null}
+            {(() => {
+              const safeColor = getSafeHex(tempColor || '#3B82F6');
+              let hsvColor: any = null;
+              
+              // Safely convert hex to HSV if toHsv is available
+              if (TriangleColorPickerComp && toHsv && typeof toHsv === 'function') {
+                try {
+                  hsvColor = toHsv(safeColor);
+                  // Validate hsvColor is an object with expected properties
+                  if (!hsvColor || typeof hsvColor !== 'object' || (!hsvColor.h && hsvColor.h !== 0)) {
+                    hsvColor = null;
+                  }
+                } catch (e) {
+                  console.error('Error converting to HSV:', e);
+                  hsvColor = null;
+                }
+              }
+
+              if (TriangleColorPickerComp && toHsv && fromHsv && hsvColor) {
+                const PickerComponent = TriangleColorPickerComp;
+                return (
+                  <View style={{ height: 260, marginBottom: 12, width: '100%' }}>
+                    <PickerComponent
+                      style={{ flex: 1, width: '100%' }}
+                      color={hsvColor}
+                      onColorChange={(hsv: any) => {
+                        try {
+                          if (fromHsv && typeof fromHsv === 'function' && hsv) {
+                            const hex = fromHsv(hsv);
+                            if (hex && typeof hex === 'string') {
+                              const safeHex = getSafeHex(hex, safeColor);
+                              setTempColor(safeHex);
+                              const { r, g, b } = hexToRgb(safeHex);
+                              setRgb({ r: String(r), g: String(g), b: String(b) });
+                            }
+                          }
+                        } catch (e) {
+                          console.error('Color picker error:', e);
+                        }
+                      }}
+                    />
+                  </View>
+                );
+              } else if (ColorPickerComp) {
+                const PickerComponent = ColorPickerComp;
+                return (
+                  <View style={{ height: 220, marginBottom: 10, width: '100%' }}>
+                    <PickerComponent
+                      style={{ flex: 1, width: '100%' }}
+                      defaultColor={safeColor}
+                      onColorChange={(hsv: any) => {
+                        try {
+                          if (fromHsv && typeof fromHsv === 'function' && hsv) {
+                            const hex = fromHsv(hsv);
+                            if (hex && typeof hex === 'string') {
+                              const safeHex = getSafeHex(hex, safeColor);
+                              setTempColor(safeHex);
+                              const { r, g, b } = hexToRgb(safeHex);
+                              setRgb({ r: String(r), g: String(g), b: String(b) });
+                            }
+                          }
+                        } catch (e) {
+                          console.error('Color picker error:', e);
+                        }
+                      }}
+                    />
+                  </View>
+                );
+              } else {
+                return (
+                  <View style={{ marginBottom: 12, padding: 12, backgroundColor: '#F3F4F6', borderRadius: 8 }}>
+                    <Text style={{ color: Colors.textSecondary, fontSize: 12, textAlign: 'center' }}>
+                      Color wheel picker not available. Use hex input, RGB inputs, or preset colors below.
+                    </Text>
+                  </View>
+                );
+              }
+            })()}
             {/* Always show vivid preset grid as well */}
             <View style={styles.pickerGrid}>
-              {presetColors.map((c) => (
+              {presetColors.map((c, idx) => (
                 <TouchableOpacity
-                  key={`picker-${c}`}
+                  key={`picker-${c}-${idx}`}
                   style={[styles.presetSquare, { backgroundColor: c }]}
-                  onPress={() => setTempColor(c)}
+                  onPress={() => {
+                    setTempColor(c);
+                    const { r, g, b } = hexToRgb(c);
+                    setRgb({ r: String(r), g: String(g), b: String(b) });
+                  }}
                 />
               ))}
             </View>
@@ -563,7 +737,8 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
-    </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -587,6 +762,7 @@ const styles = StyleSheet.create({
   smallBtnText: { color: Colors.textPrimary, fontSize: 12, fontWeight: '600' },
   deleteBtn: { backgroundColor: '#FEE2E2', borderColor: '#FCA5A5' },
   deleteBtnText: { color: '#B91C1C' },
+  deleteFullBtn: { backgroundColor: '#FEE2E2', borderWidth: 1, borderColor: '#FCA5A5' },
   accordionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: Colors.white, paddingHorizontal: 12, paddingVertical: 14, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, marginBottom: 8 },
   accordionTitle: { fontSize: 16, fontFamily: Typography.fontFamily.bold, color: Colors.textPrimary },
   accordionToggle: { fontSize: 20, fontFamily: Typography.fontFamily.bold, color: Colors.textPrimary },
@@ -617,6 +793,8 @@ const styles = StyleSheet.create({
   rgbInput: { paddingVertical: 10, fontSize: 15 },
   previewSwatchWrapper: { marginLeft: 8 },
   previewSwatch: { width: 46, height: 46, borderRadius: 8, borderWidth: 1, borderColor: Colors.border },
+  infoBox: { padding: 12, borderRadius: 8, marginHorizontal: 20, marginTop: 12 },
+  infoText: { fontSize: 13, fontFamily: Typography.fontFamily.medium },
 });
 
 export default HospitalAdminThemeManageScreen;

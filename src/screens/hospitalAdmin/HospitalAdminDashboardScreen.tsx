@@ -14,12 +14,14 @@ import { useNotifications } from '../../contexts/NotificationContext';
 import HospitalAdminApi from '../../services/hospitalAdminApi';
 import ApiService from '../../services/api';
 import { getFinalApiUrl } from '../../config/api';
+import { usePermissions } from '../../hooks/usePermissions';
 
 const HospitalAdminDashboardScreen: React.FC = () => {
   const navigation = useNavigation();
   const g = useGlobalStyles();
   const appColors = useAppColors();
   const { unreadCount } = useNotifications();
+  const { hasPermission, loading: permissionsLoading, permissions } = usePermissions();
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [dashboard, setDashboard] = useState<any>(null);
@@ -61,6 +63,19 @@ const HospitalAdminDashboardScreen: React.FC = () => {
     });
     return unsubscribe;
   }, [navigation, load]);
+
+  // Debug: Log permissions and checks when ready
+  useEffect(() => {
+    if (!permissionsLoading) {
+      try {
+        console.log('[HospitalAdminDashboard] permissions.hospital =', (permissions?.hospital || []).map(p => p.code));
+        console.log('[HospitalAdminDashboard] hasPermission(JOB_CREATE) =', hasPermission('JOB_CREATE'));
+        console.log('[HospitalAdminDashboard] hasPermission(HOSPITAL_READ) =', hasPermission('HOSPITAL_READ'));
+      } catch (e) {
+        // no-op
+      }
+    }
+  }, [permissionsLoading, permissions, hasPermission]);
 
   const scrollToEnd = () => {
     overviewScrollRef.current?.scrollToEnd({ animated: true });
@@ -111,13 +126,13 @@ const HospitalAdminDashboardScreen: React.FC = () => {
       onPress={onPress}
       disabled={!onPress}
       activeOpacity={0.8}>
-      <View style={styles.statContainer}>
+      <View style={[styles.statContainer, { backgroundColor: appColors.accentText }]}>
         <View style={styles.statIconWrapper}>
           <FontAwesomeIcon icon={icon} size={Responsive.iconSize(22)} color="#1C2A3A" />
         </View>
         <View style={styles.statContent}>
-          <Text style={styles.statValue}>{value.toLocaleString()}</Text>
-          <Text style={styles.statTitle}>{title}</Text>
+          <Text style={[styles.statValue, { color: appColors.textPrimary }]}>{value.toLocaleString()}</Text>
+          <Text style={[styles.statTitle, { color: appColors.textPrimary }]}>{title}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -183,12 +198,12 @@ const HospitalAdminDashboardScreen: React.FC = () => {
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         activeOpacity={1}>
-        <Animated.View style={[styles.quickActionCard, { transform: [{ scale: scaleAnim }] }]}>
+        <Animated.View style={[styles.quickActionCard, { backgroundColor: appColors.accentText, transform: [{ scale: scaleAnim }] }]}>
           <LinearGradient colors={gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.quickActionGradient}>
-            <FontAwesomeIcon icon={icon} size={Responsive.iconSize(22)} color="#FFFFFF" />
+            <FontAwesomeIcon icon={icon} size={Responsive.iconSize(18)} color="#FFFFFF" />
           </LinearGradient>
-          <Text style={styles.quickActionTitle}>{title}</Text>
-          <Text style={styles.quickActionSubtitle}>{subtitle}</Text>
+          <Text style={[styles.quickActionTitle, { color: appColors.textPrimary }]} numberOfLines={2} ellipsizeMode="tail">{title}</Text>
+          <Text style={[styles.quickActionSubtitle, { color: appColors.textSecondary }]} numberOfLines={2} ellipsizeMode="tail">{subtitle}</Text>
         </Animated.View>
       </TouchableOpacity>
     );
@@ -226,15 +241,15 @@ const HospitalAdminDashboardScreen: React.FC = () => {
     <SafeAreaView style={g.appBackground}>
       <StatusBar backgroundColor={appColors.background} barStyle={appColors.background === '#FFFFFF' ? 'dark-content' : 'light-content'} translucent={false} />
 
-      <View style={styles.innerContainer}>
+      <View style={[styles.innerContainer, { backgroundColor: appColors.background }]}>
         {/* Simple Header */}
-        <View style={styles.simpleHeader}>
+        <View style={[styles.simpleHeader, { backgroundColor: appColors.accentText }]}>
           <View style={styles.headerContent}>
             <View style={styles.headerLeft}>
-              <Text style={styles.headerGreeting}>
-                Hello <Text style={styles.headerRole}>Hospital Admin</Text>
+              <Text style={[styles.headerGreeting, { color: appColors.textSecondary }]}>
+                Hello <Text style={[styles.headerRole, { color: appColors.primary }]}>Hospital Admin</Text>
               </Text>
-              <Text style={styles.headerName}>
+              <Text style={[styles.headerName, { color: appColors.textPrimary }]}>
                 {userProfile ? `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() : hospital?.name || 'Hospital'}!
               </Text>
             </View>
@@ -284,12 +299,12 @@ const HospitalAdminDashboardScreen: React.FC = () => {
 
           {/* Dashboard Title */}
           <View style={styles.dashboardTitleSection}>
-            <Text style={styles.dashboardTitle}>Hospital Admin Dashboard</Text>
+            <Text style={[styles.dashboardTitle, { color: appColors.textPrimary }]}>Hospital Admin Dashboard</Text>
           </View>
 
           {/* Hospital Header Card */}
           {hospital && (
-            <View style={styles.headerCard}>
+            <View style={[styles.headerCard, { backgroundColor: appColors.accentText }]}>
               <View style={styles.headerRow}>
                 {(() => {
                   const candidate = (hospital as any);
@@ -316,9 +331,9 @@ const HospitalAdminDashboardScreen: React.FC = () => {
                   );
                 })()}
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.hospitalName}>{hospital?.name || 'Hospital'}</Text>
+                  <Text style={[styles.hospitalName, { color: appColors.textPrimary }]}>{hospital?.name || 'Hospital'}</Text>
                   {!!hospital?.units?.length && (
-                    <Text style={styles.hospitalMeta}>{hospital.units.length} active units</Text>
+                    <Text style={[styles.hospitalMeta, { color: appColors.textSecondary }]}>{hospital.units.length} active units</Text>
                   )}
                 </View>
               </View>
@@ -373,12 +388,30 @@ const HospitalAdminDashboardScreen: React.FC = () => {
           <View style={styles.quickActionsSection}>
             <Text style={[styles.sectionTitle, { color: appColors.textPrimary }]}>Quick Actions</Text>
             <View style={styles.quickActionsGrid}>
-              <QuickAction title="Create Job" subtitle="Post new opening" icon="plus" gradient={['#3B82F6', '#2563EB']} onPress={() => (navigation as any).navigate('CreateJob')} />
-              <QuickAction title="Upload Logo" subtitle="Brand your hospital" icon="image" gradient={['#10B981', '#059669']} onPress={() => (navigation as any).navigate('HospitalAdminUploadLogo')} />
-              <QuickAction title="Manage Themes" subtitle="Colors & branding" icon="palette" gradient={['#8B5CF6', '#7C3AED']} onPress={() => (navigation as any).navigate('HospitalAdminThemes')} />
-              <QuickAction title="Manage Units" subtitle="Create & edit units" icon="hospital" gradient={['#F59E0B', '#D97706']} onPress={() => (navigation as any).navigate('HospitalAdminUnits')} />
-              <QuickAction title="Permissions" subtitle="View & manage" icon="shield-alt" gradient={['#6366F1', '#4F46E5']} onPress={() => (navigation as any).navigate('PermissionManagement')} />
-              <QuickAction title="Agency Blacklist" subtitle="Manage agencies" icon="ban" gradient={['#EF4444', '#DC2626']} onPress={() => (navigation as any).navigate('AgencyBlacklist')} />
+              {!permissionsLoading && hasPermission('HOSPITAL_READ') && (
+                <QuickAction title="Hospital Details" subtitle="View & edit hospital" icon="hospital" gradient={['#06B6D4', '#0891B2']} onPress={() => (navigation as any).navigate('HospitalAdminHospital')} />
+              )}
+              {!permissionsLoading && hasPermission('JOB_CREATE') && (
+                <QuickAction title="Create Job" subtitle="Post new opening" icon="plus" gradient={['#3B82F6', '#2563EB']} onPress={() => (navigation as any).navigate('CreateJob')} />
+              )}
+              {!permissionsLoading && hasPermission('HOSPITAL_MANAGE_UNITS') && (
+                <QuickAction title="Manage Units" subtitle="Create & edit units" icon="building" gradient={['#F59E0B', '#D97706']} onPress={() => (navigation as any).navigate('HospitalAdminUnits')} />
+              )}
+              {!permissionsLoading && hasPermission('HOSPITAL_MANAGE_THEMES') && (
+                <QuickAction title="Manage Themes" subtitle="Create & edit themes" icon="palette" gradient={['#8B5CF6', '#7C3AED']} onPress={() => (navigation as any).navigate('HospitalAdminThemes')} />
+              )}
+              {!permissionsLoading && hasPermission('PERMISSION_VIEW') && (
+                <QuickAction title="Permissions" subtitle="View & grant permissions" icon="shield-alt" gradient={['#6366F1', '#4F46E5']} onPress={() => (navigation as any).navigate('PermissionManagement')} />
+              )}
+              {!permissionsLoading && hasPermission('SPECIALIZATION_MANAGE') && (
+                <QuickAction title="Specializations" subtitle="Manage specializations" icon="stethoscope" gradient={['#14B8A6', '#0D9488']} onPress={() => (navigation as any).navigate('SpecializationManagement')} />
+              )}
+              {!permissionsLoading && hasPermission('HOSPITAL_UPDATE') && (
+                <QuickAction title="Upload Logo" subtitle="Brand your hospital" icon="image" gradient={['#10B981', '#059669']} onPress={() => (navigation as any).navigate('HospitalAdminUploadLogo')} />
+              )}
+              {!permissionsLoading && hasPermission('AGENCY_BLACKLIST') && (
+                <QuickAction title="Agency Blacklist" subtitle="Manage agencies" icon="ban" gradient={['#EF4444', '#DC2626']} onPress={() => (navigation as any).navigate('AgencyBlacklist')} />
+              )}
             </View>
           </View>
 
@@ -386,11 +419,11 @@ const HospitalAdminDashboardScreen: React.FC = () => {
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
               <Text style={[styles.sectionTitle, { color: appColors.textPrimary }]}>Recent Jobs</Text>
-              <TouchableOpacity onPress={() => (navigation as any).navigate('HRJobs')}>
+              <TouchableOpacity onPress={() => (navigation as any).navigate('HospitalAdminJobs')}>
                 <Text style={styles.viewAllText}>View All</Text>
               </TouchableOpacity>
             </View>
-            <View style={styles.listCard}>
+            <View style={[styles.listCard, { backgroundColor: appColors.accentText }]}>
               {dashboard?.recentJobs && dashboard.recentJobs.length > 0 ? (
                 dashboard.recentJobs.slice(0, 3).map((job: any, index: number) => (
                   <TouchableOpacity
@@ -399,26 +432,26 @@ const HospitalAdminDashboardScreen: React.FC = () => {
                     onPress={() => (navigation as any).navigate('JobDetails', { jobId: job.id })}
                     activeOpacity={0.7}>
                     <View style={styles.listIconWrapper}>
-                      <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.listIcon}>
+                      <LinearGradient colors={[appColors.primary, appColors.secondary]} style={styles.listIcon}>
                         <FontAwesomeIcon icon="briefcase" size={Responsive.iconSize(18)} color="#FFFFFF" />
                       </LinearGradient>
                     </View>
                     <View style={styles.listContent}>
-                      <Text style={styles.listTitle} numberOfLines={1}>{job.title || 'Untitled Job'}</Text>
-                      <Text style={styles.listSubtitle} numberOfLines={1}>{job.department || job.location || ''}</Text>
+                      <Text style={[styles.listTitle, { color: appColors.textPrimary }]} numberOfLines={1}>{job.title || 'Untitled Job'}</Text>
+                      <Text style={[styles.listSubtitle, { color: appColors.textSecondary }]} numberOfLines={1}>{job.department || job.location || ''}</Text>
                       {job.priority && (
                         <View style={styles.listFooter}>
                           <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(job.priority) + '20' }]}>
                             <Text style={[styles.priorityText, { color: getPriorityColor(job.priority) }]}>{job.priority}</Text>
                           </View>
                           {job.hourlyRate && (
-                            <Text style={styles.listRate}>₹{job.hourlyRate}/hr</Text>
+                            <Text style={[styles.listRate, { color: appColors.textPrimary }]}>₹{job.hourlyRate}/hr</Text>
                           )}
                         </View>
                       )}
                     </View>
                     {job.createdAt && (
-                      <Text style={styles.listTime}>{formatDate(job.createdAt)}</Text>
+                      <Text style={[styles.listTime, { color: appColors.textSecondary }]}>{formatDate(job.createdAt)}</Text>
                     )}
                   </TouchableOpacity>
                 ))
@@ -636,7 +669,6 @@ const styles = StyleSheet.create({
     minHeight: 100,
   },
   statContainer: {
-    backgroundColor: '#ffffff',
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -783,11 +815,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   quickActionCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    padding: 24,
+    padding: 16,
+    paddingTop: 20,
+    paddingBottom: 20,
     alignItems: 'center',
-    minHeight: 120,
+    minHeight: 130,
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
@@ -796,35 +829,40 @@ const styles = StyleSheet.create({
     elevation: 6,
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.04)',
+    width: '100%',
   },
   quickActionGradient: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 10,
   },
   quickActionTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: Typography.fontFamily.bold,
     color: '#111827',
-    marginBottom: 1,
+    marginBottom: 2,
     textAlign: 'center',
     letterSpacing: -0.2,
+    lineHeight: 18,
+    paddingHorizontal: 4,
   },
   quickActionSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: Typography.fontFamily.medium,
     color: '#6B7280',
     textAlign: 'center',
+    lineHeight: 16,
+    paddingHorizontal: 4,
+    marginTop: 2,
   },
   section: {
     paddingHorizontal: 20,
     marginTop: 24,
   },
   listCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',
