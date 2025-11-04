@@ -285,6 +285,34 @@ const ProfileScreen: React.FC = () => {
               <ActivityIndicator size="small" color="#6366F1" />
             ) : themes && themes.length > 0 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingVertical: 6 }}>
+                {/* App Default Theme tile */}
+                <View key="__app_default__" style={{ marginRight: 12, alignItems: 'center' }}>
+                  <TouchableOpacity
+                    onPress={async()=>{
+                      try {
+                        // Apply hardcoded app default
+                        setTheme({
+                          name: 'Default',
+                          primaryColor: '#1C2A3A',
+                          secondaryColor: '#3B82F6',
+                          backgroundColor: '#F3F9FF',
+                          textColor: '#111827',
+                          accentTextColor: '#FFFFFF',
+                        });
+                        // Persist as user preference if supported
+                        try { await ApiService.updateUserTheme('default'); } catch {}
+                        Alert.alert('Success','Default app theme applied');
+                      } catch (e:any) {
+                        Alert.alert('Error', e?.response?.data?.message||e?.message||'Failed to apply default theme');
+                      }
+                    }}
+                    style={{ width: 56, height: 56, borderRadius: 12, backgroundColor: '#1C2A3A', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB' }}
+                    activeOpacity={0.8}
+                  >
+                    <View style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: '#3B82F6' }} />
+                  </TouchableOpacity>
+                  <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 6 }} numberOfLines={1}>Default</Text>
+                </View>
                 {themes.map((t: any) => (
                   <View key={String(t.id || t.name)} style={{ marginRight: 12, alignItems: 'center' }}>
                     <TouchableOpacity

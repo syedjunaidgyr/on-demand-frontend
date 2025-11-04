@@ -560,8 +560,8 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
       <SafeAreaView style={styles.safeAreaTop} edges={['top']}>
         {/* STATUS BAR */}
         <StatusBar
-          backgroundColor="#FFFFFF"
-          barStyle="dark-content"
+          backgroundColor={g.appBackground?.backgroundColor || '#FFFFFF'}
+          barStyle={(g.appBackground?.backgroundColor || '#FFFFFF') === '#FFFFFF' ? 'dark-content' : 'light-content'}
           translucent={false}
         />
 
