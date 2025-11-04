@@ -36,6 +36,7 @@ import JobDetailsCommonScreen from '../screens/common/JobDetailsCommonScreen';
 import PDFViewerScreen from '../screens/common/PDFViewerScreen';
 import NotificationsScreen from '../screens/common/NotificationsScreen';
 import PermissionManagementScreen from '../screens/common/PermissionManagementScreen';
+import SpecializationManagementScreen from '../screens/common/SpecializationManagementScreen';
 
 // Agency Screens
 import AgencyDashboardScreen from '../screens/agency/AgencyDashboardScreen';
@@ -53,6 +54,10 @@ import HospitalAdminUploadLogoScreen from '../screens/hospitalAdmin/HospitalAdmi
 import HospitalAdminThemeManageScreen from '../screens/hospitalAdmin/HospitalAdminThemeManageScreen';
 import HospitalAdminUnitsScreen from '../screens/hospitalAdmin/HospitalAdminUnitsScreen';
 import HospitalAdminAgencyBlacklistScreen from '../screens/hospitalAdmin/HospitalAdminAgencyBlacklistScreen';
+import HospitalAdminHospitalScreen from '../screens/hospitalAdmin/HospitalAdminHospitalScreen';
+
+// Admin Screens
+import AdminHospitalManagementScreen from '../screens/admin/AdminHospitalManagementScreen';
 
 // Test Components
 import GeolocationTest from '../components/GeolocationTest';
@@ -108,10 +113,13 @@ export type RootStackParamList = {
   AgencyNurseDetails: { userId: number };
   AgencyAssignNurse: { jobId: string; hourlyRate?: number; mode?: 'FULL' | 'PARTIAL' };
   HospitalAdminUploadLogo: undefined;
-  HospitalAdminThemes: undefined;
-  HospitalAdminUnits: undefined;
-  PermissionManagement: undefined;
+  HospitalAdminThemes: { hospitalId?: number } | undefined;
+  HospitalAdminUnits: { hospitalId?: number } | undefined;
+  HospitalAdminHospital: undefined;
+  PermissionManagement: { initialTab?: 'permissions' | 'masters' | 'userPerms' | 'grants' | 'hospitalPerms' } | undefined;
   AgencyBlacklist: undefined;
+  AdminHospitalManagement: undefined;
+  SpecializationManagement: undefined;
 };
 
 export type AuthStackParamList = {
@@ -294,7 +302,7 @@ const HospitalAdminTabNavigator = () => {
         headerShown: false,
       })}>
       <MainTab.Screen name="HospitalAdminDashboard" component={HospitalAdminDashboardScreen} options={{ title: 'Dashboard' }} />
-      <MainTab.Screen name="HospitalAdminJobs" component={HRJobsScreen as any} options={{ title: 'Jobs' }} />
+      <MainTab.Screen name="HospitalAdminJobs" component={HospitalAdminJobsScreen as any} options={{ title: 'Jobs' }} />
       <MainTab.Screen name="HospitalAdminStaff" component={HospitalAdminStaffScreen} options={{ title: 'Staff' }} />
     </MainTab.Navigator>
   );
@@ -514,6 +522,13 @@ const MainNavigator = ({ user }: { user: User }) => {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="HospitalAdminHospital"
+        component={HospitalAdminHospitalScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
 
       <Stack.Screen
         name="PermissionManagement"
@@ -526,6 +541,20 @@ const MainNavigator = ({ user }: { user: User }) => {
       <Stack.Screen
         name="AgencyBlacklist"
         component={HospitalAdminAgencyBlacklistScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="AdminHospitalManagement"
+        component={AdminHospitalManagementScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="SpecializationManagement"
+        component={SpecializationManagementScreen}
         options={{
           headerShown: false,
         }}

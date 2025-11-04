@@ -29,9 +29,11 @@ import { Job } from '../../types';
 import ApiService from '../../services/api';
 import Responsive from '../../utils/responsive';
 import { SkeletonJobCard, SkeletonSearchBar } from '../../components/SkeletonComponents';
+import { usePermissions } from '../../hooks/usePermissions';
 
 const HRJobsScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { hasPermission, loading: permissionsLoading } = usePermissions();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -158,6 +160,15 @@ const HRJobsScreen: React.FC = () => {
   };
 
   const handleCreateJob = () => {
+    // Check permission before navigating
+    if (!hasPermission('JOB_CREATE')) {
+      Alert.alert(
+        'Access Denied',
+        'You do not have permission to create jobs. Please contact your administrator.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
     (navigation as any).navigate('CreateJob');
   };
 
@@ -392,10 +403,12 @@ const HRJobsScreen: React.FC = () => {
       />
       )}
 
-      {/* Floating Action Button */}
-      <TouchableOpacity style={styles.fab} onPress={handleCreateJob}>
-        <FontAwesomeIcon icon="plus" size={24} color={Colors.white}  />
-      </TouchableOpacity>
+      {/* Floating Action Button - Only show if user has JOB_CREATE permission */}
+      {!permissionsLoading && hasPermission('JOB_CREATE') && (
+        <TouchableOpacity style={styles.fab} onPress={handleCreateJob}>
+          <FontAwesomeIcon icon="plus" size={24} color={Colors.white}  />
+        </TouchableOpacity>
+      )}
       
       <HRFooterNavigation 
         activeRoute="Jobs" 

@@ -26,9 +26,11 @@ import { User } from '../../types';
 import ApiService from '../../services/api';
 import Responsive from '../../utils/responsive';
 import { SkeletonUserCard, SkeletonSearchBar } from '../../components/SkeletonComponents';
+import { usePermissions } from '../../hooks/usePermissions';
 
 const HRUsersScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { hasPermission, loading: permissionsLoading } = usePermissions();
   const scrollY = React.useRef(new Animated.Value(0)).current;
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -182,7 +184,17 @@ const HRUsersScreen: React.FC = () => {
   });
 
   const handleUserPress = (user: User) => {
+    // Check permission before allowing edit
+    if (!hasPermission('USER_UPDATE')) {
+      Alert.alert(
+        'Access Denied',
+        'You do not have permission to edit users. Please contact your administrator.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
     console.log('User pressed:', user.id);
+    // TODO: Navigate to edit user screen
   };
 
   const handleRoleChange = (role: 'ALL' | 'DOCTOR' | 'NURSE') => {
@@ -229,9 +241,11 @@ const HRUsersScreen: React.FC = () => {
       {/* Top row: Join date + edit */}
       <View style={styles.cardTopRow}>
         <Text style={styles.cardTimeText}>Joined {formatDate(user.createdAt)}</Text>
-        <TouchableOpacity style={styles.editTopButton} onPress={() => handleUserPress(user)}>
-          <FontAwesomeIcon icon="edit" size={Responsive.iconSize(16)} color={Colors.textSecondary} />
-        </TouchableOpacity>
+        {!permissionsLoading && hasPermission('USER_UPDATE') && (
+          <TouchableOpacity style={styles.editTopButton} onPress={() => handleUserPress(user)}>
+            <FontAwesomeIcon icon="edit" size={Responsive.iconSize(16)} color={Colors.textSecondary} />
+          </TouchableOpacity>
+        )}
       </View>
       <View style={styles.cardDivider} />
 

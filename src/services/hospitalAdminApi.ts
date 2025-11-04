@@ -41,6 +41,29 @@ class HospitalAdminApiService {
     return response.data;
   }
 
+  async updateHospital(data: {
+    name?: string;
+    code?: string;
+    phone?: string;
+    email?: string;
+    website?: string;
+    description?: string;
+    address?: {
+      street?: string;
+      city?: string;
+      state?: string;
+      zipCode?: string;
+      country?: string;
+    };
+    contactInfo?: {
+      phone?: string;
+      email?: string;
+    };
+  }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.put('/hospital-admin/hospital', data);
+    return response.data;
+  }
+
   async getUsers(params?: { page?: number; limit?: number; role?: string; search?: string }): Promise<any> {
     const response: AxiosResponse<any> = await this.api.get('/hospital-admin/users', { params });
     return response.data;

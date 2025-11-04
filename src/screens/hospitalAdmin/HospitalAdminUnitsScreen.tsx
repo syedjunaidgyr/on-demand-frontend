@@ -11,15 +11,19 @@ import {
   TextInput,
   Modal,
   ActivityIndicator,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import GlobalHeader from '../../components/GlobalHeader';
 import HospitalAdminApi from '../../services/hospitalAdminApi';
+import ApiService from '../../services/api';
 import { Typography } from '../../constants/typography';
 import Responsive from '../../utils/responsive';
-import { Colors } from '../../constants/colors';
+import { useGlobalStyles } from '../../theme/globalStyles';
+import { useAppColors } from '../../hooks/useAppColors';
+import { useAuth } from '../../navigation/AppNavigator';
 
 interface Unit {
   id: number;
@@ -29,26 +33,64 @@ interface Unit {
   isActive: boolean;
 }
 
+type UnitsScreenRouteProp = RouteProp<{ Units: { hospitalId?: number } }, 'Units'>;
+
 const HospitalAdminUnitsScreen: React.FC = () => {
   const navigation = useNavigation();
+  const route = useRoute<UnitsScreenRouteProp>();
+  const { user } = useAuth();
+  const g = useGlobalStyles();
+  const appColors = useAppColors();
+  const isAdmin = user?.role === 'ADMIN';
+  const hospitalId = route.params?.hospitalId; // Admin passes hospitalId, Hospital Admin uses their own
+  
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
   const [form, setForm] = useState({ unitCode: '', unitName: '' });
+  
+  // Get user profile to determine actual hospitalId for Hospital Admin
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const profile = await ApiService.getProfile();
+        setUserProfile(profile);
+      } catch (e) {
+        console.error('Failed to load profile:', e);
+      }
+    };
+    loadProfile();
+  }, []);
+  
+  const effectiveHospitalId = isAdmin ? hospitalId : userProfile?.hospitalId;
 
   const load = useCallback(async () => {
     try {
-      const res = await HospitalAdminApi.listUnits();
-      setUnits(res.units || res || []);
+      setLoading(true);
+      if (isAdmin && effectiveHospitalId) {
+        // Admin: Get units for specific hospital
+        // Note: Admin API endpoint for listing units by hospital might need to be implemented
+        // For now, we'll use a workaround or show message
+        const hospitalDetails = await ApiService.getHospitalDetails(effectiveHospitalId);
+        setUnits(hospitalDetails?.units || hospitalDetails?.unitMasters || []);
+      } else if (!isAdmin) {
+        // Hospital Admin: Use their API
+        const res = await HospitalAdminApi.listUnits();
+        setUnits(res.units || res || []);
+      } else {
+        setUnits([]);
+      }
     } catch (e: any) {
       console.error('Failed to load units:', e);
       Alert.alert('Error', e?.response?.data?.message || e?.message || 'Failed to load units');
+      setUnits([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAdmin, effectiveHospitalId]);
 
   useEffect(() => {
     load();
@@ -77,12 +119,24 @@ const HospitalAdminUnitsScreen: React.FC = () => {
       Alert.alert('Validation', 'Please fill in all fields');
       return;
     }
+    if (isAdmin && !effectiveHospitalId) {
+      Alert.alert('Error', 'Hospital ID is required');
+      return;
+    }
     try {
       if (editingUnit) {
-        await HospitalAdminApi.updateUnit(editingUnit.unitCode, form);
+        if (isAdmin && effectiveHospitalId) {
+          await ApiService.updateUnitForHospital(effectiveHospitalId, editingUnit.unitCode, form);
+        } else {
+          await HospitalAdminApi.updateUnit(editingUnit.unitCode, form);
+        }
         Alert.alert('Success', 'Unit updated successfully');
       } else {
-        await HospitalAdminApi.createUnit(form);
+        if (isAdmin && effectiveHospitalId) {
+          await ApiService.createUnitForHospital(effectiveHospitalId, form);
+        } else {
+          await HospitalAdminApi.createUnit(form);
+        }
         Alert.alert('Success', 'Unit created successfully');
       }
       setShowModal(false);
@@ -116,29 +170,32 @@ const HospitalAdminUnitsScreen: React.FC = () => {
   };
 
   const renderUnit = ({ item }: { item: Unit }) => (
-    <View style={styles.unitCard}>
+    <View style={[styles.unitCard, { backgroundColor: appColors.accentText }]}>
       <View style={styles.unitInfo}>
-        <Text style={styles.unitCode}>{item.unitCode}</Text>
-        <Text style={styles.unitName}>{item.unitName}</Text>
+        <Text style={[styles.unitCode, { color: appColors.primary }]}>{item.unitCode || (item as any).code}</Text>
+        <Text style={[styles.unitName, { color: appColors.textPrimary }]}>{item.unitName || (item as any).name}</Text>
         <View style={styles.unitMeta}>
-          <View style={[styles.statusBadge, item.isActive ? styles.statusActive : styles.statusInactive]}>
-            <Text style={[styles.statusText, item.isActive ? styles.statusTextActive : styles.statusTextInactive]}>
-              {item.isActive ? 'Active' : 'Inactive'}
+          <View style={[styles.statusBadge, (item.isActive !== false && (item as any).isActive !== false) ? styles.statusActive : styles.statusInactive]}>
+            <Text style={[styles.statusText, (item.isActive !== false && (item as any).isActive !== false) ? styles.statusTextActive : styles.statusTextInactive]}>
+              {(item.isActive !== false && (item as any).isActive !== false) ? 'Active' : 'Inactive'}
             </Text>
           </View>
         </View>
       </View>
       <View style={styles.unitActions}>
         <TouchableOpacity style={styles.editButton} onPress={() => handleEdit(item)}>
-          <FontAwesomeIcon icon="edit" size={Responsive.iconSize(16)} color={Colors.primary} />
+          <FontAwesomeIcon icon="edit" size={Responsive.iconSize(16)} color={appColors.primary} />
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.editButton, { backgroundColor: item.isActive ? '#FEE2E2' : '#D1FAE5' }]}
+          style={[styles.editButton, { backgroundColor: (item.isActive !== false && (item as any).isActive !== false) ? '#FEE2E2' : '#D1FAE5' }]}
           onPress={async () => {
-            const nextState = !item.isActive;
+            const isActiveState = item.isActive !== false && (item as any).isActive !== false;
+            const nextState = !isActiveState;
+            const unitCode = item.unitCode || (item as any).code;
+            const unitName = item.unitName || (item as any).name;
             Alert.alert(
               nextState ? 'Activate Unit' : 'Deactivate Unit',
-              nextState ? `Activate ${item.unitName}?` : `Mark ${item.unitName} as inactive? You can reactivate it later.`,
+              nextState ? `Activate ${unitName}?` : `Mark ${unitName} as inactive? You can reactivate it later.`,
               [
                 { text: 'Cancel', style: 'cancel' },
                 {
@@ -146,7 +203,11 @@ const HospitalAdminUnitsScreen: React.FC = () => {
                   style: nextState ? 'default' : 'destructive',
                   onPress: async () => {
                     try {
-                      await HospitalAdminApi.updateUnit(item.unitCode, { isActive: nextState });
+                      if (isAdmin && effectiveHospitalId) {
+                        await ApiService.updateUnitForHospital(effectiveHospitalId, unitCode, { isActive: nextState });
+                      } else {
+                        await HospitalAdminApi.updateUnit(unitCode, { isActive: nextState });
+                      }
                       await load();
                     } catch (e: any) {
                       Alert.alert('Error', e?.response?.data?.message || e?.message || 'Failed to update status');
@@ -156,45 +217,53 @@ const HospitalAdminUnitsScreen: React.FC = () => {
               ]
             );
           }}>
-          <FontAwesomeIcon icon={item.isActive ? 'times' : 'check'} size={Responsive.iconSize(16)} color={item.isActive ? '#B91C1C' : '#059669'} />
+          <FontAwesomeIcon icon={(item.isActive !== false && (item as any).isActive !== false) ? 'times' : 'check'} size={Responsive.iconSize(16)} color={(item.isActive !== false && (item as any).isActive !== false) ? '#B91C1C' : '#059669'} />
         </TouchableOpacity>
       </View>
     </View>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={g.appBackground}>
+      <StatusBar backgroundColor={appColors.background} barStyle={appColors.background === '#FFFFFF' ? 'dark-content' : 'light-content'} />
       <GlobalHeader
-        title="Manage Units"
+        title={isAdmin && effectiveHospitalId ? `Manage Units (Hospital ${effectiveHospitalId})` : "Manage Units"}
         showBackButton={true}
-        backgroundColor="#FFFFFF"
-        titleColor="#111827"
+        backgroundColor={appColors.accentText}
+        titleColor={appColors.textPrimary}
         onBackPress={() => navigation.goBack()}
         headerStyle={{ paddingTop: 10, paddingHorizontal: 20, paddingBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 8 }}
-        backButtonStyle={{ backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#d1d5db' }}
+        backButtonStyle={{ backgroundColor: appColors.accentText, borderWidth: 1, borderColor: appColors.border }}
         rightComponent={
-          <TouchableOpacity style={styles.addButton} onPress={handleCreate}>
-            <FontAwesomeIcon icon="plus" size={Responsive.iconSize(20)} color="#FFFFFF" />
+          <TouchableOpacity style={[styles.addButton, { backgroundColor: appColors.primary }]} onPress={handleCreate}>
+            <FontAwesomeIcon icon="plus" size={Responsive.iconSize(20)} color={appColors.accentText} />
           </TouchableOpacity>
         }
       />
+      
+      {isAdmin && !effectiveHospitalId && (
+        <View style={[styles.infoBox, { backgroundColor: '#FEF3C7' }]}>
+          <Text style={[styles.infoText, { color: '#92400E' }]}>Please select a hospital to manage units</Text>
+        </View>
+      )}
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={appColors.primary} />
+          <Text style={[styles.loadingText, { color: appColors.textSecondary }]}>Loading units...</Text>
         </View>
       ) : (
         <FlatList
           data={units}
-          keyExtractor={(item) => String(item.id)}
+          keyExtractor={(item) => String(item.id || item.unitCode)}
           renderItem={renderUnit}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={appColors.primary} />}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <FontAwesomeIcon icon="hospital" size={Responsive.iconSize(48)} color="#D1D5DB" />
-              <Text style={styles.emptyText}>No units found</Text>
-              <Text style={styles.emptySubtext}>Create your first unit to get started</Text>
+              <FontAwesomeIcon icon="hospital" size={Responsive.iconSize(48)} color={appColors.textSecondary} />
+              <Text style={[styles.emptyText, { color: appColors.textPrimary }]}>No units found</Text>
+              <Text style={[styles.emptySubtext, { color: appColors.textSecondary }]}>Create your first unit to get started</Text>
             </View>
           }
         />
@@ -202,29 +271,29 @@ const HospitalAdminUnitsScreen: React.FC = () => {
 
       <Modal visible={showModal} animationType="slide" transparent={true}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{editingUnit ? 'Edit Unit' : 'Create Unit'}</Text>
+          <View style={[styles.modalContent, { backgroundColor: appColors.accentText }]}>
+            <Text style={[styles.modalTitle, { color: appColors.textPrimary }]}>{editingUnit ? 'Edit Unit' : 'Create Unit'}</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: appColors.background, color: appColors.textPrimary, borderColor: appColors.border }]}
               placeholder="Unit Code (e.g., ICU)"
               value={form.unitCode}
               onChangeText={(v) => setForm({ ...form, unitCode: v.toUpperCase() })}
-              placeholderTextColor={Colors.textSecondary}
+              placeholderTextColor={appColors.textSecondary}
               editable={!editingUnit}
             />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: appColors.background, color: appColors.textPrimary, borderColor: appColors.border }]}
               placeholder="Unit Name (e.g., Intensive Care Unit)"
               value={form.unitName}
               onChangeText={(v) => setForm({ ...form, unitName: v })}
-              placeholderTextColor={Colors.textSecondary}
+              placeholderTextColor={appColors.textSecondary}
             />
             <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.cancelButton} onPress={() => setShowModal(false)}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+              <TouchableOpacity style={[styles.cancelButton, { backgroundColor: appColors.background }]} onPress={() => setShowModal(false)}>
+                <Text style={[styles.cancelButtonText, { color: appColors.textPrimary }]}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-                <Text style={styles.saveButtonText}>Save</Text>
+              <TouchableOpacity style={[styles.saveButton, { backgroundColor: appColors.primary }]} onPress={handleSave}>
+                <Text style={[styles.saveButtonText, { color: appColors.accentText }]}>Save</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -235,11 +304,11 @@ const HospitalAdminUnitsScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
+  loadingText: { marginTop: 12, fontSize: 14, fontFamily: Typography.fontFamily.medium },
   listContent: { padding: 20 },
   unitCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -253,8 +322,8 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   unitInfo: { flex: 1 },
-  unitCode: { fontSize: 14, fontFamily: Typography.fontFamily.bold, color: Colors.primary, marginBottom: 4 },
-  unitName: { fontSize: 16, fontFamily: Typography.fontFamily.medium, color: Colors.textPrimary, marginBottom: 8 },
+  unitCode: { fontSize: 14, fontFamily: Typography.fontFamily.bold, marginBottom: 4 },
+  unitName: { fontSize: 16, fontFamily: Typography.fontFamily.medium, marginBottom: 8 },
   unitMeta: { flexDirection: 'row', alignItems: 'center' },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   statusActive: { backgroundColor: '#D1FAE5' },
@@ -265,19 +334,21 @@ const styles = StyleSheet.create({
   unitActions: { flexDirection: 'row', gap: 12 },
   editButton: { width: 36, height: 36, borderRadius: 8, backgroundColor: '#EEF2FF', justifyContent: 'center', alignItems: 'center' },
   deleteButton: { width: 36, height: 36, borderRadius: 8, backgroundColor: '#FEE2E2', justifyContent: 'center', alignItems: 'center' },
-  addButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
+  addButton: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
   emptyContainer: { alignItems: 'center', paddingVertical: 60 },
-  emptyText: { fontSize: 16, fontFamily: Typography.fontFamily.medium, color: Colors.textPrimary, marginTop: 16 },
-  emptySubtext: { fontSize: 14, fontFamily: Typography.fontFamily.regular, color: Colors.textSecondary, marginTop: 8 },
+  emptyText: { fontSize: 16, fontFamily: Typography.fontFamily.medium, marginTop: 16 },
+  emptySubtext: { fontSize: 14, fontFamily: Typography.fontFamily.regular, marginTop: 8 },
+  infoBox: { padding: 12, borderRadius: 8, marginHorizontal: 20, marginTop: 12 },
+  infoText: { fontSize: 13, fontFamily: Typography.fontFamily.medium },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 24, width: '90%', maxWidth: 400 },
-  modalTitle: { fontSize: 20, fontFamily: Typography.fontFamily.bold, color: Colors.textPrimary, marginBottom: 20 },
-  input: { backgroundColor: Colors.background, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 16, fontSize: 15, fontFamily: Typography.fontFamily.regular, borderWidth: 1, borderColor: Colors.border },
+  modalContent: { borderRadius: 16, padding: 24, width: '90%', maxWidth: 400 },
+  modalTitle: { fontSize: 20, fontFamily: Typography.fontFamily.bold, marginBottom: 20 },
+  input: { borderRadius: 10, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 16, fontSize: 15, fontFamily: Typography.fontFamily.regular, borderWidth: 1 },
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 8 },
   cancelButton: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10 },
-  cancelButtonText: { fontSize: 15, fontFamily: Typography.fontFamily.medium, color: Colors.textSecondary },
-  saveButton: { backgroundColor: Colors.primary, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10 },
-  saveButtonText: { fontSize: 15, fontFamily: Typography.fontFamily.bold, color: '#FFFFFF' },
+  cancelButtonText: { fontSize: 15, fontFamily: Typography.fontFamily.medium },
+  saveButton: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10 },
+  saveButtonText: { fontSize: 15, fontFamily: Typography.fontFamily.bold },
 });
 
 export default HospitalAdminUnitsScreen;
