@@ -20,14 +20,21 @@ import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
 import { User } from '../../types';
 import ApiService from '../../services/api';
+import HospitalAdminApi from '../../services/hospitalAdminApi';
+import { useTheme } from '../../contexts/ThemeContext';
+import { getFinalApiUrl } from '../../config/api';
 import { useAuth } from '../../navigation/AppNavigator';
 import Responsive from '../../utils/responsive';
 
 const ProfileScreen: React.FC = () => {
   const navigation = useNavigation();
   const { logout: authLogout } = useAuth();
+  const { setTheme, loadAndApplyDefaultTheme } = useTheme();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hospital, setHospital] = useState<any>(null);
+  const [themes, setThemes] = useState<any[]>([]);
+  const [loadingThemes, setLoadingThemes] = useState(false);
   
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
   const isSmallScreen = Responsive.getScreenWidth() < 375;
@@ -42,6 +49,19 @@ const ProfileScreen: React.FC = () => {
     try {
       const userData = await ApiService.getProfile();
       setUser(userData);
+      if (userData?.role === 'HOSPITAL_ADMIN') {
+        try {
+          const dash = await HospitalAdminApi.getDashboard();
+          setHospital(dash?.hospital || null);
+        } catch {}
+        try {
+          setLoadingThemes(true);
+          const res = await HospitalAdminApi.getThemes();
+          setThemes(res?.themes || res || []);
+        } catch {} finally {
+          setLoadingThemes(false);
+        }
+      }
     } catch (error) {
       Alert.alert('Error', 'Failed to load profile');
     } finally {
@@ -176,7 +196,30 @@ const ProfileScreen: React.FC = () => {
         }
       />
 
-      {/* Removed blue header section per request */}
+      {/* Hospital badge (logo + name) for Hospital Admins */}
+      {hospital && (
+        <View style={{ paddingHorizontal: 20, paddingTop: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            {(() => {
+              const c: any = hospital;
+              const logoPath = c?.logoUrl || c?.logoPath || c?.logo || c?.assets?.logoUrl || null;
+              let logoUri = logoPath as string | null;
+              if (logoUri && !logoUri.startsWith('http')) {
+                const base = getFinalApiUrl().replace('/api/v1', '');
+                logoUri = logoUri.startsWith('/') ? `${base}${logoUri}` : `${base}/${logoUri}`;
+              }
+              return logoUri ? (
+                <Image source={{ uri: logoUri }} style={{ width: 36, height: 36, borderRadius: 6 }} resizeMode="contain" />
+              ) : (
+                <View style={{ width: 36, height: 36, borderRadius: 6, backgroundColor: '#EEF2FF' }} />
+              );
+            })()}
+            <Text style={{ fontSize: 16, fontFamily: Typography.fontFamily.bold, color: '#111827' }} numberOfLines={1}>
+              {hospital?.name || 'Hospital'}
+            </Text>
+          </View>
+        </View>
+      )}
 
       <ScrollView 
         style={styles.scrollContent}
@@ -233,6 +276,67 @@ const ProfileScreen: React.FC = () => {
             )}
           </View>
         </View>
+
+        {/* Theme quick apply (Hospital Admin) */}
+        {hospital && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Theme</Text>
+            {loadingThemes ? (
+              <ActivityIndicator size="small" color="#6366F1" />
+            ) : themes && themes.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingVertical: 6 }}>
+                {/* App Default Theme tile */}
+                <View key="__app_default__" style={{ marginRight: 12, alignItems: 'center' }}>
+                  <TouchableOpacity
+                    onPress={async()=>{
+                      try {
+                        // Apply hardcoded app default
+                        setTheme({
+                          name: 'Default',
+                          primaryColor: '#1C2A3A',
+                          secondaryColor: '#3B82F6',
+                          backgroundColor: '#F3F9FF',
+                          textColor: '#111827',
+                          accentTextColor: '#FFFFFF',
+                        });
+                        // Persist as user preference if supported
+                        try { await ApiService.updateUserTheme('default'); } catch {}
+                        Alert.alert('Success','Default app theme applied');
+                      } catch (e:any) {
+                        Alert.alert('Error', e?.response?.data?.message||e?.message||'Failed to apply default theme');
+                      }
+                    }}
+                    style={{ width: 56, height: 56, borderRadius: 12, backgroundColor: '#1C2A3A', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB' }}
+                    activeOpacity={0.8}
+                  >
+                    <View style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: '#3B82F6' }} />
+                  </TouchableOpacity>
+                  <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 6 }} numberOfLines={1}>Default</Text>
+                </View>
+                {themes.map((t: any) => (
+                  <View key={String(t.id || t.name)} style={{ marginRight: 12, alignItems: 'center' }}>
+                    <TouchableOpacity
+                      onPress={() => setTheme({ name: t.name, primaryColor: t.primaryColor, secondaryColor: t.secondaryColor, backgroundColor: t.backgroundColor, textColor: t.textColor, accentTextColor: t.accentTextColor })}
+                      style={{ width: 56, height: 56, borderRadius: 12, backgroundColor: t.primaryColor || '#3B82F6', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB' }}
+                      activeOpacity={0.8}
+                    >
+                      <View style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: t.secondaryColor || '#2563EB' }} />
+                    </TouchableOpacity>
+                    <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 6 }} numberOfLines={1}>{t.name}</Text>
+                    <TouchableOpacity onPress={async()=>{ try{ await ApiService.updateUserTheme(String(t.id || t.name)); setTheme({ name: t.name, primaryColor: t.primaryColor, secondaryColor: t.secondaryColor, backgroundColor: t.backgroundColor, textColor: t.textColor, accentTextColor: t.accentTextColor }); Alert.alert('Success','Theme applied to your profile'); }catch(e:any){ Alert.alert('Error', e?.response?.data?.message||e?.message||'Failed to apply theme'); } }}>
+                      <Text style={{ fontSize: 12, color: '#111827', marginTop: 2 }}>Use this</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={async()=>{ try{ await HospitalAdminApi.setDefaultTheme(t.id || t.name); await loadAndApplyDefaultTheme(); Alert.alert('Success','Default theme set'); }catch(e:any){ Alert.alert('Error', e?.response?.data?.message||e?.message||'Failed'); } }}>
+                      <Text style={{ fontSize: 12, color: '#6366F1', marginTop: 4 }}>Set default</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            ) : (
+              <Text style={{ fontSize: 14, color: '#6B7280' }}>No themes available</Text>
+            )}
+          </View>
+        )}
 
         {/* Emergency Contact */}
         <View style={[styles.section, { marginTop: -4 }]}>

@@ -39,13 +39,12 @@ const HospitalAdminDashboardScreen: React.FC = () => {
         setUserProfile(null);
       }
 
-      const [dashRes, hospRes, themesRes] = await Promise.all([
+      const [dashRes, themesRes] = await Promise.all([
         HospitalAdminApi.getDashboard(),
-        HospitalAdminApi.getHospitalDetails(),
         HospitalAdminApi.getThemes(),
       ]);
       setDashboard(dashRes);
-      setHospital((hospRes as any)?.hospital || hospRes);
+      setHospital((dashRes as any)?.hospital || null);
       setThemes(themesRes);
     } catch (e) {
       setDashboard(null);
@@ -211,7 +210,7 @@ const HospitalAdminDashboardScreen: React.FC = () => {
   if (isLoading) {
     return (
       <SafeAreaView style={g.appBackground}>
-        <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
+        <StatusBar backgroundColor={appColors.background} barStyle={appColors.background === '#FFFFFF' ? 'dark-content' : 'light-content'} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#6366F1" />
           <Text style={styles.loadingText}>Loading dashboard...</Text>
@@ -225,11 +224,7 @@ const HospitalAdminDashboardScreen: React.FC = () => {
   -------------------------------------------------------------- */
   return (
     <SafeAreaView style={g.appBackground}>
-      <StatusBar
-        backgroundColor="#FFFFFF"
-        barStyle="dark-content"
-        translucent={false}
-      />
+      <StatusBar backgroundColor={appColors.background} barStyle={appColors.background === '#FFFFFF' ? 'dark-content' : 'light-content'} translucent={false} />
 
       <View style={styles.innerContainer}>
         {/* Simple Header */}
@@ -349,7 +344,7 @@ const HospitalAdminDashboardScreen: React.FC = () => {
           {/* Overview Stats */}
           <View style={styles.overviewSection}>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Overview</Text>
+              <Text style={[styles.sectionTitle, { color: appColors.textPrimary }]}>Overview</Text>
               <TouchableOpacity onPress={scrollToEnd} style={styles.scrollToEndButton}>
                 <Text style={styles.viewAllText}>See All</Text>
                 <FontAwesomeIcon icon="arrow-right" size={Responsive.iconSize(14)} color="#6366F1" />
@@ -376,7 +371,7 @@ const HospitalAdminDashboardScreen: React.FC = () => {
 
           {/* Quick Actions */}
           <View style={styles.quickActionsSection}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
+            <Text style={[styles.sectionTitle, { color: appColors.textPrimary }]}>Quick Actions</Text>
             <View style={styles.quickActionsGrid}>
               <QuickAction title="Create Job" subtitle="Post new opening" icon="plus" gradient={['#3B82F6', '#2563EB']} onPress={() => (navigation as any).navigate('CreateJob')} />
               <QuickAction title="Upload Logo" subtitle="Brand your hospital" icon="image" gradient={['#10B981', '#059669']} onPress={() => (navigation as any).navigate('HospitalAdminUploadLogo')} />
@@ -390,7 +385,7 @@ const HospitalAdminDashboardScreen: React.FC = () => {
           {/* Recent Jobs */}
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Recent Jobs</Text>
+              <Text style={[styles.sectionTitle, { color: appColors.textPrimary }]}>Recent Jobs</Text>
               <TouchableOpacity onPress={() => (navigation as any).navigate('HRJobs')}>
                 <Text style={styles.viewAllText}>View All</Text>
               </TouchableOpacity>

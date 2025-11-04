@@ -11,6 +11,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { FontAwesomeIcon } from '../utils/icons';
 import { Colors } from '../constants/colors';
 import { Typography } from '../constants/typography';
+import { Image } from 'react-native';
+import { useAppColors } from '../hooks/useAppColors';
 
 interface GlobalHeaderProps {
   title: string;
@@ -26,13 +28,14 @@ interface GlobalHeaderProps {
   headerStyle?: any;
   statusBarStyle?: 'light-content' | 'dark-content';
   statusBarBackgroundColor?: string;
+  logoUri?: string;
 }
 
 const GlobalHeader: React.FC<GlobalHeaderProps> = ({
   title,
   showBackButton = true,
-  backgroundColor = Colors.primary,
-  titleColor = Colors.white,
+  backgroundColor,
+  titleColor,
   onBackPress,
   rightComponent,
   showNotificationIcon = false,
@@ -42,34 +45,41 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
   headerStyle,
   statusBarStyle,
   statusBarBackgroundColor,
+  logoUri,
 }) => {
+  const theme = useAppColors();
+  const bg = backgroundColor || theme.primary;
+  const titleCol = titleColor || theme.accentText;
   const insets = useSafeAreaInsets();
   const computedTopPadding = Math.max(insets.top || 0, Platform.OS === 'android' ? 10 : 0);
-  const resolvedStatusBarBg = statusBarBackgroundColor || backgroundColor;
-  const resolvedBarStyle = statusBarStyle || (backgroundColor === '#FFFFFF' ? 'dark-content' : 'light-content');
+  const resolvedStatusBarBg = statusBarBackgroundColor || bg;
+  const resolvedBarStyle = statusBarStyle || (bg === '#FFFFFF' ? 'dark-content' : 'light-content');
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor }]} edges={['top']}> 
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: bg }]} edges={['top']}> 
       <StatusBar translucent={false} backgroundColor={resolvedStatusBarBg} barStyle={resolvedBarStyle} />
-      <View style={[styles.header, headerStyle, { backgroundColor, paddingTop: computedTopPadding }]}>
+      <View style={[styles.header, headerStyle, { backgroundColor: bg, paddingTop: computedTopPadding }]}>
         <View style={styles.headerContent}>
           {showBackButton && (
             <TouchableOpacity
               style={[styles.backButton, backButtonStyle]}
               onPress={onBackPress}>
-              <FontAwesomeIcon icon="arrow-left" size={20} color={titleColor} />
+              <FontAwesomeIcon icon="arrow-left" size={20} color={titleCol} />
             </TouchableOpacity>
           )}
-          
-          <Text style={[styles.headerTitle, { color: titleColor }]}>
-            {title}
-          </Text>
-          
+          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            {logoUri ? (
+              <Image source={{ uri: logoUri }} style={{ width: 24, height: 24, borderRadius: 4 }} resizeMode="contain" />
+            ) : null}
+            <Text style={[styles.headerTitle, { color: titleCol }]} numberOfLines={1}>
+              {title}
+            </Text>
+          </View>
           <View style={styles.rightSection}>
             {showNotificationIcon ? (
               <TouchableOpacity
                 style={styles.notificationButton}
                 onPress={onNotificationPress}>
-                <FontAwesomeIcon icon="bell" size={22} color={titleColor} />
+                <FontAwesomeIcon icon="bell" size={22} color={titleCol} />
                 {notificationCount > 0 && (
                   <View style={styles.badgeContainer}>
                     <Text style={styles.badgeText}>
