@@ -28,6 +28,7 @@ import Responsive from '../../utils/responsive';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ExportUtils from '../../utils/exportUtils';
 import { getFinalApiUrl } from '../../config/api';
+import { useAuth } from '../../navigation/AppNavigator';
 // use require inline to ensure Metro resolves assets reliably on all platforms
 
 const { width } = Dimensions.get('window');
@@ -36,7 +37,7 @@ const horizontalGutter = width < 360 ? Spacing.sm : width < 400 ? Spacing.md : S
 const tabsStartPadding = width < 360 ? Spacing.xs : Spacing.sm;
 const tabsEndPadding = horizontalGutter;
 
-  // Local icons (static imports)
+// Local icons (static imports)
 
 interface ReportFilters {
   title: string;
@@ -119,6 +120,10 @@ interface Report {
 
 const ReportsScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { user: authUser } = useAuth() as any;
+  const currentUserId: number | undefined = authUser?.id;
+  const currentUserRole: string = (authUser?.role || '').toUpperCase();
+  const isStaffUser = currentUserRole === 'NURSE' || currentUserRole === 'DOCTOR';
   const scrollRef = useRef<ScrollView>(null);
   const tabsListRef = useRef<FlatList>(null);
   const { width: windowWidth } = useWindowDimensions();
@@ -175,7 +180,7 @@ const ReportsScreen: React.FC = () => {
   const [showJobsEndPicker, setShowJobsEndPicker] = useState(false);
   const [showAssignmentsStartPicker, setShowAssignmentsStartPicker] = useState(false);
   const [showAssignmentsEndPicker, setShowAssignmentsEndPicker] = useState(false);
-  
+
   // Check-In/Out filter states
   const [checkinFilterTitle, setCheckinFilterTitle] = useState('');
   const [checkinFilterStatus, setCheckinFilterStatus] = useState('');
@@ -188,7 +193,7 @@ const ReportsScreen: React.FC = () => {
   const [showCheckinFilterModal, setShowCheckinFilterModal] = useState(false);
   const [showCheckinStartPicker, setShowCheckinStartPicker] = useState(false);
   const [showCheckinEndPicker, setShowCheckinEndPicker] = useState(false);
-  
+
 
   // Helper: current filtered jobs (Title + Department)
   const getFilteredJobs = () => {
@@ -202,10 +207,16 @@ const ReportsScreen: React.FC = () => {
       const byStatus = statusFilter.length === 0 || (j.status || '') === statusFilter;
       const jobStart = (j.startDate || '').split('T')[0];
       const jobEnd = (j.endDate || '').split('T')[0];
-      const byStart = startFilter.length === 0 || (jobStart && jobStart >= startFilter);
-      const byEnd = endFilter.length === 0 || (jobEnd && jobEnd <= endFilter);
+      // If dates missing on job, don't exclude by date filter; use whichever exists
+      const compareStart = jobStart || jobEnd || '';
+      const compareEnd = jobEnd || jobStart || '';
+      const byStart = startFilter.length === 0 || (compareStart && compareStart >= startFilter);
+      const byEnd = endFilter.length === 0 || (compareEnd && compareEnd <= endFilter);
       const byDept = deptFilter.length === 0 || (j.department || '') === deptFilter;
-      return byTitle && byStatus && byStart && byEnd && byDept;
+      // Staff users: only jobs tied to their assignments if available on job object
+      const relatedAssignments: any[] = (j as any).assignments || [];
+      const byUser = !isStaffUser || (currentUserId != null && (relatedAssignments.length === 0 || relatedAssignments.some(a => Number(a?.userId) === Number(currentUserId))));
+      return byTitle && byStatus && byStart && byEnd && byDept && byUser;
     });
   };
 
@@ -226,7 +237,9 @@ const ReportsScreen: React.FC = () => {
       const byStart = startFilter.length === 0 || (jobStart && jobStart >= startFilter);
       const byEnd = endFilter.length === 0 || (jobEnd && jobEnd <= endFilter);
       const byDept = deptFilter.length === 0 || jobDept === deptFilter;
-      return byTitle && byStatus && byStart && byEnd && byDept;
+      // Staff users only see their own assignments
+      const byUser = !isStaffUser || (currentUserId != null && Number(a.userId) === Number(currentUserId));
+      return byTitle && byStatus && byStart && byEnd && byDept && byUser;
     });
   };
 
@@ -236,36 +249,40 @@ const ReportsScreen: React.FC = () => {
       ...(realtimeData?.activeStaffDetails || []).map((item: any) => ({ ...item, isActive: true })),
       ...attendanceData
     ];
-    
+
     const titleQuery = checkinFilterTitle.trim().toLowerCase();
     const statusFilter = checkinFilterStatus.trim();
     const startFilter = checkinFilterStartDate.trim();
     const endFilter = checkinFilterEndDate.trim();
     const deptFilter = checkinFilterDepartment.trim();
-    
+
     return allCheckIns.filter((item) => {
-      const userName = item.isActive 
+      const userName = item.isActive
         ? (item.userName || '').toLowerCase()
         : (item.user ? `${item.user.firstName} ${item.user.lastName}` : '').toLowerCase();
       const byTitle = titleQuery.length === 0 || userName.includes(titleQuery);
-      
+
       const itemStatus = item.status || 'CHECKED_IN';
       const byStatus = statusFilter.length === 0 || itemStatus === statusFilter;
-      
+
       const checkInDate = new Date(item.checkInTime).toISOString().split('T')[0];
       const byStart = startFilter.length === 0 || checkInDate >= startFilter;
       const byEnd = endFilter.length === 0 || checkInDate <= endFilter;
-      
-      const dept = item.isActive 
+
+      const dept = item.isActive
         ? (item.department || item.jobDepartment || '')
         : (item.job?.department || '');
       const byDept = deptFilter.length === 0 || dept === deptFilter;
-      
-      return byTitle && byStatus && byStart && byEnd && byDept;
+
+      // Staff users: only their own records
+      const itemUserId = item.isActive ? item.userId : (item.user?.id);
+      const byUser = !isStaffUser || (currentUserId != null && Number(itemUserId) === Number(currentUserId));
+
+      return byTitle && byStatus && byStart && byEnd && byDept && byUser;
     });
   };
 
-  
+
 
   const formatDateShort = (dateString?: string) => {
     if (!dateString) return '—';
@@ -288,6 +305,13 @@ const ReportsScreen: React.FC = () => {
     userId: '',
     department: '',
   });
+
+  // Default attendance user filter for staff
+  useEffect(() => {
+    if (isStaffUser && currentUserId) {
+      setAttendanceFilters(prev => ({ ...prev, userId: String(currentUserId) }));
+    }
+  }, []);
 
   // Payout tab state
   const [payoutFilters, setPayoutFilters] = useState<{ startDate: string; endDate: string; userId?: string; jobId?: string }>(
@@ -391,11 +415,11 @@ const ReportsScreen: React.FC = () => {
       const byDates = (start.length === 0 && end.length === 0) || (candidateDates.length === 0
         ? true
         : candidateDates.some((d) => {
-            const ds = String(d).slice(0, 10);
-            if (start.length > 0 && ds < start) return false;
-            if (end.length > 0 && ds > end) return false;
-            return true;
-          }));
+          const ds = String(d).slice(0, 10);
+          if (start.length > 0 && ds < start) return false;
+          if (end.length > 0 && ds > end) return false;
+          return true;
+        }));
 
       return byText && byUser && byJob && byMin && byMax && byDates;
     });
@@ -442,6 +466,7 @@ const ReportsScreen: React.FC = () => {
   useEffect(() => {
     console.log('🧭 Selected report tab:', selectedReportType);
     if (selectedReportType === 'checkin-out') {
+      console.log('👀 Entering Check-In/Out tab → loading realtime/attendance data...');
       loadRealtimeData();
     }
     // Always scroll to top when changing tabs
@@ -451,9 +476,25 @@ const ReportsScreen: React.FC = () => {
     if (index >= 0) {
       try {
         tabsListRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0 });
-      } catch {}
+      } catch { }
     }
   }, [selectedReportType]);
+
+  // Auto-reload check-ins when filter dates change (for staff users only)
+  useEffect(() => {
+    if (selectedReportType !== 'checkin-out' || !isStaffUser) return;
+    const today = formatDate(new Date());
+    const startDate = checkinFilterStartDate || today;
+    const endDate = checkinFilterEndDate || today;
+    if (!startDate || !endDate) return;
+    // Guard: skip invalid ranges
+    if (startDate > endDate) {
+      console.log('⛔ Skipping check-ins reload due to invalid range:', { startDate, endDate });
+      return;
+    }
+    console.log('🔄 Triggering check-ins reload due to filter dates change:', { startDate, endDate });
+    loadRealtimeData();
+  }, [checkinFilterStartDate, checkinFilterEndDate]);
 
   const fetchPayoutWith = async (startDate: string, endDate: string, userId?: string, jobId?: string) => {
     try {
@@ -495,6 +536,8 @@ const ReportsScreen: React.FC = () => {
         ...prev,
         startDate: prev.startDate || today,
         endDate: prev.endDate || today,
+        // For staff users, default to their own userId
+        userId: isStaffUser && currentUserId ? String(currentUserId) : (prev.userId || ''),
       };
     });
   }, []);
@@ -516,26 +559,109 @@ const ReportsScreen: React.FC = () => {
   const loadRealtimeData = async () => {
     try {
       setLoadingRealtime(true);
+
+      if (isStaffUser) {
+        // For staff users, fetch check-ins using the staff check-ins API
+        // Use filter dates if available, otherwise default to today
+        const today = formatDate(new Date());
+        const startDate = checkinFilterStartDate || today;
+        const endDate = checkinFilterEndDate || today;
+
+        console.log('👤 Staff user - Fetching check-ins with dates:', { startDate, endDate });
+
+        const checkInsResponse = await ApiService.getStaffCheckIns({ startDate, endDate });
+        console.log('✅ Staff check-ins response:', checkInsResponse);
+
+        const checkInsList = Array.isArray(checkInsResponse?.checkIns) ? checkInsResponse.checkIns : [];
+        
+        // Map check-ins to the format expected by the UI
+        const mappedCheckIns = checkInsList.map((ci: any) => {
+          const assignmentId = ci.jobAssignmentId || ci.assignment?.id;
+          console.log('🔍 Mapping check-in:', {
+            checkInId: ci.id,
+            assignmentId: assignmentId,
+            status: ci.status,
+          });
+          
+          return {
+            id: ci.id,
+            assignmentId: assignmentId,
+            jobAssignmentId: ci.jobAssignmentId,
+            checkInTime: ci.checkInTime,
+            checkOutTime: ci.checkOutTime || null,
+            status: ci.status || (ci.checkOutTime ? 'CHECKED_OUT' : 'CHECKED_IN'),
+            totalWorkTime: ci.totalWorkTime || 0,
+            totalBreakTime: ci.totalBreakTime || 0,
+            isLate: !!ci.isLate,
+            lateMinutes: ci.lateMinutes || 0,
+            isEarlyCheckout: !!ci.isEarlyCheckout,
+            earlyCheckoutMinutes: ci.earlyCheckoutMinutes || 0,
+            notes: ci.notes,
+            user: ci.user || null,
+            job: ci.job || null,
+            jobId: ci.job?.id || null,
+            jobAssignment: ci.assignment || null,
+            department: ci.user?.department || ci.job?.department || ci.checkInLocation?.department || null,
+            specialization: ci.user?.specialization || ci.job?.specialization || null,
+            facilityName: ci.job?.facilityName || ci.checkInLocation?.facilityName || ci.job?.location || null,
+            checkInLocation: ci.checkInLocation || null,
+            checkOutLocation: ci.checkOutLocation || null,
+          };
+        });
+
+        // Separate checked-in and checked-out items
+        const checkedInItems = mappedCheckIns.filter((x: any) => x.status === 'CHECKED_IN' && !x.checkOutTime);
+        const checkedOutItems = mappedCheckIns.filter((x: any) => x.status === 'CHECKED_OUT' || x.checkOutTime);
+
+        setRealtimeData({
+          timestamp: new Date().toISOString(),
+          activeStaff: checkedInItems.length,
+          activeStaffDetails: checkedInItems.map((ci: any) => ({
+            assignmentId: ci.assignmentId || ci.jobAssignmentId,
+            userId: ci.user?.id || currentUserId,
+            userName: ci.user ? `${ci.user.firstName} ${ci.user.lastName}` : (authUser?.firstName ? `${authUser.firstName} ${authUser.lastName}` : 'Me'),
+            role: ci.user?.role || currentUserRole,
+            department: ci.department,
+            jobTitle: ci.job?.title,
+            jobDepartment: ci.job?.department,
+            facilityName: ci.facilityName,
+            checkInTime: ci.checkInTime,
+            status: ci.status,
+            workTimeMinutes: ci.totalWorkTime,
+          })),
+          summary: {
+            totalCheckIns: checkInsResponse?.summary?.totalCheckIns || mappedCheckIns.length,
+            totalCheckOuts: checkInsResponse?.summary?.checkedOut || checkedOutItems.length,
+            lateArrivals: checkInsResponse?.summary?.lateArrivals || mappedCheckIns.filter((x: any) => x.isLate).length,
+            activeJobs: checkedInItems.length,
+            pendingAssignments: 0,
+          },
+          allCheckIns: mappedCheckIns,
+          allCheckOuts: checkedOutItems,
+        });
+
+        setAttendanceData(mappedCheckIns);
+        setAttendanceCheckOuts(checkedOutItems);
+        return;
+      }
+
+      // HR/ADMIN flow (unchanged)
       const res = await ApiService.getRealtimeTrackingDashboard();
-      // ApiService already returns response.data; backend may wrap as { message, data }
-      const payload = (res as any)?.data || res;
-      setRealtimeData(payload || {});
+      const payload = (res as any)?.data || res || {};
+      setRealtimeData(payload);
       setAttendanceData(Array.isArray(payload?.allCheckIns) ? payload.allCheckIns : []);
-      const outs = Array.isArray(payload?.allCheckOuts)
-        ? payload.allCheckOuts
-        : (Array.isArray(payload?.allCheckIns)
-            ? payload.allCheckIns.filter((r: any) => r.status === 'CHECKED_OUT')
-            : []);
-      setAttendanceCheckOuts(outs);
+      setAttendanceCheckOuts(Array.isArray(payload?.allCheckOuts) ? payload.allCheckOuts : []);
     } catch (e) {
       setRealtimeData(null);
       setAttendanceData([]);
       setAttendanceCheckOuts([]);
-      console.log('Failed to load realtime dashboard:', e);
+      console.log('Failed to load realtime data:', e);
     } finally {
       setLoadingRealtime(false);
     }
   };
+
+
 
   // Helpers for the Check-In/Out tab
   const formatElapsedMinutes = (mins?: number) => {
@@ -545,29 +671,47 @@ const ReportsScreen: React.FC = () => {
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
   };
 
-  const mapCheckInToTimesheet = (item: any) => ({
-    assignmentId: item.assignmentId || item.id,
-    job: item.job || null,
-    user: item.user || null,
-    checkIns: [
-      {
-        id: item.id,
-        checkInTime: item.checkInTime,
-        checkOutTime: item.checkOutTime,
-        status: item.status,
-        workTime: item.totalWorkTime ? `${item.totalWorkTime}m` : undefined,
-        breakTime: item.totalBreakTime ? `${item.totalBreakTime}m` : undefined,
-        notes: item.notes,
-      },
-    ],
-    totalWorkTime: item.totalWorkTime ? `${item.totalWorkTime}m` : undefined,
-    totalBreakTime: item.totalBreakTime ? `${item.totalBreakTime}m` : undefined,
-    lateMinutes: item.isLate ? '—' : '0',
-    earlyCheckoutMinutes: item.isEarlyCheckout ? '—' : '0',
-  });
+  const mapCheckInToTimesheet = (item: any) => {
+    // ✅ Extract assignmentId from multiple sources
+    const assignmentId = item.assignmentId || item.jobAssignmentId || item.jobAssignment?.id || item.assignment?.id;
+
+    console.log('🔍 mapCheckInToTimesheet - assignmentId:', assignmentId, 'from item:', {
+      assignmentId: item.assignmentId,
+      jobAssignmentId: item.jobAssignmentId,
+      jobAssignmentIdNested: item.jobAssignment?.id,
+      assignmentIdNested: item.assignment?.id,
+      itemId: item.id,
+    });
+
+    if (!assignmentId) {
+      console.error('❌ WARNING: No assignmentId found in mapCheckInToTimesheet for item:', item);
+    }
+
+    return {
+      assignmentId: assignmentId || null, // ✅ Use extracted assignmentId, never fallback to item.id
+      job: item.job || item.assignment?.job || null,
+      user: item.user || item.assignment?.user || null,
+      assignment: item.assignment || null, // ✅ Include full assignment if available
+      checkIns: [
+        {
+          id: item.id, // This is the check-in ID
+          checkInTime: item.checkInTime,
+          checkOutTime: item.checkOutTime,
+          status: item.status,
+          workTime: item.totalWorkTime ? `${item.totalWorkTime}m` : undefined,
+          breakTime: item.totalBreakTime ? `${item.totalBreakTime}m` : undefined,
+          notes: item.notes,
+        },
+      ],
+      totalWorkTime: item.totalWorkTime ? `${item.totalWorkTime}m` : undefined,
+      totalBreakTime: item.totalBreakTime ? `${item.totalBreakTime}m` : undefined,
+      lateMinutes: item.isLate ? '—' : '0',
+      earlyCheckoutMinutes: item.isEarlyCheckout ? '—' : '0',
+    };
+  };
 
   const mapActiveToTimesheet = (active: any) => ({
-    assignmentId: active.assignmentId || active.userId,
+    assignmentId: active.assignmentId || active.id,   // active.id is the assignment id from active
     job: {
       title: active.jobTitle,
       department: active.jobDepartment || active.department,
@@ -596,10 +740,45 @@ const ReportsScreen: React.FC = () => {
     earlyCheckoutMinutes: '0',
   });
 
-  const openRealtimeCheckInModal = (item: any) => {
-    const mapped = mapCheckInToTimesheet(item);
-    setSelectedTimesheet(mapped as any);
-    setShowTimesheetModal(true);
+  const openRealtimeCheckInModal = async (item: any) => {
+    try {
+      // ✅ CRITICAL: Extract assignmentId from multiple possible locations
+      const assignmentId = item.assignmentId || item.jobAssignmentId || item.jobAssignment?.id;
+
+      console.log('🔍 openRealtimeCheckInModal - item:', item);
+      console.log('🔍 Extracted assignmentId:', assignmentId);
+      console.log('🔍 Available IDs:', {
+        itemId: item.id,
+        assignmentId: item.assignmentId,
+        jobAssignmentId: item.jobAssignmentId,
+        jobAssignmentIdNested: item.jobAssignment?.id,
+      });
+
+      if (!assignmentId) {
+        Alert.alert('Error', 'Assignment ID not found. Cannot load timesheet details.');
+        console.error('❌ No assignmentId found in item:', item);
+        return;
+      }
+
+      // ✅ Fetch full assignment details
+      setLoadingJobDetails(true);
+      const assignment = await ApiService.getAssignmentById(String(assignmentId));
+
+      const mapped = mapCheckInToTimesheet({
+        ...item,
+        assignmentId: assignmentId, // ✅ Ensure assignmentId is set
+        assignment: assignment.assignment || assignment,
+        job: assignment.assignment?.job || assignment.job || item.job,
+      });
+
+      setSelectedTimesheet(mapped as any);
+      setShowTimesheetModal(true);
+    } catch (error: any) {
+      console.error('❌ Failed to open timesheet modal:', error);
+      Alert.alert('Error', error.response?.data?.message || 'Failed to load timesheet details');
+    } finally {
+      setLoadingJobDetails(false);
+    }
   };
 
   const openRealtimeCheckInModalFromActive = (active: any) => {
@@ -1166,7 +1345,7 @@ const ReportsScreen: React.FC = () => {
         hourlyRate: r.hourlyRate,
         amount: r.amount,
       }));
-      const headers = ['jobId','jobTitle','assignmentId','userId','staffName','shiftDates','minutesWorked','hoursWorked','hourlyRate','amount'];
+      const headers = ['jobId', 'jobTitle', 'assignmentId', 'userId', 'staffName', 'shiftDates', 'minutesWorked', 'hoursWorked', 'hourlyRate', 'amount'];
       const fileBase = `Payout_${payoutFilters.startDate || ''}_${payoutFilters.endDate || ''}`;
       if (format === 'pdf') {
         await ExportUtils.generateAndSavePDF(rows, fileBase, headers, 'Check-In/Out Payout');
@@ -1197,7 +1376,7 @@ const ReportsScreen: React.FC = () => {
         hourlyRate: item.hourlyRate,
         amount: item.amount,
       };
-      const headers = ['jobId','jobTitle','assignmentId','userId','staffName','shiftDates','minutesWorked','hoursWorked','hourlyRate','amount'];
+      const headers = ['jobId', 'jobTitle', 'assignmentId', 'userId', 'staffName', 'shiftDates', 'minutesWorked', 'hoursWorked', 'hourlyRate', 'amount'];
       const fileBase = `Payout_${item.assignmentId || ''}_${new Date().getTime()}`;
       if (format === 'pdf') {
         await ExportUtils.generateAndSavePDF([row], fileBase, headers, 'Payout Line');
@@ -1215,7 +1394,7 @@ const ReportsScreen: React.FC = () => {
   const handleExportTimesheet = async (timesheetData: any, format: 'pdf' | 'excel') => {
     try {
       const fileName = `Timesheet_${timesheetData.assignmentId || timesheetData.id}_${new Date().getTime()}`;
-      
+
       if (format === 'pdf') {
         const rows = timesheetData.checkIns?.map((checkIn: any) => ({
           id: checkIn.id,
@@ -1226,11 +1405,11 @@ const ReportsScreen: React.FC = () => {
           status: checkIn.status,
           notes: checkIn.notes || '',
         })) || [];
-        
+
         await ExportUtils.generateAndSavePDF(
-          rows, 
-          fileName, 
-          ['id', 'checkInTime', 'checkOutTime', 'workTime', 'breakTime', 'status', 'notes'], 
+          rows,
+          fileName,
+          ['id', 'checkInTime', 'checkOutTime', 'workTime', 'breakTime', 'status', 'notes'],
           `Timesheet - ${timesheetData.jobTitle || 'Assignment'}`
         );
       } else if (format === 'excel') {
@@ -1243,7 +1422,7 @@ const ReportsScreen: React.FC = () => {
           status: checkIn.status,
           notes: checkIn.notes || '',
         })) || [];
-        
+
         await ExportUtils.exportToXLSXFile(rows, fileName, ['id', 'checkInTime', 'checkOutTime', 'workTime', 'breakTime', 'status', 'notes']);
       }
     } catch (error) {
@@ -1255,20 +1434,29 @@ const ReportsScreen: React.FC = () => {
   const openTimesheetModal = async (checkIn: any) => {
     try {
       setLoadingJobDetails(true);
+
+      // ✅ Extract assignmentId from multiple possible locations
+      const assignmentId = checkIn.assignmentId || checkIn.jobAssignmentId || checkIn.jobAssignment?.id;
+
+      if (!assignmentId) {
+        Alert.alert('Error', 'Assignment ID not found for this check-in');
+        return;
+      }
+
       const [assignment, job] = await Promise.all([
-        ApiService.getAssignmentById(checkIn.assignmentId),
-        checkIn.jobId ? ApiService.getJobById(checkIn.jobId) : null,
+        ApiService.getAssignmentById(String(assignmentId)), // ✅ Use extracted assignmentId
+        checkIn.jobId ? ApiService.getJobById(String(checkIn.jobId)) : null,
       ]);
-      
+
       setSelectedTimesheet({
         ...checkIn,
         assignment,
         job,
       });
       setShowTimesheetModal(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load timesheet details:', error);
-      Alert.alert('Error', 'Failed to load timesheet details');
+      Alert.alert('Error', error.response?.data?.message || 'Failed to load timesheet details');
     } finally {
       setLoadingJobDetails(false);
     }
@@ -1317,7 +1505,7 @@ const ReportsScreen: React.FC = () => {
                   if (idx >= 0) {
                     try {
                       tabsListRef.current?.scrollToIndex({ index: idx, animated: true, viewPosition: 0 });
-                    } catch {}
+                    } catch { }
                   }
                   scrollRef.current?.scrollTo({ y: 0, animated: true });
                 }}
@@ -1352,13 +1540,13 @@ const ReportsScreen: React.FC = () => {
               placeholder="Search by title"
               value={
                 selectedReportType === 'assigned' ? assignmentsFilterTitle :
-                selectedReportType === 'checkin-out' ? checkinFilterTitle :
-                jobsFilterTitle
+                  selectedReportType === 'checkin-out' ? checkinFilterTitle :
+                    jobsFilterTitle
               }
-              onChangeText={(t) => 
+              onChangeText={(t) =>
                 selectedReportType === 'assigned' ? setAssignmentsFilterTitle(t) :
-                selectedReportType === 'checkin-out' ? setCheckinFilterTitle(t) :
-                setJobsFilterTitle(t)
+                  selectedReportType === 'checkin-out' ? setCheckinFilterTitle(t) :
+                    setJobsFilterTitle(t)
               }
             />
           </View>
@@ -1426,7 +1614,7 @@ const ReportsScreen: React.FC = () => {
                   const statusBg = getStatusColor(item.status || 'ACTIVE');
                   return (
                     <View style={styles.jobCardContainer}>
-                      <View style={[styles.jobCard, showJobExportMenuForId === item.id && { zIndex: 2000, elevation: 16 }]}> 
+                      <View style={[styles.jobCard, showJobExportMenuForId === item.id && { zIndex: 2000, elevation: 16 }]}>
                         {/* Top row date + hourly rate */}
                         <View style={styles.cardTopRow}>
                           <Text style={styles.cardTimeText}>{dateRange}</Text>
@@ -1468,7 +1656,7 @@ const ReportsScreen: React.FC = () => {
                                   <Text style={styles.subtitleDot}> • </Text>
                                 ) : null}
                                 {!!item.status && (
-                                  <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor(item.status || 'ACTIVE') }]}> 
+                                  <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor(item.status || 'ACTIVE') }]}>
                                     <Text style={[styles.inlineStatusText, { color: Colors.white }]}>
                                       {formatStatusLabel(item.status || 'ACTIVE')}
                                     </Text>
@@ -1522,7 +1710,7 @@ const ReportsScreen: React.FC = () => {
                           </View>
                         )}
 
-                        
+
                       </View>
                     </View>
                   );
@@ -1593,7 +1781,7 @@ const ReportsScreen: React.FC = () => {
                   const statusBg = getStatusColor(item.status || 'ASSIGNED');
                   return (
                     <View style={styles.jobCardContainer}>
-                      <View style={[styles.jobCard, showAssignmentExportMenuForId === item.id && { zIndex: 2000, elevation: 16 }]}> 
+                      <View style={[styles.jobCard, showAssignmentExportMenuForId === item.id && { zIndex: 2000, elevation: 16 }]}>
                         <View style={styles.cardTopRow}>
                           <Text style={styles.cardTimeText}>{dateRange}</Text>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -1632,7 +1820,7 @@ const ReportsScreen: React.FC = () => {
                                   <Text style={styles.subtitleDot}> • </Text>
                                 ) : null}
                                 {!!item.status && (
-                                  <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor(item.status) }]}> 
+                                  <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor(item.status) }]}>
                                     <Text style={[styles.inlineStatusText, { color: Colors.white }]}> {formatStatusLabel(item.status)} </Text>
                                   </View>
                                 )}
@@ -1681,7 +1869,7 @@ const ReportsScreen: React.FC = () => {
                           </View>
                         )}
 
-                        
+
                       </View>
                     </View>
                   );
@@ -1738,17 +1926,28 @@ const ReportsScreen: React.FC = () => {
               <ActivityIndicator size="small" color={Colors.primary} />
             ) : (attendanceData.length > 0 || (realtimeData?.activeStaffDetails?.length || 0) > 0) ? (
               <FlatList
-                data={getFilteredCheckIns()}
+                data={(function () {
+                  try {
+                    const active = (realtimeData?.activeStaffDetails || []).map((a: any) => ({ ...a, isActive: true }));
+                    const base = [...active, ...attendanceData];
+                    const filtered = getFilteredCheckIns();
+                    return (Array.isArray(filtered) && filtered.length > 0) ? filtered : base;
+                  } catch {
+                    const active = (realtimeData?.activeStaffDetails || []).map((a: any) => ({ ...a, isActive: true }));
+                    return [...active, ...attendanceData];
+                  }
+                })()}
                 renderItem={({ item }) => {
-                  const uniqueId = item.isActive ? `active-${item.userId}-${item.checkInTime}` : String(item.id);
+                  const isActiveItem = 'isActive' in item && (item as any).isActive;
+                  const uniqueId = isActiveItem ? `active-${(item as any).userId}-${(item as any).checkInTime}` : String((item as any).id);
                   return (
                     <View style={styles.jobCardContainer}>
-                      <View style={[styles.jobCard, showCheckinExportMenuForId === uniqueId && { zIndex: 2000, elevation: 16 }]}> 
+                      <View style={[styles.jobCard, showCheckinExportMenuForId === uniqueId && { zIndex: 2000, elevation: 16 }]}>
                         <View style={styles.cardTopRow}>
                           <Text style={styles.cardTimeText}>
-                            {item.isActive 
-                              ? `Checked in: ${formatDateShort(item.checkInTime)} • Elapsed ${formatElapsedMinutes(item.workTimeMinutes)}`
-                              : `${formatDateShort(item.checkInTime)} - ${item.checkOutTime ? formatDateShort(item.checkOutTime) : 'In Progress'}`
+                            {isActiveItem
+                              ? `Checked in: ${formatDateShort((item as any).checkInTime)} • Elapsed ${formatElapsedMinutes((item as any).workTimeMinutes)}`
+                              : `${formatDateShort((item as any).checkInTime)} - ${(item as any).checkOutTime ? formatDateShort((item as any).checkOutTime) : 'In Progress'}`
                             }
                           </Text>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -1762,24 +1961,24 @@ const ReportsScreen: React.FC = () => {
                         </View>
                         <View style={styles.cardDivider} />
 
-                        <TouchableOpacity onPress={() => item.isActive ? openRealtimeCheckInModalFromActive(item) : openRealtimeCheckInModal(item)} activeOpacity={0.8}>
+                        <TouchableOpacity onPress={() => isActiveItem ? openRealtimeCheckInModalFromActive(item) : openRealtimeCheckInModal(item)} activeOpacity={0.8}>
                           <View style={styles.profileRow}>
                             <View style={styles.profileContent}>
                               <Text style={styles.cardTitle} numberOfLines={1}>
-                                {item.isActive ? item.userName : (item.user ? `${item.user.firstName} ${item.user.lastName}` : 'Unknown')}
+                                {isActiveItem ? (item as any).userName : ((item as any).user ? `${(item as any).user.firstName} ${(item as any).user.lastName}` : 'Unknown')}
                               </Text>
                               <View style={styles.subtitleRow}>
-                                {!!(item.isActive ? item.jobTitle : item.job?.title) && (
+                                {!!(isActiveItem ? (item as any).jobTitle : (item as any).job?.title) && (
                                   <Text style={styles.subtitleText} numberOfLines={1}>
-                                    {item.isActive ? item.jobTitle : item.job?.title}
+                                    {isActiveItem ? (item as any).jobTitle : (item as any).job?.title}
                                   </Text>
                                 )}
-                                {!!(item.isActive ? item.jobTitle : item.job?.title) && !!(item.isActive ? (item.department || item.jobDepartment) : item.job?.department) && (
+                                {!!(isActiveItem ? (item as any).jobTitle : (item as any).job?.title) && !!(isActiveItem ? ((item as any).department || (item as any).jobDepartment) : (item as any).job?.department) && (
                                   <Text style={styles.subtitleDot}> • </Text>
                                 )}
-                                {!!(item.isActive ? (item.department || item.jobDepartment) : item.job?.department) && (
+                                {!!(isActiveItem ? ((item as any).department || (item as any).jobDepartment) : (item as any).job?.department) && (
                                   <Text style={styles.subtitleText} numberOfLines={1}>
-                                    {item.isActive ? (item.department || item.jobDepartment) : item.job?.department}
+                                    {isActiveItem ? ((item as any).department || (item as any).jobDepartment) : (item as any).job?.department}
                                   </Text>
                                 )}
                               </View>
@@ -1788,30 +1987,30 @@ const ReportsScreen: React.FC = () => {
                                 <View style={styles.infoCol}>
                                   <Text style={styles.infoLabel}>Status</Text>
                                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor(item.status) }]}> 
+                                    <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor((item as any).status) }]}>
                                       <Text style={[styles.inlineStatusText, { color: Colors.white }]}>
-                                        {formatStatusLabel(item.status)}
+                                        {formatStatusLabel((item as any).status)}
                                       </Text>
                                     </View>
                                   </View>
                                 </View>
-                                {!item.isActive && (
+                                {!isActiveItem && (
                                   <>
                                     <View style={styles.infoCol}>
                                       <Text style={styles.infoLabel}>Work Time</Text>
-                                      <Text style={styles.infoValue}>{item.totalWorkTime ? `${item.totalWorkTime}m` : '—'}</Text>
+                                      <Text style={styles.infoValue}>{(item as any).totalWorkTime ? `${(item as any).totalWorkTime}m` : '—'}</Text>
                                     </View>
                                     <View style={styles.infoCol}>
                                       <Text style={styles.infoLabel}>Break Time</Text>
-                                      <Text style={styles.infoValue}>{item.totalBreakTime ? `${item.totalBreakTime}m` : '—'}</Text>
+                                      <Text style={styles.infoValue}>{(item as any).totalBreakTime ? `${(item as any).totalBreakTime}m` : '—'}</Text>
                                     </View>
                                   </>
                                 )}
                               </View>
 
-                              {!item.isActive && item.notes && (
+                              {!isActiveItem && (item as any).notes && (
                                 <Text style={styles.descriptionText} numberOfLines={2}>
-                                  {item.notes}
+                                  {(item as any).notes}
                                 </Text>
                               )}
                             </View>
@@ -1822,14 +2021,14 @@ const ReportsScreen: React.FC = () => {
                           <View style={[styles.exportDropdownMenu, { right: 8, top: 36, position: 'absolute' }]}>
                             <TouchableOpacity
                               style={styles.exportDropdownItem}
-                              onPress={() => { setShowCheckinExportMenuForId(null); handleExportTimesheet(item.isActive ? mapActiveToTimesheet(item) : mapCheckInToTimesheet(item), 'pdf'); }}
+                              onPress={() => { setShowCheckinExportMenuForId(null); handleExportTimesheet(isActiveItem ? mapActiveToTimesheet(item) : mapCheckInToTimesheet(item), 'pdf'); }}
                             >
                               <FontAwesomeIcon icon="file-pdf" size={14} color={Colors.error} />
                               <Text style={styles.exportDropdownItemText}>PDF</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                               style={styles.exportDropdownItem}
-                              onPress={() => { setShowCheckinExportMenuForId(null); handleExportTimesheet(item.isActive ? mapActiveToTimesheet(item) : mapCheckInToTimesheet(item), 'excel'); }}
+                              onPress={() => { setShowCheckinExportMenuForId(null); handleExportTimesheet(isActiveItem ? mapActiveToTimesheet(item) : mapCheckInToTimesheet(item), 'excel'); }}
                             >
                               <FontAwesomeIcon icon="file-excel" size={14} color={Colors.success} />
                               <Text style={styles.exportDropdownItemText}>Excel</Text>
@@ -1840,7 +2039,7 @@ const ReportsScreen: React.FC = () => {
                     </View>
                   );
                 }}
-                keyExtractor={(item, index) => item.isActive ? `active-${index}` : String(item.id)}
+                keyExtractor={(item, index) => ('isActive' in item && (item as any).isActive) ? `active-${index}` : String((item as any).id)}
                 scrollEnabled={false}
               />
             ) : (
@@ -1960,63 +2159,63 @@ const ReportsScreen: React.FC = () => {
 
                         {/* Main content (like other tabs) */}
                         <TouchableOpacity onPress={onOpenDetails} activeOpacity={0.8}>
-                        <View style={styles.profileRow}>
-                          <View style={styles.profileContent}>
-                            <Text style={styles.cardTitle} numberOfLines={1}>{item.staffName || `${user.firstName || ''} ${user.lastName || ''}`.trim()}</Text>
-                            <View style={styles.subtitleRow}>
-                              {!!(item.jobTitle || job.title) && (
-                                <Text style={styles.subtitleText} numberOfLines={1}>{item.jobTitle || job.title}</Text>
-                              )}
-                              {!!(item.jobTitle || job.title) && !!(item.department || job.department) ? (
-                                <Text style={styles.subtitleDot}> • </Text>
-                              ) : null}
-                              {!!(item.department || job.department) && (
-                                <Text style={styles.subtitleText} numberOfLines={1}>{item.department || job.department}</Text>
-                              )}
-                              {!!(item.department || job.department || item.jobTitle || job.title) && !!status ? (
-                                <Text style={styles.subtitleDot}> • </Text>
-                              ) : null}
-                              {!!status && (
-                                <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor(status) }]}>
-                                  <Text style={[styles.inlineStatusText, { color: Colors.white }]}>
-                                    {formatStatusLabel(status)}
-                                  </Text>
+                          <View style={styles.profileRow}>
+                            <View style={styles.profileContent}>
+                              <Text style={styles.cardTitle} numberOfLines={1}>{item.staffName || `${user.firstName || ''} ${user.lastName || ''}`.trim()}</Text>
+                              <View style={styles.subtitleRow}>
+                                {!!(item.jobTitle || job.title) && (
+                                  <Text style={styles.subtitleText} numberOfLines={1}>{item.jobTitle || job.title}</Text>
+                                )}
+                                {!!(item.jobTitle || job.title) && !!(item.department || job.department) ? (
+                                  <Text style={styles.subtitleDot}> • </Text>
+                                ) : null}
+                                {!!(item.department || job.department) && (
+                                  <Text style={styles.subtitleText} numberOfLines={1}>{item.department || job.department}</Text>
+                                )}
+                                {!!(item.department || job.department || item.jobTitle || job.title) && !!status ? (
+                                  <Text style={styles.subtitleDot}> • </Text>
+                                ) : null}
+                                {!!status && (
+                                  <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor(status) }]}>
+                                    <Text style={[styles.inlineStatusText, { color: Colors.white }]}>
+                                      {formatStatusLabel(status)}
+                                    </Text>
+                                  </View>
+                                )}
+                              </View>
+
+                              <View style={styles.assignmentRow}>
+                                <View style={styles.infoCol}>
+                                  <Text style={styles.infoLabel}>Required Role</Text>
+                                  <Text style={styles.infoValue}>{job.requiredRole || '—'}</Text>
                                 </View>
-                              )}
-                            </View>
+                                <View style={styles.infoCol}>
+                                  <Text style={styles.infoLabel}>Priority</Text>
+                                  <Text style={styles.infoValue}>{job.priority || '—'}</Text>
+                                </View>
+                                <View style={styles.infoCol}>
+                                  <Text style={styles.infoLabel}>Worked</Text>
+                                  <Text style={styles.infoValue} numberOfLines={1}>{(payout.minutesWorked ?? item.minutesWorked) || 0}m</Text>
+                                </View>
+                              </View>
 
-                            <View style={styles.assignmentRow}>
-                              <View style={styles.infoCol}>
-                                <Text style={styles.infoLabel}>Required Role</Text>
-                                <Text style={styles.infoValue}>{job.requiredRole || '—'}</Text>
+                              <View style={styles.assignmentRow}>
+                                <View style={styles.infoCol}>
+                                  <Text style={styles.infoLabel}>Rate</Text>
+                                  <Text style={styles.infoValue}>₹{(payout.hourlyRate ?? item.hourlyRate) || job.hourlyRate}/hr</Text>
+                                </View>
+                                <View style={styles.infoCol}>
+                                  <Text style={styles.infoLabel}>Amount</Text>
+                                  <Text style={[styles.infoValue, { color: Colors.primary }]}>₹{(payout.amount ?? item.amount) || 0}</Text>
+                                </View>
+                                <View style={styles.infoCol}>
+                                  <Text style={styles.infoLabel}>Facility</Text>
+                                  <Text style={styles.infoValue} numberOfLines={1}>{job.facilityName || item.facilityName || job.location || item.location || '—'}</Text>
+                                </View>
                               </View>
-                              <View style={styles.infoCol}>
-                                <Text style={styles.infoLabel}>Priority</Text>
-                                <Text style={styles.infoValue}>{job.priority || '—'}</Text>
-                              </View>
-                              <View style={styles.infoCol}>
-                                <Text style={styles.infoLabel}>Worked</Text>
-                                <Text style={styles.infoValue} numberOfLines={1}>{(payout.minutesWorked ?? item.minutesWorked) || 0}m ({Number((payout.hoursWorked ?? item.hoursWorked) || 0).toFixed(2)}h)</Text>
-                              </View>
-                            </View>
 
-                            <View style={styles.assignmentRow}>
-                              <View style={styles.infoCol}>
-                                <Text style={styles.infoLabel}>Rate</Text>
-                                <Text style={styles.infoValue}>₹{(payout.hourlyRate ?? item.hourlyRate) || job.hourlyRate}/hr</Text>
-                              </View>
-                              <View style={styles.infoCol}>
-                                <Text style={styles.infoLabel}>Amount</Text>
-                                <Text style={[styles.infoValue, { color: Colors.primary }]}>₹{(payout.amount ?? item.amount) || 0}</Text>
-                              </View>
-                              <View style={styles.infoCol}>
-                                <Text style={styles.infoLabel}>Facility</Text>
-                                <Text style={styles.infoValue} numberOfLines={1}>{job.facilityName || item.facilityName || job.location || item.location || '—'}</Text>
-                              </View>
                             </View>
-
                           </View>
-                        </View>
                         </TouchableOpacity>
 
                         {showPayoutExportMenuForId === uniqueId && (
@@ -2294,7 +2493,7 @@ const ReportsScreen: React.FC = () => {
                 <FlatList
                   data={recentReports}
                   renderItem={renderReportCard}
-                  keyExtractor={(item) => item.id.toString()}
+                  keyExtractor={(item) => String(item.id)}
                   scrollEnabled={false}
                 />
               )}
@@ -3746,7 +3945,9 @@ const ReportsScreen: React.FC = () => {
                 <Text style={styles.jobDetailSectionTitle}>Payout</Text>
                 <View style={styles.jobDetailRow}>
                   <Text style={styles.jobDetailLabel}>Worked:</Text>
-                  <Text style={styles.jobDetailValue}>{(selectedPayoutDetails?.payout?.minutesWorked ?? selectedPayoutDetails?.flat?.minutesWorked) || 0} minutes ({Number((selectedPayoutDetails?.payout?.hoursWorked ?? selectedPayoutDetails?.flat?.hoursWorked) || 0).toFixed(2)} hours)</Text>
+                  <Text style={styles.jobDetailValue}>
+                    {(selectedPayoutDetails?.payout?.minutesWorked ?? selectedPayoutDetails?.flat?.minutesWorked) || 0} minutes
+                  </Text>
                 </View>
                 <View style={styles.jobDetailRow}>
                   <Text style={styles.jobDetailLabel}>Rate:</Text>
@@ -4846,7 +5047,7 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     color: Colors.white,
   },
-  
+
   // Check-In/Out styles
   summaryContainer: {
     backgroundColor: Colors.white,
@@ -4973,7 +5174,7 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     marginLeft: Spacing.xs,
   },
-  
+
   // Timesheet modal styles
   timelineItem: {
     flexDirection: 'row',

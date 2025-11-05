@@ -12,7 +12,9 @@ import {
   Image,
   StatusBar,
   Platform,
+  Modal,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGlobalStyles } from '../../theme/globalStyles';
 import { useNavigation } from '@react-navigation/native';
@@ -81,6 +83,7 @@ const HRDashboardScreen: React.FC = () => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showLoginSuccessModal, setShowLoginSuccessModal] = useState(false);
   // Pending check-in approvals
   const [showApprovalsModal, setShowApprovalsModal] = useState(false);
   const [pendingCheckIns, setPendingCheckIns] = useState<any[]>([]);
@@ -94,6 +97,19 @@ const HRDashboardScreen: React.FC = () => {
   -------------------------------------------------------------- */
   useEffect(() => {
     loadDashboardData();
+  }, []);
+
+  // Show success modal after login if flag set
+  useEffect(() => {
+    (async () => {
+      try {
+        const flag = await AsyncStorage.getItem('SHOW_LOGIN_SUCCESS');
+        if (flag === '1') {
+          setShowLoginSuccessModal(true);
+          await AsyncStorage.removeItem('SHOW_LOGIN_SUCCESS');
+        }
+      } catch {}
+    })();
   }, []);
 
   const loadDashboardData = async () => {
@@ -729,6 +745,35 @@ const HRDashboardScreen: React.FC = () => {
 
       <HRFooterNavigation activeRoute="Dashboard" scrollY={scrollY} isLoading={isLoading} />
       </View>
+
+      {/* Login Success Modal (same style as LoginScreen) */}
+      <Modal
+        transparent
+        visible={showLoginSuccessModal}
+        animationType="fade"
+        onRequestClose={() => setShowLoginSuccessModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowLoginSuccessModal(false)} />
+          <View style={styles.modalContent}>
+            <View style={styles.successIconContainer}>
+              <FontAwesomeIcon 
+                icon="check-circle" 
+                size={Responsive.iconSize(60)} 
+                color="#4CAF50" 
+              />
+            </View>
+            <Text style={styles.successTitle}>Login Successful!</Text>
+            <Text style={styles.successMessage}>Welcome back! You have successfully signed in.</Text>
+            <TouchableOpacity
+              style={styles.modalDoneButton}
+              onPress={() => setShowLoginSuccessModal(false)}
+            >
+              <Text style={styles.modalDoneButtonText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -1230,6 +1275,52 @@ const styles = StyleSheet.create({
     height: 15,
     width: 80,
     marginLeft: -12,
+  },
+  // Success modal styles (matching LoginScreen)
+  modalOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    width: '80%',
+    maxWidth: 400,
+  },
+  successIconContainer: {
+    marginBottom: 20,
+  },
+  successTitle: {
+    fontSize: 24,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#111827',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  successMessage: {
+    fontSize: 16,
+    fontFamily: Typography.fontFamily.regular,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 16,
+  },
+  modalDoneButton: {
+    backgroundColor: '#111827',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 40,
+    marginTop: 8,
+  },
+  modalDoneButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: Typography.fontFamily.bold,
   },
 });
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,11 +10,11 @@ import {
   SafeAreaView,
   ActivityIndicator,
   Keyboard,
-  TouchableWithoutFeedback,
   KeyboardAvoidingView,
   Platform,
   PermissionsAndroid,
   Modal,
+  ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
@@ -24,6 +24,7 @@ import { Typography } from '../../constants/typography';
 import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import ApiService from '../../services/api';
 import messaging from '@react-native-firebase/messaging';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../navigation/AppNavigator';
 import Responsive from '../../utils/responsive';
 
@@ -45,6 +46,7 @@ const LoginScreen: React.FC = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   const performLogin = async (isRetry = false) => {
     if (!isRetry) {
@@ -68,15 +70,10 @@ const LoginScreen: React.FC = () => {
       const response = await ApiService.login({ email, password });
       console.log('✅ Login successful, updating auth context...');
       
-      // Show success modal
-      setShowSuccessModal(true);
-      
-      // Wait 1.5 seconds before proceeding
-      setTimeout(() => {
-        setShowSuccessModal(false);
-        login(response.user);
-        console.log('✅ Auth context updated, navigation should happen now');
-      }, 1500);
+      // Set flag to show success on HRDashboard, then proceed
+      try { await AsyncStorage.setItem('SHOW_LOGIN_SUCCESS', '1'); } catch {}
+      login(response.user);
+      console.log('✅ Auth context updated, navigating to dashboard');
 
       // Register device push token after successful login
       try {
@@ -105,7 +102,7 @@ const LoginScreen: React.FC = () => {
         console.log('⚠️ Unable to register push token post-login:', (e as any)?.message);
       }
     } catch (error: any) {
-      console.error('❌ Login error:', error);
+      // console.error('❌ Login error:', error);
       
       let errorMsg = 'Login failed. Please try again.';
       
@@ -139,6 +136,12 @@ const LoginScreen: React.FC = () => {
       setIsLoading(false);
     }
   };
+  // Hide bottom overlay when keyboard is visible (prevents grey patch overlap)
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => setIsKeyboardVisible(true));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setIsKeyboardVisible(false));
+    return () => { showSub.remove(); hideSub.remove(); };
+  }, []);
 
   const handleLogin = () => {
     Keyboard.dismiss();
@@ -149,18 +152,23 @@ const LoginScreen: React.FC = () => {
     navigation.navigate('Register' as never);
   };
 
-  const dismissKeyboard = () => {
-    Keyboard.dismiss();
-  };
+  //
 
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        enabled={Platform.OS === 'ios'}
+        behavior="padding"
         style={styles.keyboardView}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        keyboardVerticalOffset={0}
       >
-        <TouchableWithoutFeedback onPress={dismissKeyboard}>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.scrollContent}
+          contentInsetAdjustmentBehavior="never"
+          overScrollMode="never"
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.content}>
             {/* Top Spacer */}
             <View style={styles.topSpacer} />
@@ -263,18 +271,20 @@ const LoginScreen: React.FC = () => {
             {/* Bottom Spacer */}
             <View style={styles.bottomSpacer} />
           </View>
-        </TouchableWithoutFeedback>
+        </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Powered By Section - Fixed at bottom */}
-      <View style={styles.poweredByContainer}>
-        <Text style={styles.poweredByText}>Powered by</Text>
-        <Image
-          source={require('../../assets/footer_logo.png')}
-          style={styles.companyLogo}
-          resizeMode="contain"
-        />
-      </View>
+      {/* Powered By Section - hide when keyboard is open to avoid grey patch */}
+      {!isKeyboardVisible && (
+        <View style={styles.poweredByContainer}>
+          <Text style={styles.poweredByText}>Powered by</Text>
+          <Image
+            source={require('../../assets/footer_logo.png')}
+            style={styles.companyLogo}
+            resizeMode="contain"
+          />
+        </View>
+      )}
 
       {/* Success Modal */}
       <Modal
@@ -330,6 +340,10 @@ const LoginScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: Responsive.wp('5%'),
+  },
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',

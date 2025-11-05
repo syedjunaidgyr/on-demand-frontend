@@ -405,7 +405,6 @@ const DepartmentDropdown = ({
       zIndex={4000}
       zIndexInverse={1000}
     />
-    {error && <Text numberOfLines={1} style={styles.errorText}>{error}</Text>}
   </View>
 );
 
@@ -450,7 +449,6 @@ const SpecializationDropdown = ({
       zIndex={3000}
       zIndexInverse={2000}
     />
-    {error && <Text numberOfLines={1} style={styles.errorText}>{error}</Text>}
   </View>
 );
 
@@ -498,7 +496,6 @@ const HospitalDropdown = ({
       zIndex={2000}
       zIndexInverse={3000}
     />
-    {error && <Text numberOfLines={1} style={styles.errorText}>{error}</Text>}
   </View>
 );
 
@@ -549,7 +546,6 @@ const UnitDropdown = ({
       zIndex={1000}
       zIndexInverse={4000}
     />
-    {error && <Text numberOfLines={1} style={styles.errorText}>{error}</Text>}
   </View>
 );
 
@@ -594,7 +590,6 @@ const StateDropdown = ({
       zIndex={900}
       zIndexInverse={3100}
     />
-    {error && <Text numberOfLines={1} style={styles.errorText}>{error}</Text>}
   </View>
 );
 
@@ -642,7 +637,6 @@ const CityDropdown = ({
       zIndex={800}
       zIndexInverse={3200}
     />
-    {error && <Text numberOfLines={1} style={styles.errorText}>{error}</Text>}
   </View>
 );
 
@@ -1145,17 +1139,14 @@ const CreateJobScreen: React.FC = () => {
     }
   };
 
-  // Auto-advance to next section when current expanded section is completed
+  // Auto-open the next accordion only after the current one is completed (do not auto-close anything)
   useEffect(() => {
-    // find the currently expanded section (first true in order)
-    const currentSection = sectionOrder.find(key => expandedSections[key]);
-    if (!currentSection) return;
-
-    if (isSectionComplete(currentSection)) {
-      const currentIdx = sectionOrder.indexOf(currentSection);
-      const nextSection = sectionOrder[currentIdx + 1];
-      if (nextSection) {
-        openOnlySection(nextSection);
+    for (let i = 0; i < sectionOrder.length - 1; i++) {
+      const current = sectionOrder[i];
+      const next = sectionOrder[i + 1];
+      if (expandedSections[current] && isSectionComplete(current) && !expandedSections[next]) {
+        setExpandedSections(prev => ({ ...prev, [next]: true }));
+        break;
       }
     }
   }, [formData, expandedSections]);
@@ -1379,55 +1370,63 @@ const CreateJobScreen: React.FC = () => {
             isExpanded={expandedSections.jobDetails}
             onToggle={() => toggleSection('jobDetails')}
             isComplete={isSectionComplete('jobDetails')}>
-          <InputField
-            label="Job Title"
-            value={formData.title}
-            onChangeText={(text) => handleInputChange('title', text)}
-              error={validationErrors.title}
-              maxWords={150}
-          />
+          <View style={styles.fieldBlock}>
+            <InputField
+              label="Job Title"
+              value={formData.title}
+              onChangeText={(text) => handleInputChange('title', text)}
+                error={validationErrors.title}
+                maxWords={150}
+            />
+          </View>
 
-          <InputField
-            label="Description"
-            value={formData.description}
-            onChangeText={(text) => handleInputChange('description', text)}
-            multiline={true}
-            numberOfLines={4}
-              error={validationErrors.description}
-              maxWords={150}
-          />
+          <View style={[styles.fieldBlock, styles.tightBetweenTitleDesc]}>
+            <InputField
+              label="Description"
+              value={formData.description}
+              onChangeText={(text) => handleInputChange('description', text)}
+              multiline={true}
+              numberOfLines={4}
+                error={validationErrors.description}
+                maxWords={150}
+            />
+          </View>
 
-          <DepartmentDropdown 
-            open={departmentDropdownOpen}
-            setOpen={(open) => {
-              setDepartmentDropdownOpen(open);
-              if (open) {
-                setSpecializationDropdownOpen(false);
-                setHospitalDropdownOpen(false);
-                setUnitDropdownOpen(false);
-              }
-            }}
-            value={formData.department}
-            setValue={(callback) => {
-              const newValue = callback(formData.department);
-              handleInputChange('department', newValue);
-            }}
-            items={medicalDepartments.map(dept => ({
-              label: dept,
-              value: dept,
-            }))}
-            styles={styles}
-              error={validationErrors.department}
-          />
+          <View style={[styles.fieldBlock, styles.tightUpLarge]}>
+            <DepartmentDropdown 
+              open={departmentDropdownOpen}
+              setOpen={(open) => {
+                setDepartmentDropdownOpen(open);
+                if (open) {
+                  setSpecializationDropdownOpen(false);
+                  setHospitalDropdownOpen(false);
+                  setUnitDropdownOpen(false);
+                }
+              }}
+              value={formData.department}
+              setValue={(callback) => {
+                const newValue = callback(formData.department);
+                handleInputChange('department', newValue);
+              }}
+              items={medicalDepartments.map(dept => ({
+                label: dept,
+                value: dept,
+              }))}
+              styles={styles}
+                error={validationErrors.department}
+            />
+          </View>
 
-          <InputField
-            label="Location"
-            value={formData.location}
-            onChangeText={(text) => handleInputChange('location', text)}
-              error={validationErrors.location}
-          />
+          <View style={styles.fieldBlock}>
+            <InputField
+              label="Location"
+              value={formData.location}
+              onChangeText={(text) => handleInputChange('location', text)}
+                error={validationErrors.location}
+            />
+          </View>
 
-          <View style={styles.roleSelector}>
+          <View style={[styles.roleSelector, styles.fieldBlock]}>
             <Text style={styles.inputLabel}>Required Role</Text>
             <View style={styles.roleButtons}>
               <TouchableOpacity
@@ -1476,28 +1475,30 @@ const CreateJobScreen: React.FC = () => {
           </View>
 
           {formData.requiredRole === 'DOCTOR' && (
-            <SpecializationDropdown 
-              open={specializationDropdownOpen}
-              setOpen={(open) => {
-                setSpecializationDropdownOpen(open);
-                if (open) {
-                  setDepartmentDropdownOpen(false);
-                  setHospitalDropdownOpen(false);
-                  setUnitDropdownOpen(false);
-                }
-              }}
-              value={formData.specialization}
-              setValue={(callback) => {
-                const newValue = callback(formData.specialization);
-                handleInputChange('specialization', newValue);
-              }}
-              items={(departmentSpecializations[formData.department] || []).map(specialization => ({
-                label: specialization,
-                value: specialization,
-              }))}
-              styles={styles}
-                error={validationErrors.specialization}
-              />
+            <View style={styles.fieldBlock}>
+              <SpecializationDropdown 
+                open={specializationDropdownOpen}
+                setOpen={(open) => {
+                  setSpecializationDropdownOpen(open);
+                  if (open) {
+                    setDepartmentDropdownOpen(false);
+                    setHospitalDropdownOpen(false);
+                    setUnitDropdownOpen(false);
+                  }
+                }}
+                value={formData.specialization}
+                setValue={(callback) => {
+                  const newValue = callback(formData.specialization);
+                  handleInputChange('specialization', newValue);
+                }}
+                items={(departmentSpecializations[formData.department] || []).map(specialization => ({
+                  label: specialization,
+                  value: specialization,
+                }))}
+                styles={styles}
+                  error={validationErrors.specialization}
+                />
+            </View>
             )}
           </AccordionSection>
 
@@ -2015,7 +2016,7 @@ const styles = StyleSheet.create({
   formContainer: {
     padding: Spacing.lg,
     width: '100%',
-    maxWidth: 720,
+    maxWidth: 900,
     alignSelf: 'center',
   },
   // Accordion styles
@@ -2070,7 +2071,7 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   inputContainer: {
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   inputLabel: {
     fontSize: Typography.fontSize.sm,
@@ -2232,6 +2233,18 @@ const styles = StyleSheet.create({
     fontSize: Typography.fontSize.lg,
     color: Colors.white,
     fontFamily: Typography.fontFamily.bold,
+  },
+  fieldBlock: {
+    marginBottom: Spacing.sm,
+  },
+  tightBetweenTitleDesc: {
+    marginTop: -Spacing.md,
+  },
+  tightUpSmall: {
+    marginTop: -Spacing.sm,
+  },
+  tightUpLarge: {
+    marginTop: -Spacing.lg,
   },
   dropdownStyle: {
     backgroundColor: Colors.backgroundSecondary,

@@ -48,7 +48,7 @@ export const getComputerIP = (): string => {
   // macOS: ifconfig | grep "inet " | grep -v 127.0.0.1
   // Windows: ipconfig
   // Linux: hostname -I
-  return '192.168.1.52'; // Your actual IP
+  return '192.168.1.8'; // Your actual IP
 };
 
 // Manual override for testing on physical device
@@ -68,5 +68,4 @@ console.log('🔧 Development Mode:', __DEV__);
 console.log('🔧 Force Physical Device:', FORCE_PHYSICAL_DEVICE);
 console.log('🔧 Final URL will be:', getFinalApiUrl());
 
-export const NOTIFICATIONS_SERVICE_URL = 'http://192.168.1.52:3020/api';
-export const TOKEN_REGISTRATION_URL = 'http://192.168.1.52:3020/api/tokenRegistration';
+export const TOKEN_REGISTRATION_URL = 'http://192.168.1.8:3020/api/tokenRegistration';
