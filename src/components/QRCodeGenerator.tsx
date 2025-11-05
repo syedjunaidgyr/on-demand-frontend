@@ -34,10 +34,6 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
         <View style={styles.detailsContainer}>
           <Text style={styles.title}>{qrData.jobTitle}</Text>
           <Text style={styles.location}>{qrData.location}</Text>
-          <Text style={styles.provider}>{qrData.providerName}</Text>
-          <Text style={styles.action}>
-            {qrData.action === 'checkin' ? 'Check In' : 'Check Out'}
-          </Text>
         </View>
       )}
     </View>

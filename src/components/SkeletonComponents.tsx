@@ -232,18 +232,57 @@ export const SkeletonFooter = () => (
   <View style={styles.skeletonFooterContainer}>
     <View style={styles.footerWrapper}>
       <View style={styles.footerRow}>
-        {/* Three footer buttons */}
+        {/* Three footer buttons with skeleton effect */}
         <View style={styles.footerButton}>
-          <SkeletonView width={24} height={24} borderRadius={12} style={{ marginBottom: 4 }} />
-          <SkeletonView width={50} height={10} borderRadius={5} />
+          <SkeletonView 
+            width={24} 
+            height={24} 
+            borderRadius={12} 
+            baseColor="#3A4759" 
+            highlightColor="rgba(255,255,255,0.3)"
+            style={{ marginBottom: 4 }} 
+          />
+          <SkeletonView 
+            width={50} 
+            height={10} 
+            borderRadius={5} 
+            baseColor="#3A4759" 
+            highlightColor="rgba(255,255,255,0.3)"
+          />
         </View>
         <View style={styles.footerButton}>
-          <SkeletonView width={24} height={24} borderRadius={12} style={{ marginBottom: 4 }} />
-          <SkeletonView width={50} height={10} borderRadius={5} />
+          <SkeletonView 
+            width={24} 
+            height={24} 
+            borderRadius={12} 
+            baseColor="#3A4759" 
+            highlightColor="rgba(255,255,255,0.3)"
+            style={{ marginBottom: 4 }} 
+          />
+          <SkeletonView 
+            width={50} 
+            height={10} 
+            borderRadius={5} 
+            baseColor="#3A4759" 
+            highlightColor="rgba(255,255,255,0.3)"
+          />
         </View>
         <View style={styles.footerButton}>
-          <SkeletonView width={24} height={24} borderRadius={12} style={{ marginBottom: 4 }} />
-          <SkeletonView width={50} height={10} borderRadius={5} />
+          <SkeletonView 
+            width={24} 
+            height={24} 
+            borderRadius={12} 
+            baseColor="#3A4759" 
+            highlightColor="rgba(255,255,255,0.3)"
+            style={{ marginBottom: 4 }} 
+          />
+          <SkeletonView 
+            width={50} 
+            height={10} 
+            borderRadius={5} 
+            baseColor="#3A4759" 
+            highlightColor="rgba(255,255,255,0.3)"
+          />
         </View>
       </View>
     </View>
