@@ -324,7 +324,7 @@ class ApiService {
   async assignNursesToAgencyJob(
     jobId: string | number, 
     body: { 
-      mode: 'FULL' | 'PARTIAL' | 'SEGMENTS'; 
+      mode: 'FULL' | 'SEGMENTS'; 
       hourlyRate: number; 
       assignments: Array<{ 
         userId: string | number; 

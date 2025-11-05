@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ActivityIndicator, TouchableOpacity, TextInput, FlatList, Alert, StatusBar, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ActivityIndicator, TouchableOpacity, TextInput, FlatList, Alert, StatusBar, ScrollView, Platform, Modal } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import GlobalHeader from '../../components/GlobalHeader';
@@ -10,7 +10,7 @@ import ApiService from '../../services/api';
 import { useAuth } from '../../navigation/AppNavigator';
 
 type ParamList = {
-  AgencyAssignNurse: { jobId: string; hourlyRate?: number; mode?: 'FULL' | 'PARTIAL' | 'SEGMENTS' };
+  AgencyAssignNurse: { jobId: string; hourlyRate?: number; mode?: 'FULL' | 'SEGMENTS' };
 };
 
 interface Segment {
@@ -20,6 +20,7 @@ interface Segment {
   endDate: Date | null;
   showStartPicker: boolean;
   showEndPicker: boolean;
+  showDoctorPicker: boolean;
 }
 
 const AgencyAssignNurseScreen: React.FC = () => {
@@ -27,18 +28,20 @@ const AgencyAssignNurseScreen: React.FC = () => {
   const route = useRoute<RouteProp<ParamList, 'AgencyAssignNurse'>>();
   const { user } = useAuth();
   const jobId = route.params?.jobId as string;
-  const [mode, setMode] = useState<'FULL' | 'PARTIAL' | 'SEGMENTS'>(route.params?.mode || 'FULL');
+  const [mode, setMode] = useState<'FULL' | 'SEGMENTS'>(route.params?.mode || 'FULL');
   const [hourlyRate, setHourlyRate] = useState<string>(route.params?.hourlyRate ? String(route.params.hourlyRate) : '');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [pool, setPool] = useState<any[]>([]);
-  const [nurses, setNurses] = useState<any[]>([]);
+  const [doctors, setDoctors] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | number | null>(null);
   const [job, setJob] = useState<any>(null);
   const [segments, setSegments] = useState<Segment[]>([
-    { id: '1', userId: null, startDate: null, endDate: null, showStartPicker: false, showEndPicker: false }
+    { id: '1', userId: null, startDate: null, endDate: null, showStartPicker: false, showEndPicker: false, showDoctorPicker: false }
   ]);
+  const [showDoctorModal, setShowDoctorModal] = useState(false);
+  const [selectedSegmentForDoctor, setSelectedSegmentForDoctor] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -58,9 +61,9 @@ const AgencyAssignNurseScreen: React.FC = () => {
 
         const res = await ApiService.getAgencyNurses(agencyId);
         setPool(res.pool || []);
-        setNurses(res.nurses || []);
+        setDoctors(res.nurses || []);
       } catch (e) {
-        Alert.alert('Error', 'Failed to load nurses.');
+        Alert.alert('Error', 'Failed to load doctors.');
       } finally {
         setLoading(false);
       }
@@ -68,19 +71,33 @@ const AgencyAssignNurseScreen: React.FC = () => {
     load();
   }, [user?.id, jobId]);
 
-  const eligiblePool = (pool || []).filter((m: any) => String(m.status || '').toUpperCase() !== 'REVOKED');
+  // Filter to show only doctors (role === 'DOCTOR') and non-revoked
+  const eligiblePool = (pool || []).filter((m: any) => {
+    const status = String(m.status || '').toUpperCase();
+    const role = String(m.nurse?.role || m.role || '').toUpperCase();
+    return status !== 'REVOKED' && role === 'DOCTOR';
+  });
 
   const items = eligiblePool.map((m: any) => {
-    const fallback = nurses.find((x: any) => String(x.id) === String(m.nurseId)) || {};
-    const n = m.nurse || fallback || {};
-    return { id: n.id, firstName: n.firstName, lastName: n.lastName, email: n.email, status: m.status };
-  }).filter((n: any) => {
+    const fallback = doctors.find((x: any) => String(x.id) === String(m.nurseId || m.userId)) || {};
+    const doctor = m.nurse || m.doctor || fallback || {};
+    return { 
+      id: doctor.id, 
+      firstName: doctor.firstName, 
+      lastName: doctor.lastName, 
+      email: doctor.email, 
+      phone: doctor.phone,
+      specialization: doctor.specialization,
+      department: doctor.department,
+      status: m.status 
+    };
+  }).filter((d: any) => {
     if (!search.trim()) return true;
     const q = search.trim().toLowerCase();
     return (
-      String(n.firstName || '').toLowerCase().includes(q) ||
-      String(n.lastName || '').toLowerCase().includes(q) ||
-      String(n.email || '').toLowerCase().includes(q)
+      String(d.firstName || '').toLowerCase().includes(q) ||
+      String(d.lastName || '').toLowerCase().includes(q) ||
+      String(d.email || '').toLowerCase().includes(q)
     );
   });
 
@@ -113,7 +130,7 @@ const AgencyAssignNurseScreen: React.FC = () => {
     // Check all segments have required fields
     for (const seg of segments) {
       if (!seg.userId) {
-        return 'Please select a nurse for all segments';
+        return 'Please select a doctor for all segments';
       }
       if (!seg.startDate || !seg.endDate) {
         return 'Please select start and end dates for all segments';
@@ -154,7 +171,8 @@ const AgencyAssignNurseScreen: React.FC = () => {
       startDate: null,
       endDate: null,
       showStartPicker: false,
-      showEndPicker: false
+      showEndPicker: false,
+      showDoctorPicker: false
     }]);
   };
 
@@ -199,41 +217,54 @@ const AgencyAssignNurseScreen: React.FC = () => {
           { text: 'OK', onPress: () => (navigation as any).goBack() },
         ]);
       } else {
-        // FULL or PARTIAL mode
+        // FULL mode
         if (!selectedUserId) {
-          Alert.alert('Select Nurse', 'Please select a nurse to assign.');
+          Alert.alert('Select Doctor', 'Please select a doctor to assign.');
           return;
         }
         setSubmitting(true);
         await ApiService.assignNursesToAgencyJob(jobId, {
-          mode,
+          mode: 'FULL',
           hourlyRate: rate,
           assignments: [{ userId: selectedUserId }],
         });
-        Alert.alert('Success', 'Nurse assigned to job.', [
+        Alert.alert('Success', 'Doctor assigned to job.', [
           { text: 'OK', onPress: () => (navigation as any).goBack() },
         ]);
       }
     } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.message || e?.message || 'Failed to assign nurse.');
+      Alert.alert('Error', e?.response?.data?.message || e?.message || 'Failed to assign doctor.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const getSelectedNurseName = (userId: string | number | null): string => {
-    if (!userId) return 'Select nurse';
-    const nurse = items.find(n => String(n.id) === String(userId));
-    return nurse ? `${nurse.firstName} ${nurse.lastName}` : 'Select nurse';
+  const getSelectedDoctorName = (userId: string | number | null): string => {
+    if (!userId) return 'Select doctor';
+    const doctor = items.find(d => String(d.id) === String(userId));
+    return doctor ? `Dr. ${doctor.firstName} ${doctor.lastName}` : 'Select doctor';
   };
 
   const dateRange = getJobDateRange();
+
+  const openDoctorPicker = (segmentId: string) => {
+    setSelectedSegmentForDoctor(segmentId);
+    setShowDoctorModal(true);
+  };
+
+  const selectDoctorForSegment = (doctorId: string | number) => {
+    if (selectedSegmentForDoctor) {
+      updateSegment(selectedSegmentForDoctor, { userId: doctorId, showDoctorPicker: false });
+    }
+    setShowDoctorModal(false);
+    setSelectedSegmentForDoctor(null);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" translucent={false} />
       <GlobalHeader 
-        title="Assign Nurse"
+        title="Assign Doctor"
         backgroundColor="#FFFFFF"
         titleColor="#111827"
         onBackPress={() => (navigation as any).goBack?.()}
@@ -256,7 +287,7 @@ const AgencyAssignNurseScreen: React.FC = () => {
           <View style={styles.inputRow}>
             <Text style={styles.label}>Mode</Text>
             <View style={styles.modeRow}>
-              {(['FULL', 'PARTIAL', 'SEGMENTS'] as const).map(m => (
+              {(['FULL', 'SEGMENTS'] as const).map(m => (
                 <TouchableOpacity 
                   key={m} 
                   style={[styles.modeChip, mode === m && styles.modeChipActive]} 
@@ -286,7 +317,7 @@ const AgencyAssignNurseScreen: React.FC = () => {
               <FontAwesomeIcon icon="search" size={16} color={Colors.textSecondary} />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search nurses"
+                placeholder="Search doctors"
                 placeholderTextColor={Colors.textTertiary}
                 value={search}
                 onChangeText={setSearch}
@@ -321,29 +352,14 @@ const AgencyAssignNurseScreen: React.FC = () => {
                   </View>
 
                   <TouchableOpacity
-                    style={styles.segmentNurseSelect}
-                    onPress={() => {
-                      // Show nurse selection modal
-                      const nurseList = items.map(n => ({
-                        label: `${n.firstName} ${n.lastName}`,
-                        value: n.id,
-                      }));
-                      Alert.alert(
-                        'Select Nurse',
-                        '',
-                        [
-                          { text: 'Cancel', style: 'cancel' },
-                          ...nurseList.map(n => ({
-                            text: n.label,
-                            onPress: () => updateSegment(segment.id, { userId: n.value }),
-                          })),
-                        ],
-                        { cancelable: true }
-                      );
-                    }}>
-                    <Text style={[styles.segmentNurseText, !segment.userId && styles.segmentNursePlaceholder]}>
-                      {getSelectedNurseName(segment.userId)}
-                    </Text>
+                    style={styles.segmentDoctorSelect}
+                    onPress={() => openDoctorPicker(segment.id)}>
+                    <View style={styles.segmentDoctorSelectContent}>
+                      <FontAwesomeIcon icon="user-md" size={18} color={segment.userId ? Colors.primary : Colors.textTertiary} />
+                      <Text style={[styles.segmentDoctorText, !segment.userId && styles.segmentDoctorPlaceholder]}>
+                        {getSelectedDoctorName(segment.userId)}
+                      </Text>
+                    </View>
                     <FontAwesomeIcon icon="chevron-down" size={14} color={Colors.textSecondary} />
                   </TouchableOpacity>
 
@@ -419,29 +435,52 @@ const AgencyAssignNurseScreen: React.FC = () => {
             {loading ? (
               <View style={styles.center}> 
                 <ActivityIndicator size="large" color={Colors.primary} />
-                <Text style={styles.loadingText}>Loading nurses…</Text>
+                <Text style={styles.loadingText}>Loading doctors…</Text>
+              </View>
+            ) : items.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <FontAwesomeIcon icon="user-md" size={48} color={Colors.textTertiary} />
+                <Text style={styles.emptyText}>No doctors available</Text>
+                <Text style={styles.emptySubtext}>Add doctors to your agency pool first</Text>
               </View>
             ) : (
               <View style={styles.listContainer}>
-                {items.map((item) => (
+                {items.map((doctor) => (
                   <TouchableOpacity 
-                    key={item.id}
-                    style={[styles.nurseItem, selectedUserId === item.id && styles.nurseItemActive]} 
-                    onPress={() => setSelectedUserId(item.id)}>
-                    <View style={styles.avatar}>
-                      <Text style={styles.avatarTxt}>
-                        {(item.firstName || item.lastName || 'N').charAt(0)}
+                    key={doctor.id}
+                    style={[styles.doctorItem, selectedUserId === doctor.id && styles.doctorItemActive]} 
+                    onPress={() => setSelectedUserId(doctor.id)}>
+                    <View style={[styles.avatar, selectedUserId === doctor.id && styles.avatarActive]}>
+                      <Text style={[styles.avatarTxt, selectedUserId === doctor.id && styles.avatarTxtActive]}>
+                        {(doctor.firstName || doctor.lastName || 'D').charAt(0).toUpperCase()}
                       </Text>
                     </View>
-                    <View style={styles.nurseBody}>
-                      <Text style={styles.nurseName}>{item.firstName} {item.lastName}</Text>
-                      <Text style={styles.nurseSub}>{item.email}</Text>
+                    <View style={styles.doctorBody}>
+                      <View style={styles.doctorHeader}>
+                        <Text style={styles.doctorName}>Dr. {doctor.firstName} {doctor.lastName}</Text>
+                        {selectedUserId === doctor.id && (
+                          <View style={styles.selectedBadge}>
+                            <FontAwesomeIcon icon="check-circle" size={16} color={Colors.white} />
+                          </View>
+                        )}
+                      </View>
+                      {doctor.specialization && (
+                        <View style={styles.doctorMeta}>
+                          <FontAwesomeIcon icon="stethoscope" size={12} color={Colors.textSecondary} />
+                          <Text style={styles.doctorMetaText}>{doctor.specialization}</Text>
+                        </View>
+                      )}
+                      {doctor.department && (
+                        <View style={styles.doctorMeta}>
+                          <FontAwesomeIcon icon="hospital" size={12} color={Colors.textSecondary} />
+                          <Text style={styles.doctorMetaText}>{doctor.department}</Text>
+                        </View>
+                      )}
+                      <View style={styles.doctorMeta}>
+                        <FontAwesomeIcon icon="envelope" size={12} color={Colors.textSecondary} />
+                        <Text style={styles.doctorMetaText}>{doctor.email}</Text>
+                      </View>
                     </View>
-                    {selectedUserId === item.id ? (
-                      <FontAwesomeIcon icon="check-circle" size={18} color={Colors.primary} />
-                    ) : (
-                      <FontAwesomeIcon icon="circle" size={18} color={Colors.borderLight} />
-                    )}
                   </TouchableOpacity>
                 ))}
               </View>
@@ -462,11 +501,72 @@ const AgencyAssignNurseScreen: React.FC = () => {
             <ActivityIndicator size="small" color={Colors.white} />
           ) : (
             <Text style={styles.primaryBtnTxt}>
-              {mode === 'SEGMENTS' ? `Assign ${segments.length} Segment(s)` : 'Assign'}
+              {mode === 'SEGMENTS' ? `Assign ${segments.length} Segment(s)` : 'Assign Doctor'}
             </Text>
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Doctor Selection Modal for Segments */}
+      <Modal
+        visible={showDoctorModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          setShowDoctorModal(false);
+          setSelectedSegmentForDoctor(null);
+        }}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Doctor</Text>
+              <TouchableOpacity onPress={() => {
+                setShowDoctorModal(false);
+                setSelectedSegmentForDoctor(null);
+              }}>
+                <FontAwesomeIcon icon="times" size={20} color={Colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalSearchBar}>
+              <FontAwesomeIcon icon="search" size={16} color={Colors.textSecondary} />
+              <TextInput
+                style={styles.modalSearchInput}
+                placeholder="Search doctors"
+                placeholderTextColor={Colors.textTertiary}
+                value={search}
+                onChangeText={setSearch}
+              />
+            </View>
+            <FlatList
+              data={items}
+              keyExtractor={(item) => String(item.id)}
+              renderItem={({ item: doctor }) => (
+                <TouchableOpacity
+                  style={styles.modalDoctorItem}
+                  onPress={() => selectDoctorForSegment(doctor.id)}>
+                  <View style={styles.modalAvatar}>
+                    <Text style={styles.modalAvatarText}>
+                      {(doctor.firstName || doctor.lastName || 'D').charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.modalDoctorBody}>
+                    <Text style={styles.modalDoctorName}>Dr. {doctor.firstName} {doctor.lastName}</Text>
+                    {doctor.specialization && (
+                      <Text style={styles.modalDoctorSub}>{doctor.specialization}</Text>
+                    )}
+                    <Text style={styles.modalDoctorEmail}>{doctor.email}</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>No doctors found</Text>
+                </View>
+              }
+            />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -483,19 +583,21 @@ const styles = StyleSheet.create({
     borderRadius: 10, 
     borderWidth: 1, 
     borderColor: Colors.borderLight, 
-    paddingHorizontal: 12, 
+    paddingHorizontal: 12,
+    backgroundColor: Colors.white,
+    color: Colors.textPrimary,
   },
   modeRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   modeChip: { 
-    paddingHorizontal: 12, 
-    paddingVertical: 8, 
+    paddingHorizontal: 16, 
+    paddingVertical: 10, 
     borderRadius: 20, 
     borderWidth: 1, 
     borderColor: Colors.borderLight, 
-    backgroundColor: Colors.background 
+    backgroundColor: Colors.white
   },
   modeChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  modeChipTxt: { fontSize: 13, fontFamily: Typography.fontFamily.medium, color: Colors.textPrimary },
+  modeChipTxt: { fontSize: 14, fontFamily: Typography.fontFamily.medium, color: Colors.textPrimary },
   modeChipTxtActive: { color: Colors.white },
   searchBar: { 
     flexDirection: 'row', 
@@ -506,48 +608,105 @@ const styles = StyleSheet.create({
     paddingVertical: 10, 
     borderWidth: 1, 
     borderColor: Colors.borderLight, 
-    minHeight: 44 
+    minHeight: 44,
+    marginBottom: 16,
   },
   searchInput: { flex: 1, marginLeft: 8, color: Colors.textPrimary, fontFamily: Typography.fontFamily.regular },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
   loadingText: { marginTop: 8, color: Colors.textSecondary, fontFamily: Typography.fontFamily.medium },
-  listContainer: { paddingHorizontal: 12, paddingTop: 8 },
-  nurseItem: { 
+  emptyContainer: { alignItems: 'center', paddingVertical: 40, paddingHorizontal: 20 },
+  emptyText: { marginTop: 12, color: Colors.textSecondary, fontFamily: Typography.fontFamily.medium, fontSize: 16 },
+  emptySubtext: { marginTop: 4, color: Colors.textTertiary, fontFamily: Typography.fontFamily.regular, fontSize: 14 },
+  listContainer: { paddingHorizontal: 16, paddingTop: 8 },
+  doctorItem: { 
     flexDirection: 'row', 
-    alignItems: 'center', 
+    alignItems: 'flex-start', 
     backgroundColor: Colors.white, 
-    borderRadius: 12, 
-    borderWidth: 1, 
+    borderRadius: 16, 
+    borderWidth: 1.5, 
     borderColor: Colors.borderLight, 
-    padding: 12, 
-    marginBottom: 8 
+    padding: 16, 
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  nurseItemActive: { borderColor: Colors.primary, borderWidth: 2 },
+  doctorItemActive: { 
+    borderColor: Colors.primary, 
+    borderWidth: 2,
+    backgroundColor: '#EEF2FF',
+  },
   avatar: { 
-    width: 36, 
-    height: 36, 
-    borderRadius: 18, 
+    width: 56, 
+    height: 56, 
+    borderRadius: 28, 
     backgroundColor: '#EEF2FF', 
     justifyContent: 'center', 
     alignItems: 'center', 
-    marginRight: 12 
+    marginRight: 16,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
   },
-  avatarTxt: { color: '#4F46E5', fontFamily: Typography.fontFamily.bold, fontSize: 14 },
-  nurseBody: { flex: 1 },
-  nurseName: { color: Colors.textPrimary, fontFamily: Typography.fontFamily.bold, fontSize: 14 },
-  nurseSub: { color: Colors.textSecondary, fontFamily: Typography.fontFamily.regular, fontSize: 12, marginTop: 2 },
+  avatarActive: { 
+    backgroundColor: Colors.primary, 
+    borderColor: Colors.primary,
+  },
+  avatarTxt: { 
+    color: '#4F46E5', 
+    fontFamily: Typography.fontFamily.bold, 
+    fontSize: 20 
+  },
+  avatarTxtActive: { 
+    color: Colors.white 
+  },
+  doctorBody: { flex: 1 },
+  doctorHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  doctorName: { 
+    color: Colors.textPrimary, 
+    fontFamily: Typography.fontFamily.bold, 
+    fontSize: 16,
+    flex: 1,
+  },
+  selectedBadge: {
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    padding: 4,
+  },
+  doctorMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  doctorMetaText: { 
+    color: Colors.textSecondary, 
+    fontFamily: Typography.fontFamily.regular, 
+    fontSize: 13 
+  },
   footer: { 
     position: 'absolute', 
     left: 0, 
     right: 0, 
     bottom: 0, 
-    padding: 12, 
+    padding: 16, 
     backgroundColor: Colors.background,
     borderTopWidth: 1,
-    borderTopColor: Colors.borderLight
+    borderTopColor: Colors.borderLight,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   primaryBtn: { 
-    height: 48, 
+    height: 52, 
     borderRadius: 12, 
     backgroundColor: Colors.primary, 
     alignItems: 'center', 
@@ -587,23 +746,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 8,
     gap: 6,
   },
   addSegmentText: {
     color: Colors.white,
     fontFamily: Typography.fontFamily.medium,
-    fontSize: 12,
+    fontSize: 13,
   },
   segmentCard: {
     backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: 16,
+    padding: 16,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: Colors.borderLight,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   segmentHeader: {
     flexDirection: 'row',
@@ -614,26 +778,32 @@ const styles = StyleSheet.create({
   segmentNumber: {
     color: Colors.textPrimary,
     fontFamily: Typography.fontFamily.bold,
-    fontSize: 14,
+    fontSize: 15,
   },
-  segmentNurseSelect: {
+  segmentDoctorSelect: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: Colors.background,
-    padding: 12,
-    borderRadius: 8,
+    padding: 14,
+    borderRadius: 10,
     marginBottom: 12,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: Colors.borderLight,
   },
-  segmentNurseText: {
+  segmentDoctorSelectContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  segmentDoctorText: {
     flex: 1,
     color: Colors.textPrimary,
     fontFamily: Typography.fontFamily.medium,
-    fontSize: 14,
+    fontSize: 15,
   },
-  segmentNursePlaceholder: {
+  segmentDoctorPlaceholder: {
     color: Colors.textTertiary,
   },
   dateRow: {
@@ -655,7 +825,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: Colors.background,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: Colors.borderLight,
   },
@@ -666,6 +836,89 @@ const styles = StyleSheet.create({
   },
   dateButtonPlaceholder: {
     color: Colors.textTertiary,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+  },
+  modalSearchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.background,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  modalSearchInput: {
+    flex: 1,
+    marginLeft: 8,
+    color: Colors.textPrimary,
+    fontFamily: Typography.fontFamily.regular,
+  },
+  modalDoctorItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  modalAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#EEF2FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  modalAvatarText: {
+    color: '#4F46E5',
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 18,
+  },
+  modalDoctorBody: {
+    flex: 1,
+  },
+  modalDoctorName: {
+    color: Colors.textPrimary,
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 15,
+    marginBottom: 4,
+  },
+  modalDoctorSub: {
+    color: Colors.textSecondary,
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: 13,
+    marginBottom: 2,
+  },
+  modalDoctorEmail: {
+    color: Colors.textTertiary,
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: 12,
   },
 });
 
