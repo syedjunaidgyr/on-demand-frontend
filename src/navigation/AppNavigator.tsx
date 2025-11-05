@@ -29,6 +29,7 @@ import QRCodeDisplayScreen from '../screens/healthcare/QRCodeDisplayScreen';
 
 // Common Screens
 import ProfileScreen from '../screens/common/ProfileScreen';
+import ThemeSettingsScreen from '../screens/common/ThemeSettingsScreen';
 import ProfileSettingsScreen from '../screens/common/ProfileSettingsScreen';
 import EditProfileScreen from '../screens/common/EditProfileScreen';
 import ChangePasswordScreen from '../screens/common/ChangePasswordScreen';
@@ -353,6 +354,13 @@ const MainNavigator = ({ user }: { user: User }) => {
       <Stack.Screen
         name="ProfileSettings"
         component={ProfileSettingsScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="ThemeSettings"
+        component={ThemeSettingsScreen}
         options={{
           headerShown: false,
         }}

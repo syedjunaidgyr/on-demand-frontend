@@ -1131,6 +1131,10 @@ class ApiService {
   }
 
   // User-level theme selection
+  async getProfileThemes(): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get('/auth/profile/themes');
+    return response.data;
+  }
   async updateUserTheme(themeId: string): Promise<any> {
     const response: AxiosResponse<any> = await this.api.put('/auth/profile/theme', { themeId });
     return response.data;
