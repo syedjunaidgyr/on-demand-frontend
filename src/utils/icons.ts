@@ -106,6 +106,7 @@ import { faFilePdf } from '@fortawesome/free-solid-svg-icons/faFilePdf';
 import { faFileExcel } from '@fortawesome/free-solid-svg-icons/faFileExcel';
 import { faFileExport } from '@fortawesome/free-solid-svg-icons/faFileExport';
 import { faDatabase } from '@fortawesome/free-solid-svg-icons/faDatabase';
+import { faHandshake } from '@fortawesome/free-solid-svg-icons/faHandshake';
 
 // Add all icons to the library
 library.add(
@@ -213,6 +214,7 @@ library.add(
   faFileExcel as any,
   faFileExport as any,
   faDatabase as any,
+  faHandshake as any,
 );
 
 export { FontAwesomeIcon };

@@ -412,6 +412,12 @@ const HospitalAdminDashboardScreen: React.FC = () => {
               {!permissionsLoading && hasPermission('AGENCY_BLACKLIST') && (
                 <QuickAction title="Agency Blacklist" subtitle="Manage agencies" icon="ban" gradient={['#EF4444', '#DC2626']} onPress={() => (navigation as any).navigate('AgencyBlacklist')} />
               )}
+              {!permissionsLoading && hasPermission('AGENCY_BLACKLIST') && (
+                <QuickAction title="Create Agency" subtitle="Register new agency" icon="user-plus" gradient={['#10B981', '#059669']} onPress={() => (navigation as any).navigate('HospitalAdminCreateAgency')} />
+              )}
+              {!permissionsLoading && hasPermission('AGENCY_BLACKLIST') && (
+                <QuickAction title="Onboard Agency" subtitle="Onboard agency to hospital" icon="handshake" gradient={['#3B82F6', '#2563EB']} onPress={() => (navigation as any).navigate('HospitalAdminOnboardAgency')} />
+              )}
             </View>
           </View>
 

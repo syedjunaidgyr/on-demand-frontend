@@ -55,6 +55,8 @@ import HospitalAdminThemeManageScreen from '../screens/hospitalAdmin/HospitalAdm
 import HospitalAdminUnitsScreen from '../screens/hospitalAdmin/HospitalAdminUnitsScreen';
 import HospitalAdminAgencyBlacklistScreen from '../screens/hospitalAdmin/HospitalAdminAgencyBlacklistScreen';
 import HospitalAdminHospitalScreen from '../screens/hospitalAdmin/HospitalAdminHospitalScreen';
+import HospitalAdminCreateAgencyScreen from '../screens/hospitalAdmin/HospitalAdminCreateAgencyScreen';
+import HospitalAdminOnboardAgencyScreen from '../screens/hospitalAdmin/HospitalAdminOnboardAgencyScreen';
 
 // Admin Screens
 import AdminHospitalManagementScreen from '../screens/admin/AdminHospitalManagementScreen';
@@ -120,6 +122,8 @@ export type RootStackParamList = {
   AgencyBlacklist: undefined;
   AdminHospitalManagement: undefined;
   SpecializationManagement: undefined;
+  HospitalAdminCreateAgency: undefined;
+  HospitalAdminOnboardAgency: undefined;
 };
 
 export type AuthStackParamList = {
@@ -538,6 +542,20 @@ const MainNavigator = ({ user }: { user: User }) => {
       <Stack.Screen
         name="AgencyBlacklist"
         component={HospitalAdminAgencyBlacklistScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="HospitalAdminCreateAgency"
+        component={HospitalAdminCreateAgencyScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="HospitalAdminOnboardAgency"
+        component={HospitalAdminOnboardAgencyScreen}
         options={{
           headerShown: false,
         }}
