@@ -321,7 +321,18 @@ class ApiService {
   }
 
   // Agency assign nurses to a job
-  async assignNursesToAgencyJob(jobId: string | number, body: { mode: 'FULL' | 'PARTIAL'; hourlyRate: number; assignments: Array<{ userId: string | number }> }): Promise<any> {
+  async assignNursesToAgencyJob(
+    jobId: string | number, 
+    body: { 
+      mode: 'FULL' | 'PARTIAL' | 'SEGMENTS'; 
+      hourlyRate: number; 
+      assignments: Array<{ 
+        userId: string | number; 
+        startDate?: string; 
+        endDate?: string; 
+      }> 
+    }
+  ): Promise<any> {
     try {
       const url = `/agency/jobs/${jobId}/assign`;
       const response = await this.api.post(url, body);
