@@ -1851,6 +1851,74 @@ class ApiService {
       throw new Error(error.response?.data?.message || 'Failed to delete notification');
     }
   }
+
+  // Generic Agency creation (Hospital Admin/HR/Admin)
+  async createAgency(params: {
+    email: string;
+    password: string;
+    name: string;
+    phone?: string;
+    address?: { street?: string; city?: string; state?: string; zipCode?: string; country?: string };
+  }): Promise<any> {
+    const payload = {
+      email: params.email.trim(),
+      password: params.password,
+      confirmPassword: params.password,
+      name: params.name.trim(),
+      phone: params.phone || undefined,
+      address: params.address || undefined,
+    } as any;
+    try {
+      const role = (await AsyncStorage.getItem('user_role')) || 'UNKNOWN';
+      // Note: baseURL already contains /api/v1, so paths here should not repeat it
+      const url = '/agency/register';
+      // eslint-disable-next-line no-console
+      console.log('[CreateAgency] role', role, 'baseURL', this.api.defaults.baseURL);
+      // eslint-disable-next-line no-console
+      console.log('[CreateAgency] POST', `${this.api.defaults.baseURL}${url}`);
+      // eslint-disable-next-line no-console
+      console.log('[CreateAgency] payload', payload);
+      const { data } = await this.api.post(url, payload);
+      // eslint-disable-next-line no-console
+      console.log('[CreateAgency] response', data);
+      return (data as any).agency || data;
+    } catch (err: any) {
+      const status = err?.response?.status;
+      // eslint-disable-next-line no-console
+      console.log('[CreateAgency] register failed', status, err?.response?.data || err?.message || err);
+      // Fallback to alias endpoint if register is denied/not found
+      if (status === 403 || status === 404 || status === 405) {
+        const alt = '/agency/create';
+        try {
+          // eslint-disable-next-line no-console
+          console.log('[CreateAgency] trying alias', `${this.api.defaults.baseURL}${alt}`);
+          const { data } = await this.api.post(alt, payload);
+          // eslint-disable-next-line no-console
+          console.log('[CreateAgency] alias response', data);
+          return (data as any).agency || data;
+        } catch (altErr: any) {
+          // eslint-disable-next-line no-console
+          console.log('[CreateAgency] alias failed', altErr?.response?.status, altErr?.response?.data || altErr?.message || altErr);
+          throw altErr;
+        }
+      }
+      throw err;
+    }
+  }
+
+  // List agencies (admin/hr/ha visibility per backend), supports includeHospitals flag
+  async listAgencies(params?: { includeHospitals?: boolean; q?: string; page?: number; limit?: number }): Promise<any> {
+    const query: Record<string, any> = {};
+    if (params?.includeHospitals) query.includeHospitals = true;
+    if (params?.q) query.q = params.q;
+    if (params?.page) query.page = params.page;
+    if (params?.limit) query.limit = params.limit;
+    const url = '/agency/list';
+    // eslint-disable-next-line no-console
+    console.log('[ListAgencies] GET', `${this.api.defaults.baseURL}${url}`, query);
+    const { data } = await this.api.get(url, { params: query });
+    return data;
+  }
 }
 
 export default new ApiService();

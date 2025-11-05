@@ -170,6 +170,21 @@ class HospitalAdminApiService {
     return response.data;
   }
 
+  // Agencies → Hospital Linking
+  async listUnlinkedAgencies(hospitalId: number): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get(`/agency/hospitals/${hospitalId}/agencies/unlinked`);
+    return response.data;
+  }
+
+  async linkAgencyToHospital(agencyId: number, hospitalIds: number[]): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post(`/agency/${agencyId}/hospitals`, { hospitalIds });
+    return response.data;
+  }
+
+  async unlinkAgencyFromHospital(agencyId: number, hospitalId: number): Promise<void> {
+    await this.api.delete(`/agency/${agencyId}/hospitals/${hospitalId}`);
+  }
+
   // List all agencies linked to a hospital (approved/blacklisted). If backend differs, adjust path accordingly.
   async listHospitalAgencies(hospitalId: number, params?: { q?: string }): Promise<any> {
     try {
@@ -181,6 +196,38 @@ class HospitalAdminApiService {
       return { agencies: (fallback.links || []).map((l: any) => ({ ...l.agency, status: l.status, linkId: l.id })) };
     }
   }
+
+  // Agency Registration API
+  async registerAgency(data: {
+    email: string;
+    password: string;
+    confirmPassword: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    companyName?: string;
+    address?: {
+      street?: string;
+      city?: string;
+      state?: string;
+      zipCode?: string;
+      country?: string;
+    };
+  }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post('/hospital-admin/agencies/register', data);
+    return response.data;
+  }
+
+  // Agency Onboarding API
+  async onboardAgency(agencyId: number, hospitalId: number, data?: {
+    notes?: string;
+    terms?: string;
+  }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post(`/hospital-admin/agencies/${agencyId}/hospitals/${hospitalId}/onboard`, data || {});
+    return response.data;
+  }
+
+  // (deduped methods above)
 }
 
 export default new HospitalAdminApiService();
