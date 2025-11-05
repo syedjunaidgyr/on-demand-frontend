@@ -283,14 +283,14 @@ const HRJobsScreen: React.FC = () => {
 
   const handleCreateJob = () => {
     // Check permission before navigating
-    if (!hasPermission('JOB_CREATE')) {
-      Alert.alert(
-        'Access Denied',
-        'You do not have permission to create jobs. Please contact your administrator.',
-        [{ text: 'OK' }]
-      );
-      return;
-    }
+    // if (!hasPermission('JOB_CREATE')) {
+    //   Alert.alert(
+    //     'Access Denied',
+    //     'You do not have permission to create jobs. Please contact your administrator.',
+    //     [{ text: 'OK' }]
+    //   );
+    //   return;
+    // }
     (navigation as any).navigate('CreateJob');
   };
 
