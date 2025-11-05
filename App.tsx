@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import messaging from '@react-native-firebase/messaging';
 import AppNavigator from './src/navigation/AppNavigator';
 import GifSplashScreen from './src/screens/GifSplashScreen';
@@ -104,26 +105,28 @@ function App(): React.JSX.Element {
   }, []);
 
   return (
-    <SafeAreaProvider>
-      <StatusBar
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <StatusBar
         barStyle="light-content"
         backgroundColor="transparent"
         translucent={true}
         hidden={false}
       />
-      {showSplash ? (
-        <GifSplashScreen onAnimationFinish={handleSplashFinish} />
-      ) : (
-        <AppNavigator />
-      )}
-      <NotificationBanner
-        visible={notification.visible}
-        title={notification.title}
-        message={notification.message}
-        onClose={() => setNotification(prev => ({ ...prev, visible: false }))}
-        duration={5000}
-      />
-    </SafeAreaProvider>
+        {showSplash ? (
+          <GifSplashScreen onAnimationFinish={handleSplashFinish} />
+        ) : (
+          <AppNavigator />
+        )}
+        <NotificationBanner
+          visible={notification.visible}
+          title={notification.title}
+          message={notification.message}
+          onClose={() => setNotification(prev => ({ ...prev, visible: false }))}
+          duration={5000}
+        />
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 

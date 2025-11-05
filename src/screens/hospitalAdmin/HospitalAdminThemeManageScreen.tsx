@@ -11,7 +11,8 @@ import { useGlobalStyles } from '../../theme/globalStyles';
 import { useAppColors } from '../../hooks/useAppColors';
 import { useAuth } from '../../navigation/AppNavigator';
 import GlobalHeader from '../../components/GlobalHeader';
-import { Picker } from '@react-native-picker/picker';
+import ColorPicker, { Panel1, HueSlider, Preview } from 'reanimated-color-picker';
+import { runOnJS } from 'react-native-reanimated';
 
 type ThemeScreenRouteProp = RouteProp<{ Themes: { hospitalId?: number } }, 'Themes'>;
 
@@ -607,35 +608,29 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
                 <View style={[styles.previewSwatch, { backgroundColor: tempColor }]} />
               </View>
             </View>
-            <View style={{ marginBottom: 12, width: '100%' }}>
-              <Picker
-                selectedValue={getSafeHex(tempColor || '#3B82F6')}
-                onValueChange={(value) => {
-                  const safe = getSafeHex(String(value));
-                  setTempColor(safe);
-                  const { r, g, b } = hexToRgb(safe);
-                  setRgb({ r: String(r), g: String(g), b: String(b) });
-                }}
-              >
-                {presetColors.map((c, idx) => (
-                  <Picker.Item key={`picker-item-${c}-${idx}`} label={c} value={c} />
-                ))}
-              </Picker>
-            </View>
-            {/* Always show vivid preset grid as well */}
-            <View style={styles.pickerGrid}>
-              {presetColors.map((c, idx) => (
-                <TouchableOpacity
-                  key={`picker-${c}-${idx}`}
-                  style={[styles.presetSquare, { backgroundColor: c }]}
-                  onPress={() => {
-                    setTempColor(c);
-                    const { r, g, b } = hexToRgb(c);
-                    setRgb({ r: String(r), g: String(g), b: String(b) });
+            <View style={{ marginBottom: 12, width: '100%', alignItems: 'center' }}>
+              <View style={{ width: '100%', maxWidth: 340 }}>
+                <ColorPicker
+                  value={getSafeHex(tempColor || '#3B82F6')}
+                  onChange={(color: any) => {
+                    'worklet';
+                    try {
+                      const hex = (color && color.hex) ? color.hex : tempColor;
+                      const safe = hex && typeof hex === 'string' ? hex : '#3B82F6';
+                      runOnJS(setTempColor)(safe);
+                      const { r, g, b } = hexToRgb(safe);
+                      runOnJS(setRgb)({ r: String(r), g: String(g), b: String(b) });
+                    } catch {}
                   }}
-                />
-              ))}
+                  style={{ width: '100%' }}
+                >
+                  <Preview hideText style={{ marginBottom: 8 }} />
+                  <Panel1 style={{ height: 180, borderRadius: 12, marginBottom: 12 }} />
+                  <HueSlider style={{ marginBottom: 8 }} sliderThickness={12} thumbSize={18} />
+                </ColorPicker>
+              </View>
             </View>
+            {/* preset grid removed */}
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={styles.smallBtn}
