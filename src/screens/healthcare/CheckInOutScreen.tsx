@@ -57,6 +57,8 @@ const CheckInOutScreen: React.FC = () => {
   const [showActivitiesListModal, setShowActivitiesListModal] = useState(false);
   const [activitiesList, setActivitiesList] = useState<any[]>([]);
   const [isLoadingActivities, setIsLoadingActivities] = useState(false);
+  const [fabDisabled, setFabDisabled] = useState(false);
+  const prevHasCheckoutRef = React.useRef<boolean>(false);
 
   
 
@@ -189,6 +191,15 @@ const CheckInOutScreen: React.FC = () => {
   };
 
   const filteredAssignments = useMemo(() => confirmedAssignments, [confirmedAssignments]);
+
+  // Disable FAB after a checkout completes: detect transition from having checkout eligibility to none
+  useEffect(() => {
+    const hasCheckoutNow = confirmedAssignments.some(a => a.isCheckedIn === true && String(a.approvalStatus || '').toLowerCase() === 'approved');
+    if (prevHasCheckoutRef.current && !hasCheckoutNow) {
+      setFabDisabled(true);
+    }
+    prevHasCheckoutRef.current = hasCheckoutNow;
+  }, [confirmedAssignments]);
 
   const handleCheckIn = async (assignment: JobAssignment) => {
     // Gate: prevent duplicate or pending flows
@@ -884,9 +895,11 @@ const CheckInOutScreen: React.FC = () => {
       </ScrollView>
 
       {/* Floating action button (Check In or Check Out based on eligibility) */}
+      {!fabDisabled && (
       <TouchableOpacity
-        style={styles.fabCenter}
+        style={[styles.fabCenter, fabDisabled && { opacity: 0.6 }]}
         activeOpacity={0.8}
+        disabled={fabDisabled}
         onPress={() => {
           try {
             // Determine eligible checkout assignments (approved and currently checked in)
@@ -926,6 +939,7 @@ const CheckInOutScreen: React.FC = () => {
           );
         })()}
       </TouchableOpacity>
+      )}
 
       {isProcessing && (
         <View style={styles.processingOverlay}>

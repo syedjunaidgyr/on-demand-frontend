@@ -1202,7 +1202,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   headerName: {
-    fontSize: 24,
+    fontSize: 22,
     fontFamily: Typography.fontFamily.bold,
     color: '#111827',
   },

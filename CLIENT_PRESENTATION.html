@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Healthcare Staffing Management System - Presentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+        }
+        .presentation-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .slide {
+            width: 90%;
+            max-width: 1200px;
+            height: 85vh;
+            background: white;
+            border-radius: 15px;
+            padding: 60px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            display: none;
+            overflow-y: auto;
+            position: relative;
+        }
+        .slide.active {
+            display: block;
+        }
+        .slide h1 {
+            color: #667eea;
+            font-size: 42px;
+            margin-bottom: 30px;
+            border-bottom: 4px solid #667eea;
+            padding-bottom: 15px;
+        }
+        .slide h2 {
+            color: #764ba2;
+            font-size: 36px;
+            margin-bottom: 25px;
+        }
+        .slide h3 {
+            color: #555;
+            font-size: 28px;
+            margin: 20px 0 15px 0;
+        }
+        .slide-content {
+            font-size: 20px;
+            line-height: 1.8;
+            color: #333;
+        }
+        .step-slide {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        .step-number {
+            font-size: 120px;
+            font-weight: bold;
+            color: #667eea;
+            opacity: 0.2;
+            position: absolute;
+            top: 20px;
+            right: 40px;
+        }
+        .step-content {
+            position: relative;
+            z-index: 1;
+        }
+        .step-title {
+            font-size: 48px;
+            color: #667eea;
+            margin-bottom: 30px;
+        }
+        .step-details {
+            font-size: 24px;
+            line-height: 1.8;
+        }
+        .step-details ul {
+            margin: 20px 0;
+            padding-left: 40px;
+        }
+        .step-details li {
+            margin: 15px 0;
+        }
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+        .nav-btn {
+            padding: 15px 30px;
+            background: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+        }
+        .nav-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            color: #667eea;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .benefit-box {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .benefit-box h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        .flow-diagram {
+            background: #f8f9fa;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 24px;
+            font-family: 'Courier New', monospace;
+            margin: 30px 0;
+            line-height: 2;
+        }
+        .highlight {
+            background: #fff3cd;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-counter">
+        <span id="current-slide">1</span> / <span id="total-slides">12</span>
+    </div>
+
+    <div class="presentation-container">
+        <!-- Slide 1: Title -->
+        <div class="slide active">
+            <h1>Healthcare Staffing Management System</h1>
+            <div class="slide-content">
+                <h2 style="text-align: center; margin-top: 100px;">Complete Workflow Overview</h2>
+                <p style="text-align: center; font-size: 24px; margin-top: 50px; color: #666;">
+                    End-to-End Staff Management Solution
+                </p>
+            </div>
+        </div>
+
+        <!-- Slide 2: Step 1 -->
+        <div class="slide step-slide">
+            <div class="step-number">1</div>
+            <div class="step-content">
+                <div class="step-title">Staff Registration</div>
+                <div class="step-details">
+                    <p>New healthcare staff (Doctors/Nurses) register through the mobile application.</p>
+                    <p><strong>Registration includes:</strong></p>
+                    <ul>
+                        <li>Personal information (name, email, phone)</li>
+                        <li>Professional credentials (license number, specialization)</li>
+                        <li>Department and location preferences</li>
+                        <li>Emergency contact information</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: Step 2 -->
+        <div class="slide step-slide">
+            <div class="step-number">2</div>
+            <div class="step-content">
+                <div class="step-title">Job Creation by Admin/HR</div>
+                <div class="step-details">
+                    <p>Admin or HR personnel create job postings through the system.</p>
+                    <p><strong>Job details include:</strong></p>
+                    <ul>
+                        <li>Job title, department, and specialization requirements</li>
+                        <li>Date and time schedule (start/end dates, shift times)</li>
+                        <li>Location and facility details</li>
+                        <li>Hourly rate and priority level</li>
+                        <li>Required qualifications</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: Step 3 -->
+        <div class="slide step-slide">
+            <div class="step-number">3</div>
+            <div class="step-content">
+                <div class="step-title">Staff Job Acceptance</div>
+                <div class="step-details">
+                    <p>Registered staff members can view available jobs matching their profile.</p>
+                    <p><strong>Staff can browse and filter jobs by:</strong></p>
+                    <ul>
+                        <li>Department and Location</li>
+                        <li>Date range and Rate range</li>
+                    </ul>
+                    <p style="margin-top: 30px;">Staff members accept jobs that match their availability. Multiple staff can accept the same job posting.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Step 4 -->
+        <div class="slide step-slide">
+            <div class="step-number">4</div>
+            <div class="step-content">
+                <div class="step-title">HR Candidate Selection</div>
+                <div class="step-details">
+                    <p>HR/Admin reviews all candidates who accepted the job.</p>
+                    <p><strong>HR can view candidate profiles including:</strong></p>
+                    <ul>
+                        <li>Qualifications and experience</li>
+                        <li>Specialization and department match</li>
+                        <li>Previous performance history</li>
+                    </ul>
+                    <p style="margin-top: 30px;">HR selects the most suitable candidate. Selected candidate is confirmed, and others are automatically notified.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Step 5 -->
+        <div class="slide step-slide">
+            <div class="step-number">5</div>
+            <div class="step-content">
+                <div class="step-title">Check-In Process</div>
+                <div class="step-details">
+                    <p>On the scheduled day, staff member arrives at the facility.</p>
+                    <p><strong>Two check-in methods available:</strong></p>
+                    <ul>
+                        <li><strong>Manual Check-In:</strong> Staff manually confirms location using GPS</li>
+                        <li><strong>QR Code Check-In:</strong> Staff scans a QR code generated by the system</li>
+                    </ul>
+                    <p style="margin-top: 30px;">Location is automatically captured and verified.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: Step 6 -->
+        <div class="slide step-slide">
+            <div class="step-number">6</div>
+            <div class="step-content">
+                <div class="step-title">QR Code Generation & Scanning</div>
+                <div class="step-details">
+                    <p>System generates a unique QR code for each job assignment.</p>
+                    <p><strong>QR code contains:</strong></p>
+                    <ul>
+                        <li>Assignment ID and Job details</li>
+                        <li>Facility location and Time stamp</li>
+                    </ul>
+                    <p style="margin-top: 30px;">Staff scans QR code using mobile app camera. Location is automatically captured via GPS. Check-in data is submitted for approval.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Step 7 -->
+        <div class="slide step-slide">
+            <div class="step-number">7</div>
+            <div class="step-content">
+                <div class="step-title">HR Approval of Check-In</div>
+                <div class="step-details">
+                    <p>HR/Admin receives notification of pending check-in.</p>
+                    <p><strong>HR reviews the check-in details:</strong></p>
+                    <ul>
+                        <li>Verification of location (GPS coordinates)</li>
+                        <li>Time verification</li>
+                        <li>Staff member identity</li>
+                    </ul>
+                    <p style="margin-top: 30px;">HR approves or rejects the check-in. Staff receives confirmation. Job status changes to <span class="highlight">"IN_PROGRESS"</span>.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 9: Step 8 -->
+        <div class="slide step-slide">
+            <div class="step-number">8</div>
+            <div class="step-content">
+                <div class="step-title">Check-Out Process</div>
+                <div class="step-details">
+                    <p>At the end of the shift, staff member checks out.</p>
+                    <p><strong>Check-out includes:</strong></p>
+                    <ul>
+                        <li>Location verification (GPS)</li>
+                        <li>Time stamp</li>
+                        <li>Shift completion confirmation</li>
+                    </ul>
+                    <p style="margin-top: 30px;">Staff can check-out via manual or QR code scanning. Job status updates to <span class="highlight">"COMPLETED"</span>.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 10: Step 9 -->
+        <div class="slide step-slide">
+            <div class="step-number">9</div>
+            <div class="step-content">
+                <div class="step-title">Reports & Analytics</div>
+                <div class="step-details">
+                    <p>Comprehensive reporting system available for HR/Admin.</p>
+                    <p><strong>Reports include:</strong></p>
+                    <ul>
+                        <li><strong>Job Reports:</strong> All jobs with status and completion rates</li>
+                        <li><strong>Assignment Reports:</strong> Staff assignments with check-in/out times</li>
+                        <li><strong>Check-In/Out Reports:</strong> Detailed attendance tracking</li>
+                        <li><strong>Staff Performance:</strong> Individual activity and job history</li>
+                    </ul>
+                    <p style="margin-top: 30px;">Reports can be filtered and exported to PDF/Excel formats.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 11: Benefits -->
+        <div class="slide">
+            <h1>Key Benefits</h1>
+            <div class="benefits-grid">
+                <div class="benefit-box">
+                    <h3>⚡ Efficiency</h3>
+                    <ul>
+                        <li>Automated workflow</li>
+                        <li>Real-time updates</li>
+                        <li>Quick candidate selection</li>
+                    </ul>
+                </div>
+                <div class="benefit-box">
+                    <h3>🎯 Accuracy</h3>
+                    <ul>
+                        <li>GPS-based verification</li>
+                        <li>Eliminates time fraud</li>
+                        <li>Ensures correct location</li>
+                    </ul>
+                </div>
+                <div class="benefit-box">
+                    <h3>👁️ Transparency</h3>
+                    <ul>
+                        <li>Complete visibility</li>
+                        <li>Detailed audit trail</li>
+                        <li>Comprehensive reporting</li>
+                    </ul>
+                </div>
+                <div class="benefit-box">
+                    <h3>🔒 Security</h3>
+                    <ul>
+                        <li>HR approval workflow</li>
+                        <li>Verified check-ins</li>
+                        <li>Secure QR codes</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 12: Flow Diagram -->
+        <div class="slide">
+            <h1>System Flow Diagram</h1>
+            <div class="flow-diagram">
+                Staff Registration → Job Creation → Job Acceptance → Candidate Selection<br><br>
+                                                              ↓<br><br>
+                Check-Out ← HR Approval ← QR Scan/Manual ← Check-In ← Job Assignment Confirmed<br><br>
+                     ↓<br><br>
+                Reports & Analytics
+            </div>
+            <div style="text-align: center; margin-top: 50px; font-size: 24px; color: #667eea;">
+                <p><strong>9-Step Complete Workflow</strong></p>
+                <p style="font-size: 18px; color: #666; margin-top: 20px;">
+                    Efficient management with complete transparency and accountability
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="navigation">
+        <button class="nav-btn" id="prev-btn" onclick="previousSlide()">← Previous</button>
+        <button class="nav-btn" id="next-btn" onclick="nextSlide()">Next →</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        document.getElementById('total-slides').textContent = totalSlides;
+
+        function showSlide(n) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (n + totalSlides) % totalSlides;
+            slides[currentSlide].classList.add('active');
+            document.getElementById('current-slide').textContent = currentSlide + 1;
+            
+            // Update button states
+            document.getElementById('prev-btn').disabled = currentSlide === 0;
+            document.getElementById('next-btn').disabled = currentSlide === totalSlides - 1;
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                showSlide(currentSlide + 1);
+            }
+        }
+
+        function previousSlide() {
+            if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                previousSlide();
+            }
+        });
+
+        // Initialize
+        showSlide(0);
+    </script>
+</body>
+</html>
+
