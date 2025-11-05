@@ -52,20 +52,33 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const loadAndApplyDefaultTheme = useCallback(async () => {
     try {
       const res = await HospitalAdminApi.getThemes();
-      // Expected formats: { themes: [...], current: {id:..} } OR array
+      // Supported formats:
+      // 1) { themes: [...], current: { id } | 'name' }
+      // 2) { themes: [...], defaultTheme: { ... } }
+      // 3) { hospital: { defaultThemeId }, themes: [...] }
+      // 4) Array of themes
       const themes = res?.themes || res || [];
       const current = res?.current;
-      const currentObj = current
-        ? themes.find((x: any) => x.id === current.id || x.name === current)
-        : null;
-      if (currentObj) {
+      const defaultThemeObj = res?.defaultTheme;
+      const defaultThemeId = res?.hospital?.defaultThemeId || res?.defaultThemeId;
+
+      let chosen: any = null;
+      if (defaultThemeObj && typeof defaultThemeObj === 'object') {
+        chosen = defaultThemeObj;
+      } else if (current) {
+        chosen = themes.find((x: any) => x.id === (current.id ?? current) || x.name === current);
+      } else if (defaultThemeId) {
+        chosen = themes.find((x: any) => x.id === defaultThemeId);
+      }
+
+      if (chosen) {
         const applied: AppTheme = {
-          name: currentObj.name,
-          primaryColor: currentObj.primaryColor,
-          secondaryColor: currentObj.secondaryColor,
-          backgroundColor: currentObj.backgroundColor,
-          textColor: currentObj.textColor,
-          accentTextColor: currentObj.accentTextColor,
+          name: chosen.name,
+          primaryColor: chosen.primaryColor,
+          secondaryColor: chosen.secondaryColor,
+          backgroundColor: chosen.backgroundColor,
+          textColor: chosen.textColor,
+          accentTextColor: chosen.accentTextColor,
         };
         await setTheme(applied);
       }

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, RefreshControl, Alert, Switch, Modal, ScrollView, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
@@ -11,6 +11,7 @@ import { useGlobalStyles } from '../../theme/globalStyles';
 import { useAppColors } from '../../hooks/useAppColors';
 import { useAuth } from '../../navigation/AppNavigator';
 import GlobalHeader from '../../components/GlobalHeader';
+import { Picker } from '@react-native-picker/picker';
 
 type ThemeScreenRouteProp = RouteProp<{ Themes: { hospitalId?: number } }, 'Themes'>;
 
@@ -54,43 +55,7 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
   
   const effectiveHospitalId = isAdmin ? hospitalId : userProfile?.hospitalId;
 
-  // Try to use a richer color picker if installed; otherwise fallback to presets
-  const ColorPickerComp = useMemo(() => {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const mod = require('react-native-color-picker');
-      return mod?.ColorPicker || null;
-    } catch (e) {
-      return null;
-    }
-  }, []);
-  const TriangleColorPickerComp = useMemo(() => {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const mod = require('react-native-color-picker');
-      return mod?.TriangleColorPicker || null;
-    } catch (e) {
-      return null;
-    }
-  }, []);
-  const fromHsv = useMemo(() => {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const mod = require('react-native-color-picker');
-      return mod?.fromHsv || ((c: any) => tempColor);
-    } catch (e) {
-      return (c: any) => tempColor;
-    }
-  }, [tempColor]);
-  const toHsv = useMemo(() => {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const mod = require('react-native-color-picker');
-      return mod?.toHsv || null;
-    } catch (e) {
-      return null;
-    }
-  }, []);
+  // Using Picker dropdown for color selection instead of a color wheel
   const [form, setForm] = useState({
     id: '',
     name: '',
@@ -282,6 +247,7 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
         textColor: updates.textColor || form.textColor,
         accentTextColor: updates.accentTextColor || form.accentTextColor,
       });
+      Alert.alert('Success', form.setAsDefault ? 'Theme updated and set as default' : 'Theme updated successfully');
     } catch (e: any) {
       Alert.alert('Error', e?.response?.data?.message || e?.message || 'Failed to update theme');
     } finally { setIsSubmitting(false); }
@@ -294,15 +260,24 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
     }
     try {
       setIsSubmitting(true);
+      console.log('[Theme] setDefault:start', { isAdmin, effectiveHospitalId, id });
       if (isAdmin && effectiveHospitalId) {
+        console.log('[Theme] setDefault:calling ApiService.setHospitalDefaultTheme');
         await ApiService.setHospitalDefaultTheme(effectiveHospitalId, String(id));
       } else {
+        console.log('[Theme] setDefault:calling HospitalAdminApi.setDefaultTheme');
         await HospitalAdminApi.setDefaultTheme(id);
       }
+      console.log('[Theme] setDefault:api success, reloading themes');
       await load();
+      console.log('[Theme] setDefault:themes reloaded', { themesCount: Array.isArray(themes) ? themes.length : 0, currentId });
       await loadAndApplyDefaultTheme();
+      console.log('[Theme] setDefault:applied default theme');
       setSelectedKey(id);
+      console.log('[Theme] setDefault:selectedKey updated', { selectedKey: id });
+      Alert.alert('Success', 'Default theme updated successfully');
     } catch (e: any) {
+      console.error('[Theme] setDefault:error', e);
       Alert.alert('Error', e?.response?.data?.message || e?.message || 'Failed to set default theme');
     } finally { setIsSubmitting(false); }
   };
@@ -431,7 +406,7 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
         </View>
       )}
       
-      <ScrollView style={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={appColors.primary} />}>
+      <ScrollView style={[styles.container, { backgroundColor: appColors.background }]} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={appColors.primary} />}>
         {/* Single Accordion: Manage Theme (Create or Update) */}
         <TouchableOpacity style={[styles.accordionHeader, { backgroundColor: appColors.accentText }]} onPress={() => setShowManage(!showManage)}>
           <Text style={[styles.accordionTitle, { color: appColors.textPrimary }]}>Manage Theme</Text>
@@ -632,84 +607,21 @@ const HospitalAdminThemeManageScreen: React.FC = () => {
                 <View style={[styles.previewSwatch, { backgroundColor: tempColor }]} />
               </View>
             </View>
-            {(() => {
-              const safeColor = getSafeHex(tempColor || '#3B82F6');
-              let hsvColor: any = null;
-              
-              // Safely convert hex to HSV if toHsv is available
-              if (TriangleColorPickerComp && toHsv && typeof toHsv === 'function') {
-                try {
-                  hsvColor = toHsv(safeColor);
-                  // Validate hsvColor is an object with expected properties
-                  if (!hsvColor || typeof hsvColor !== 'object' || (!hsvColor.h && hsvColor.h !== 0)) {
-                    hsvColor = null;
-                  }
-                } catch (e) {
-                  console.error('Error converting to HSV:', e);
-                  hsvColor = null;
-                }
-              }
-
-              if (TriangleColorPickerComp && toHsv && fromHsv && hsvColor) {
-                const PickerComponent = TriangleColorPickerComp;
-                return (
-                  <View style={{ height: 260, marginBottom: 12, width: '100%' }}>
-                    <PickerComponent
-                      style={{ flex: 1, width: '100%' }}
-                      color={hsvColor}
-                      onColorChange={(hsv: any) => {
-                        try {
-                          if (fromHsv && typeof fromHsv === 'function' && hsv) {
-                            const hex = fromHsv(hsv);
-                            if (hex && typeof hex === 'string') {
-                              const safeHex = getSafeHex(hex, safeColor);
-                              setTempColor(safeHex);
-                              const { r, g, b } = hexToRgb(safeHex);
-                              setRgb({ r: String(r), g: String(g), b: String(b) });
-                            }
-                          }
-                        } catch (e) {
-                          console.error('Color picker error:', e);
-                        }
-                      }}
-                    />
-                  </View>
-                );
-              } else if (ColorPickerComp) {
-                const PickerComponent = ColorPickerComp;
-                return (
-                  <View style={{ height: 220, marginBottom: 10, width: '100%' }}>
-                    <PickerComponent
-                      style={{ flex: 1, width: '100%' }}
-                      defaultColor={safeColor}
-                      onColorChange={(hsv: any) => {
-                        try {
-                          if (fromHsv && typeof fromHsv === 'function' && hsv) {
-                            const hex = fromHsv(hsv);
-                            if (hex && typeof hex === 'string') {
-                              const safeHex = getSafeHex(hex, safeColor);
-                              setTempColor(safeHex);
-                              const { r, g, b } = hexToRgb(safeHex);
-                              setRgb({ r: String(r), g: String(g), b: String(b) });
-                            }
-                          }
-                        } catch (e) {
-                          console.error('Color picker error:', e);
-                        }
-                      }}
-                    />
-                  </View>
-                );
-              } else {
-                return (
-                  <View style={{ marginBottom: 12, padding: 12, backgroundColor: '#F3F4F6', borderRadius: 8 }}>
-                    <Text style={{ color: Colors.textSecondary, fontSize: 12, textAlign: 'center' }}>
-                      Color wheel picker not available. Use hex input, RGB inputs, or preset colors below.
-                    </Text>
-                  </View>
-                );
-              }
-            })()}
+            <View style={{ marginBottom: 12, width: '100%' }}>
+              <Picker
+                selectedValue={getSafeHex(tempColor || '#3B82F6')}
+                onValueChange={(value) => {
+                  const safe = getSafeHex(String(value));
+                  setTempColor(safe);
+                  const { r, g, b } = hexToRgb(safe);
+                  setRgb({ r: String(r), g: String(g), b: String(b) });
+                }}
+              >
+                {presetColors.map((c, idx) => (
+                  <Picker.Item key={`picker-item-${c}-${idx}`} label={c} value={c} />
+                ))}
+              </Picker>
+            </View>
             {/* Always show vivid preset grid as well */}
             <View style={styles.pickerGrid}>
               {presetColors.map((c, idx) => (
