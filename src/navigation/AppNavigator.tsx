@@ -190,14 +190,13 @@ const HRTabNavigator = () => {
 
           return <FontAwesomeIcon icon={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textTertiary,
+        tabBarActiveTintColor: '#FFFFFF',
+        tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.6)',
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopWidth: 1,
-          borderTopColor: '#E5E7EB',
+          backgroundColor: '#1C2A3A',
+          borderTopWidth: 0,
           paddingBottom: 8,
-          paddingTop: 8,
+          paddingTop: 6,
           height: 60,
           elevation: 8,
           shadowColor: '#000',
@@ -205,10 +204,14 @@ const HRTabNavigator = () => {
           shadowOpacity: 0.1,
           shadowRadius: 4,
         },
+        tabBarIconStyle: {
+          marginTop: -4,
+        },
         tabBarLabelStyle: {
           fontSize: 12,
           fontFamily: Typography.fontFamily.medium,
-          marginTop: 4,
+          marginTop: 2,
+          color: '#FFFFFF',
         },
         headerShown: false,
         ...TransitionPresets.FadeTransition,
@@ -243,14 +246,13 @@ const HealthcareProviderTabNavigator = () => {
 
           return <FontAwesomeIcon icon={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textTertiary,
+        tabBarActiveTintColor: '#FFFFFF',
+        tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.6)',
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopWidth: 1,
-          borderTopColor: '#E5E7EB',
+          backgroundColor: '#1C2A3A',
+          borderTopWidth: 0,
           paddingBottom: 8,
-          paddingTop: 8,
+          paddingTop: 4,
           height: 60,
           elevation: 8,
           shadowColor: '#000',
@@ -258,10 +260,14 @@ const HealthcareProviderTabNavigator = () => {
           shadowOpacity: 0.1,
           shadowRadius: 4,
         },
+        tabBarIconStyle: {
+          marginTop: -4,
+        },
         tabBarLabelStyle: {
           fontSize: 12,
           fontFamily: Typography.fontFamily.medium,
-          marginTop: 4,
+          marginTop: 2,
+          color: '#FFFFFF',
         },
         headerShown: false,
         ...TransitionPresets.FadeTransition,
@@ -296,14 +302,13 @@ const AgencyTabNavigator = () => {
 
           return <FontAwesomeIcon icon={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textTertiary,
+        tabBarActiveTintColor: '#FFFFFF',
+        tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.6)',
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopWidth: 1,
-          borderTopColor: '#E5E7EB',
+          backgroundColor: '#1C2A3A',
+          borderTopWidth: 0,
           paddingBottom: 8,
-          paddingTop: 8,
+          paddingTop: 4,
           height: 60,
           elevation: 8,
           shadowColor: '#000',
@@ -311,10 +316,14 @@ const AgencyTabNavigator = () => {
           shadowOpacity: 0.1,
           shadowRadius: 4,
         },
+        tabBarIconStyle: {
+          marginTop: -4,
+        },
         tabBarLabelStyle: {
           fontSize: 12,
           fontFamily: Typography.fontFamily.medium,
-          marginTop: 4,
+          marginTop: 2,
+          color: '#FFFFFF',
         },
         headerShown: false,
         ...TransitionPresets.FadeTransition,
@@ -349,14 +358,13 @@ const HospitalAdminTabNavigator = () => {
 
           return <FontAwesomeIcon icon={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textTertiary,
+        tabBarActiveTintColor: '#FFFFFF',
+        tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.6)',
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopWidth: 1,
-          borderTopColor: '#E5E7EB',
+          backgroundColor: '#1C2A3A',
+          borderTopWidth: 0,
           paddingBottom: 8,
-          paddingTop: 8,
+          paddingTop: 4,
           height: 60,
           elevation: 8,
           shadowColor: '#000',
@@ -364,10 +372,14 @@ const HospitalAdminTabNavigator = () => {
           shadowOpacity: 0.1,
           shadowRadius: 4,
         },
+        tabBarIconStyle: {
+          marginTop: -4,
+        },
         tabBarLabelStyle: {
           fontSize: 12,
           fontFamily: Typography.fontFamily.medium,
-          marginTop: 4,
+          marginTop: 2,
+          color: '#FFFFFF',
         },
         headerShown: false,
         ...TransitionPresets.FadeTransition,

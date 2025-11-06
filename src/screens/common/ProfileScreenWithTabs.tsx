@@ -433,14 +433,13 @@ const ProfileScreenWithTabs: React.FC = () => {
       <Tab.Navigator
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: Colors.primary,
-          tabBarInactiveTintColor: Colors.textTertiary,
+          tabBarActiveTintColor: '#FFFFFF',
+          tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.6)',
           tabBarStyle: {
-            backgroundColor: '#FFFFFF',
-            borderTopWidth: 1,
-            borderTopColor: '#E5E7EB',
+            backgroundColor: '#1C2A3A',
+            borderTopWidth: 0,
             paddingBottom: 8,
-            paddingTop: 8,
+            paddingTop: 0,
             height: 60,
             elevation: 8,
             shadowColor: '#000',
@@ -448,10 +447,14 @@ const ProfileScreenWithTabs: React.FC = () => {
             shadowOpacity: 0.1,
             shadowRadius: 4,
           },
+          tabBarIconStyle: {
+            marginTop: -4,
+          },
           tabBarLabelStyle: {
             fontSize: 12,
             fontFamily: Typography.fontFamily.medium,
-            marginTop: 4,
+            marginTop: 2,
+            color: '#FFFFFF',
           },
           // Using fade transition animation from the documentation
           ...TransitionPresets.FadeTransition,
