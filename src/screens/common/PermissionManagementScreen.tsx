@@ -582,15 +582,101 @@ const PermissionManagementScreen: React.FC = () => {
               </TouchableOpacity>
               {userPermissions && (
                 <>
-                  <Text style={[styles.sectionTitle, { color: appColors.textPrimary }]}>Global</Text>
-                  {userPermissions.global?.map(p=>renderPermissionItem(p,'global'))}
+                  <Text style={[styles.sectionTitle, { color: appColors.textPrimary }]}>Global Permissions</Text>
+                  {userPermissions.global?.map((p: Permission) => renderPermissionItem(p, 'global', true, Number(userPermsUserId)))}
                   {userPermissions.global?.length === 0 && <Text style={[styles.emptyText, { color: appColors.textSecondary }]}>No global permissions</Text>}
-                  <Text style={[styles.sectionTitle, { color: appColors.textPrimary }]}>Hospital</Text>
-                  {userPermissions.hospital?.map(p=>renderPermissionItem(p,'hospital'))}
+                  
+                  <Text style={[styles.sectionTitle, { color: appColors.textPrimary, marginTop: 16 }]}>Hospital Permissions</Text>
+                  {userPermissions.hospital?.map((p: Permission) => renderPermissionItem(p, 'hospital', true, Number(userPermsUserId)))}
                   {userPermissions.hospital?.length === 0 && <Text style={[styles.emptyText, { color: appColors.textSecondary }]}>No hospital permissions</Text>}
-                  <Text style={[styles.sectionTitle, { color: appColors.textPrimary }]}>Unit</Text>
-                  {userPermissions.unit?.map(p=>renderPermissionItem(p,'unit'))}
+                  
+                  <Text style={[styles.sectionTitle, { color: appColors.textPrimary, marginTop: 16 }]}>Unit Permissions</Text>
+                  {userPermissions.unit?.map((p: Permission) => renderPermissionItem(p, 'unit', true, Number(userPermsUserId)))}
                   {userPermissions.unit?.length === 0 && <Text style={[styles.emptyText, { color: appColors.textSecondary }]}>No unit permissions</Text>}
+                  
+                  {/* Quick Grant Section */}
+                  {(isAdmin || isHospitalAdmin) && (
+                    <>
+                      <Text style={[styles.sectionTitle, { color: appColors.textPrimary, marginTop: 24 }]}>Available Permissions to Grant</Text>
+                      <TextInput 
+                        style={[styles.searchInput, { backgroundColor: appColors.accentText, color: appColors.textPrimary, borderColor: appColors.border, marginBottom: 12 }]} 
+                        placeholder="Search available permissions..." 
+                        value={searchQuery} 
+                        onChangeText={setSearchQuery} 
+                        placeholderTextColor={appColors.textSecondary} 
+                      />
+                      <FlatList
+                        data={filteredPermissions.filter(p => {
+                          // Filter by scope based on role
+                          if (isHospitalAdmin) {
+                            return p.scope === 'HOSPITAL';
+                          }
+                          return true; // Admin can see all
+                        }).filter(p => {
+                          // Exclude already granted permissions
+                          const granted = [
+                            ...(userPermissions.global || []),
+                            ...(userPermissions.hospital || []),
+                            ...(userPermissions.unit || [])
+                          ];
+                          return !granted.some(g => g.code === p.code);
+                        })}
+                        keyExtractor={(item) => String(item.id)}
+                        renderItem={({ item }) => (
+                          <View key={item.id} style={[styles.permissionItem, { backgroundColor: appColors.accentText }]}>
+                            <View style={styles.permissionInfo}>
+                              <Text style={[styles.permissionCode, { color: appColors.textPrimary }]}>{item.code}</Text>
+                              <Text style={[styles.permissionName, { color: appColors.textPrimary }]}>{item.name}</Text>
+                              <View style={styles.permissionMeta}>
+                                <Text style={[styles.permissionCategory, { color: appColors.textSecondary, backgroundColor: appColors.background }]}>{item.category}</Text>
+                                <Text style={[styles.permissionScope, { color: appColors.primary }]}>{item.scope}</Text>
+                              </View>
+                            </View>
+                            <TouchableOpacity
+                              style={[styles.grantButton, { backgroundColor: appColors.primary }]}
+                              onPress={() => {
+                                if (!userPermsUserId) {
+                                  Alert.alert('Error', 'Please select a user first');
+                                  return;
+                                }
+                                Alert.alert(
+                                  'Grant Permission',
+                                  `Grant ${item.code} to user ${userPermsUserId}?`,
+                                  [
+                                    { text: 'Cancel', style: 'cancel' },
+                                    { text: 'Grant', style: 'destructive', onPress: async () => {
+                                      try {
+                                        const data: any = { permissionCode: item.code };
+                                        if (isHospitalAdmin && userProfile?.hospitalId) {
+                                          data.hospitalId = userProfile.hospitalId;
+                                        } else if (isAdmin && item.scope === 'HOSPITAL' && selectedHospitalId) {
+                                          data.hospitalId = selectedHospitalId;
+                                        }
+                                        await ApiService.grantPermission(Number(userPermsUserId), data);
+                                        Alert.alert('Success', 'Permission granted successfully');
+                                        // Reload user permissions
+                                        const params: any = {};
+                                        if (isHospitalAdmin && userProfile?.hospitalId) {
+                                          params.hospitalId = userProfile.hospitalId;
+                                        }
+                                        const res = await ApiService.getUserPermissions(Number(userPermsUserId), params);
+                                        setUserPermissions(res.permissions || { global: [], hospital: [], unit: [] });
+                                      } catch (e: any) {
+                                        Alert.alert('Error', e?.response?.data?.message || e?.message || 'Failed to grant permission');
+                                      }
+                                    } }
+                                  ]
+                                );
+                              }}>
+                              <Text style={styles.grantButtonText}>Grant</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                        scrollEnabled={false}
+                        ListEmptyComponent={<Text style={[styles.emptyText, { color: appColors.textSecondary }]}>No available permissions to grant</Text>}
+                      />
+                    </>
+                  )}
                 </>
               )}
             </View>
@@ -1175,6 +1261,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: Typography.fontFamily.bold,
     color: '#B91C1C',
+  },
+  grantButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  grantButtonText: {
+    fontSize: 12,
+    fontFamily: Typography.fontFamily.bold,
+    color: '#FFFFFF',
   },
   searchInput: {
     borderRadius: 10,

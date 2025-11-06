@@ -78,7 +78,19 @@ const HRDashboardScreen: React.FC = () => {
   const { unreadCount } = useNotifications();
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
-  const { hasPermission, loading: permissionsLoading } = usePermissions();
+  const { hasPermission, loading: permissionsLoading, permissions } = usePermissions();
+  
+  // Debug: Log permissions for ADMIN users
+  useEffect(() => {
+    if (isAdmin && !permissionsLoading) {
+      console.log('[HRDashboard] ADMIN permissions:', {
+        global: permissions?.global?.map((p: any) => p.code) || [],
+        total: (permissions?.global || []).length + (permissions?.hospital || []).length + (permissions?.unit || []).length,
+      });
+      console.log('[HRDashboard] hasPermission(JOB_CREATE) =', hasPermission('JOB_CREATE'));
+      console.log('[HRDashboard] hasPermission(USER_READ) =', hasPermission('USER_READ'));
+    }
+  }, [isAdmin, permissionsLoading, permissions, hasPermission]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -534,16 +546,17 @@ const HRDashboardScreen: React.FC = () => {
               </View>
             ) : (
               <View style={styles.quickActionsGrid}>
-                {!permissionsLoading && hasPermission('JOB_CREATE') && (
+                {/* For ADMIN: Show all actions if permissions not loaded or if they have the permission */}
+                {(isAdmin || (!permissionsLoading && hasPermission('JOB_CREATE'))) && (
                   <QuickAction title="Create Job" subtitle="Post new opening" icon="plus" gradient={['#3B82F6', '#2563EB']} onPress={() => (navigation as any).navigate('CreateJob')} />
                 )}
-                {!permissionsLoading && hasPermission('JOB_READ') && (
+                {(isAdmin || (!permissionsLoading && hasPermission('JOB_READ'))) && (
                   <QuickAction title="Assign Jobs" subtitle="View & edit" icon="briefcase" gradient={['#8B5CF6', '#7C3AED']} onPress={() => (navigation as any).navigate('HRJobs')} />
                 )}
-                {!permissionsLoading && hasPermission('USER_READ') && (
+                {(isAdmin || (!permissionsLoading && hasPermission('USER_READ'))) && (
                   <QuickAction title="Staff" subtitle="Manage users" icon="users" gradient={['#10B981', '#059669']} onPress={() => (navigation as any).navigate('HRUsers')} />
                 )}
-                {!permissionsLoading && hasPermission('REPORT_VIEW') && (
+                {(isAdmin || (!permissionsLoading && hasPermission('REPORT_VIEW'))) && (
                   <QuickAction title="Reports" subtitle="View insights" icon="chart-line" gradient={['#F59E0B', '#D97706']} onPress={() => (navigation as any).navigate('Reports')} />
                 )}
                 {isAdmin && (
