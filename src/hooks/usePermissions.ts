@@ -48,18 +48,23 @@ export const usePermissions = () => {
         }
 
         const params: any = {};
-        if (effectiveHospitalId) {
+        // For ADMIN users, don't pass hospitalId (they have GLOBAL permissions)
+        if (user?.role === 'ADMIN') {
+          // Admin users get GLOBAL permissions, no hospitalId needed
+        } else if (effectiveHospitalId) {
           params.hospitalId = effectiveHospitalId;
         }
         if (effectiveUnitCode) {
           params.unitCode = effectiveUnitCode;
         }
-        console.log('[usePermissions] GET /permissions/my-permissions params =', params);
+        console.log('[usePermissions] role =', user?.role, 'GET /permissions/my-permissions params =', params);
         const res = await ApiService.getMyPermissions(params);
         console.log('[usePermissions] permissions response =', {
+          role: user?.role,
           hasGlobal: Array.isArray(res?.permissions?.global) ? res.permissions.global.length : 'n/a',
           hasHospital: Array.isArray(res?.permissions?.hospital) ? res.permissions.hospital.length : 'n/a',
           hasUnit: Array.isArray(res?.permissions?.unit) ? res.permissions.unit.length : 'n/a',
+          globalCodes: Array.isArray(res?.permissions?.global) ? res.permissions.global.map((p: Permission) => p.code).slice(0, 5) : 'n/a',
         });
         setPermissions(res.permissions || { global: [], hospital: [], unit: [] });
       } catch (error) {
