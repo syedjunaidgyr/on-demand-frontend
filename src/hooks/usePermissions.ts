@@ -87,6 +87,7 @@ export const usePermissions = () => {
    * Check if user has a specific permission
    * @param code - Permission code (e.g., 'JOB_CREATE', 'USER_UPDATE')
    * @returns true if user has the permission at any scope (global, hospital, or unit)
+   * Note: This is now 100% API-based - no hardcoded role bypasses
    */
   const hasPermission = (code: string): boolean => {
     const all = [
@@ -94,7 +95,9 @@ export const usePermissions = () => {
       ...permissions.hospital,
       ...permissions.unit,
     ];
-    return all.some((p) => p.code === code);
+    const hasPerm = all.some((p) => p.code === code);
+    console.log(`[usePermissions] hasPermission('${code}') = ${hasPerm} (from API)`);
+    return hasPerm;
   };
 
   /**

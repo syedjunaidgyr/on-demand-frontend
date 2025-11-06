@@ -549,24 +549,31 @@ const HRDashboardScreen: React.FC = () => {
               </View>
             ) : (
               <View style={styles.quickActionsGrid}>
-                {/* For ADMIN: Show all actions if permissions not loaded or if they have the permission */}
-                {(isAdmin || (!permissionsLoading && hasPermission('JOB_CREATE'))) && (
+                {/* All actions are now based on API permissions - no hardcoded ADMIN bypass */}
+                {!permissionsLoading && hasPermission('JOB_CREATE') && (
                   <QuickAction title="Create Job" subtitle="Post new opening" icon="plus" gradient={['#3B82F6', '#2563EB']} onPress={() => (navigation as any).navigate('CreateJob')} />
                 )}
-                {(isAdmin || (!permissionsLoading && hasPermission('JOB_READ'))) && (
+                {!permissionsLoading && hasPermission('JOB_READ') && (
                   <QuickAction title="Assign Jobs" subtitle="View & edit" icon="briefcase" gradient={['#8B5CF6', '#7C3AED']} onPress={() => (navigation as any).navigate('HRJobs')} />
                 )}
-                {(isAdmin || (!permissionsLoading && hasPermission('USER_READ'))) && (
+                {!permissionsLoading && hasPermission('USER_READ') && (
                   <QuickAction title="Staff" subtitle="Manage users" icon="users" gradient={['#10B981', '#059669']} onPress={() => (navigation as any).navigate('HRUsers')} />
                 )}
-                {(isAdmin || (!permissionsLoading && hasPermission('REPORT_VIEW'))) && (
+                {!permissionsLoading && hasPermission('REPORT_VIEW') && (
                   <QuickAction title="Reports" subtitle="View insights" icon="chart-line" gradient={['#F59E0B', '#D97706']} onPress={() => (navigation as any).navigate('Reports')} />
                 )}
-                {isAdmin && (
+                {/* Admin-specific actions - also check permissions from API */}
+                {isAdmin && !permissionsLoading && (
                   <>
-                    <QuickAction title="Hospitals" subtitle="Manage hospitals" icon="hospital" gradient={['#EF4444', '#DC2626']} onPress={() => (navigation as any).navigate('AdminHospitalManagement')} />
-                    <QuickAction title="Permissions" subtitle="Manage permissions" icon="shield-alt" gradient={['#6366F1', '#4F46E5']} onPress={() => (navigation as any).navigate('PermissionManagement')} />
-                    <QuickAction title="Specializations" subtitle="Manage specializations" icon="stethoscope" gradient={['#14B8A6', '#0D9488']} onPress={() => (navigation as any).navigate('SpecializationManagement')} />
+                    {hasPermission('HOSPITAL_READ_GLOBAL') && (
+                      <QuickAction title="Hospitals" subtitle="Manage hospitals" icon="hospital" gradient={['#EF4444', '#DC2626']} onPress={() => (navigation as any).navigate('AdminHospitalManagement')} />
+                    )}
+                    {hasPermission('PERMISSION_VIEW_GLOBAL') && (
+                      <QuickAction title="Permissions" subtitle="Manage permissions" icon="shield-alt" gradient={['#6366F1', '#4F46E5']} onPress={() => (navigation as any).navigate('PermissionManagement')} />
+                    )}
+                    {hasPermission('SPECIALIZATION_MANAGE') && (
+                      <QuickAction title="Specializations" subtitle="Manage specializations" icon="stethoscope" gradient={['#14B8A6', '#0D9488']} onPress={() => (navigation as any).navigate('SpecializationManagement')} />
+                    )}
                   </>
                 )}
               </View>
