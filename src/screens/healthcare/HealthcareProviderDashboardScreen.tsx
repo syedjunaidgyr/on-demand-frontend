@@ -19,7 +19,6 @@ import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import LinearGradient from 'react-native-linear-gradient';
 import GlobalHeader from '../../components/GlobalHeader';
-import HRFooterNavigation from '../../components/HRFooterNavigation';
 
 import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
@@ -35,10 +34,13 @@ import {
   SkeletonHeader,
 } from '../../components/SkeletonComponents';
 import { useGlobalStyles } from '../../theme/globalStyles';
+import { useAppColors } from '../../hooks/useAppColors';
+import HRFooterNavigation from '../../components/HRFooterNavigation';
 
 const HealthcareProviderDashboardScreen: React.FC = () => {
   const navigation = useNavigation();
   const g = useGlobalStyles();
+  const appColors = useAppColors();
   const { unreadCount } = useNotifications();
   const [availableJobs, setAvailableJobs] = useState<Job[]>([]);
   const [upcomingJobs, setUpcomingJobs] = useState<Job[]>([]);
@@ -591,27 +593,21 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
   const roleConfig = getRoleConfig();
 
   return (
-    <View style={g.appBackground}>
-      <SafeAreaView style={styles.safeAreaTop} edges={['top']}>
-        {/* STATUS BAR */}
-        <StatusBar
-          backgroundColor={g.appBackground?.backgroundColor || '#FFFFFF'}
-          barStyle={(g.appBackground?.backgroundColor || '#FFFFFF') === '#FFFFFF' ? 'dark-content' : 'light-content'}
-          translucent={false}
-        />
+    <SafeAreaView style={g.appBackground}>
+      <StatusBar backgroundColor={appColors.background} barStyle={appColors.background === '#FFFFFF' ? 'dark-content' : 'light-content'} translucent={false} />
 
-        <View style={styles.innerContainer}>
+      <View style={[styles.innerContainer, { backgroundColor: appColors.background }]}>
         {/* Simple Header */}
         {isLoading || !user ? (
           <SkeletonHeader />
         ) : (
-          <View style={styles.simpleHeader}>
+          <View style={[styles.simpleHeader, { backgroundColor: appColors.accentText }]}>
             <View style={styles.headerContent}>
               <View style={styles.headerLeft}>
-                <Text style={styles.headerGreeting}>
-                  Hello <Text style={styles.headerRole}>{user?.role || 'Provider'}</Text>
+                <Text style={[styles.headerGreeting, { color: appColors.textSecondary }]}>
+                  Hello <Text style={[styles.headerRole, { color: appColors.primary }]}>{user?.role || 'Provider'}</Text>
                   </Text>
-                <Text style={styles.headerName}>
+                <Text style={[styles.headerName, { color: appColors.textPrimary }]}>
                   {user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Loading...'}!
                 </Text>
               </View>
@@ -664,15 +660,15 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
           <RefreshControl 
             refreshing={refreshing} 
             onRefresh={onRefresh}
-            tintColor="#6366F1"
-            colors={['#6366F1']}
+            tintColor={appColors.primary}
+            colors={[appColors.primary]}
           />
         }>
 
         {/* ✨ Quick Actions – icon stats like HR overview */}
         <View style={[styles.section, styles.firstSection]}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
+            <Text style={[styles.sectionTitle, { color: appColors.textPrimary }]}>Quick Actions</Text>
           </View>
           <ScrollView
             horizontal
@@ -755,10 +751,10 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
         {/* My Assignments */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>My Jobs</Text>
+            <Text style={[styles.sectionTitle, { color: appColors.textPrimary }]}>My Jobs</Text>
             {!isLoading && (
             <TouchableOpacity onPress={() => (navigation as any).navigate('Assignments')}>
-              <Text style={styles.seeAllText}>See All</Text>
+              <Text style={[styles.seeAllText, { color: appColors.primary }]}>See All</Text>
             </TouchableOpacity>
             )}
           </View>
@@ -1152,27 +1148,22 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
       </View>
 
       <HRFooterNavigation activeRoute="Dashboard" scrollY={scrollY} isLoading={isLoading} />
-        </View>
-      </SafeAreaView>
-    </View>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F9FF',
   },
   safeAreaTop: {
     flex: 1,
-    backgroundColor: '#F3F9FF',
   },
   innerContainer: {
     flex: 1,
-    backgroundColor: '#F3F9FF',
   },
   simpleHeader: {
-    backgroundColor: '#FFFFFF',
     paddingTop: Platform.OS === 'android' ? 10 : 0,
     paddingHorizontal: 20,
     paddingBottom: 16,
@@ -1193,18 +1184,15 @@ const styles = StyleSheet.create({
   headerRole: {
     fontSize: 16,
     fontFamily: Typography.fontFamily.medium,
-    color: '#6366F1',
   },
   headerGreeting: {
     fontSize: 16,
     fontFamily: Typography.fontFamily.regular,
-    color: '#6B7280',
     marginBottom: 2,
   },
   headerName: {
     fontSize: 22,
     fontFamily: Typography.fontFamily.bold,
-    color: '#111827',
   },
   headerRight: {
     flexDirection: 'row',
@@ -1321,14 +1309,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontFamily: Typography.fontFamily.bold,
-    color: Colors.textPrimary,
     marginTop: Spacing.md,
     marginBottom: Spacing.md,
   },
   seeAllText: {
     fontSize: Typography.fontSize.sm,
-    backgroundColor: Colors.primary,
-    color: Colors.white,
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
     borderRadius: 8,

@@ -16,7 +16,6 @@ import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
 import { Spacing, Shadow, BorderRadius } from '../../constants/spacing';
 import ApiService from '../../services/api';
-import HRFooterNavigation from '../../components/HRFooterNavigation';
 import GlobalHeader from '../../components/GlobalHeader';
 import Responsive from '../../utils/responsive';
 
@@ -269,7 +268,6 @@ const ReportDetailsScreen: React.FC = () => {
       </ScrollView>
 
       {/* Footer Navigation */}
-      <HRFooterNavigation activeRoute="Users" isLoading={loading} />
     </View>
   );
 };

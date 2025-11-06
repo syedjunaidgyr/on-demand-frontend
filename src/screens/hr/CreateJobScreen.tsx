@@ -96,13 +96,13 @@ const ToastModal = ({ visible, message, type = 'error', onClose }: { visible: bo
   return (
     <Modal transparent visible={visible} animationType="none" statusBarTranslucent>
       <View style={styles.toastContainer} pointerEvents="box-none">
-        <Animated.View
+        <Animated.View 
           style={[
-            styles.toast,
-            {
-              transform: [{ translateY: slideAnim }],
+            styles.toast, 
+            { 
+              transform: [{ translateY: slideAnim }], 
               opacity: opacityAnim,
-              backgroundColor
+              backgroundColor 
             }
           ]}>
           <FontAwesomeIcon icon={icon} size={24} color={Colors.white} />
@@ -117,11 +117,11 @@ const ToastModal = ({ visible, message, type = 'error', onClose }: { visible: bo
 };
 
 // Reusable input components
-const InputField = ({
-  label,
-  value,
-  onChangeText,
-  placeholder,
+const InputField = ({ 
+  label, 
+  value, 
+  onChangeText, 
+  placeholder, 
   keyboardType = 'default',
   multiline = false,
   numberOfLines = 1,
@@ -227,8 +227,8 @@ const DateField = ({
           />
         </TouchableOpacity>
         {value && (
-          <TouchableOpacity
-            onPress={() => onChange('')}
+          <TouchableOpacity 
+            onPress={() => onChange('')} 
             style={styles.clearButton}
             activeOpacity={0.7}>
             <FontAwesomeIcon icon="times" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
@@ -280,18 +280,18 @@ const TimeField = ({
       let hours = parseInt(match12[1], 10);
       const minutes = parseInt(match12[2], 10);
       const period = match12[3].toUpperCase();
-
+      
       if (period === 'PM' && hours !== 12) {
         hours += 12;
       } else if (period === 'AM' && hours === 12) {
         hours = 0;
       }
-
+      
       const date = new Date();
       date.setHours(hours, minutes, 0, 0);
       return date;
     }
-
+    
     // Handle 24-hour format: HH:MM
     const match24 = timeString.match(/^(\d{1,2}):(\d{2})$/);
     if (match24) {
@@ -301,7 +301,7 @@ const TimeField = ({
       date.setHours(hours, minutes, 0, 0);
       return date;
     }
-
+    
     return new Date();
   };
 
@@ -309,14 +309,14 @@ const TimeField = ({
     let hours = date.getHours();
     const minutes = date.getMinutes();
     const period = hours >= 12 ? 'PM' : 'AM';
-
+    
     // Convert to 12-hour format
     if (hours > 12) {
       hours -= 12;
     } else if (hours === 0) {
       hours = 12;
     }
-
+    
     return `${hours}:${String(minutes).padStart(2, '0')} ${period}`;
   };
 
@@ -335,8 +335,8 @@ const TimeField = ({
           />
         </TouchableOpacity>
         {value && (
-          <TouchableOpacity
-            onPress={() => onChange('')}
+          <TouchableOpacity 
+            onPress={() => onChange('')} 
             style={styles.clearButton}
             activeOpacity={0.7}>
             <FontAwesomeIcon icon="times" size={Responsive.iconSize(16)} color={Colors.textTertiary} />
@@ -365,15 +365,15 @@ const TimeField = ({
 };
 
 // Dropdown components
-const DepartmentDropdown = ({
-  open,
-  setOpen,
-  value,
-  setValue,
-  items,
-  placeholder,
+const DepartmentDropdown = ({ 
+  open, 
+  setOpen, 
+  value, 
+  setValue, 
+  items, 
+  placeholder, 
   styles,
-  error
+  error 
 }: {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -392,7 +392,7 @@ const DepartmentDropdown = ({
       items={items}
       setOpen={setOpen}
       setValue={setValue}
-      placeholder={placeholder}
+      placeholder={placeholder || 'Select'}
       arrowIconContainerStyle={styles.dropdownArrowContainer}
       arrowIconStyle={styles.dropdownArrowIcon}
       style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
@@ -400,24 +400,29 @@ const DepartmentDropdown = ({
       placeholderStyle={styles.dropdownPlaceholderStyle}
       dropDownContainerStyle={styles.dropdownContainerStyle}
       listItemLabelStyle={styles.dropdownListItemStyle}
+      listItemContainerStyle={styles.dropdownListItemContainer}
+      selectedItemContainerStyle={styles.dropdownSelectedItemContainer}
+      selectedItemLabelStyle={styles.dropdownSelectedItemLabel}
       closeAfterSelecting={true}
       searchable={false}
-      listMode="SCROLLVIEW"
+      listMode="MODAL"
+      modalAnimationType="slide"
+      modalContentContainerStyle={styles.dropdownSmallModal}
       zIndex={4000}
       zIndexInverse={1000}
     />
   </View>
 );
 
-const SpecializationDropdown = ({
-  open,
-  setOpen,
-  value,
-  setValue,
-  items,
-  placeholder,
+const SpecializationDropdown = ({ 
+  open, 
+  setOpen, 
+  value, 
+  setValue, 
+  items, 
+  placeholder, 
   styles,
-  error
+  error 
 }: {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -436,7 +441,7 @@ const SpecializationDropdown = ({
       items={items}
       setOpen={setOpen}
       setValue={setValue}
-      placeholder={placeholder}
+      placeholder={placeholder || 'Select'}
       arrowIconContainerStyle={styles.dropdownArrowContainer}
       arrowIconStyle={styles.dropdownArrowIcon}
       style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
@@ -447,24 +452,24 @@ const SpecializationDropdown = ({
       closeAfterSelecting={true}
       searchable={false}
       listMode="MODAL"
-      modalTitle="Select Specialization"
       modalAnimationType="slide"
+      modalContentContainerStyle={styles.dropdownSmallModal}
       zIndex={3000}
       zIndexInverse={2000}
     />
   </View>
 );
 
-const HospitalDropdown = ({
-  open,
-  setOpen,
-  value,
-  setValue,
-  items,
-  placeholder,
-  loading,
+const HospitalDropdown = ({ 
+  open, 
+  setOpen, 
+  value, 
+  setValue, 
+  items, 
+  placeholder, 
+  loading, 
   styles,
-  error
+  error 
 }: {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -484,7 +489,7 @@ const HospitalDropdown = ({
       items={items}
       setOpen={setOpen}
       setValue={setValue}
-      placeholder={placeholder}
+      placeholder={placeholder || 'Select'}
       loading={loading}
       arrowIconContainerStyle={styles.dropdownArrowContainer}
       arrowIconStyle={styles.dropdownArrowIcon}
@@ -493,26 +498,32 @@ const HospitalDropdown = ({
       placeholderStyle={styles.dropdownPlaceholderStyle}
       dropDownContainerStyle={styles.dropdownContainerStyle}
       listItemLabelStyle={styles.dropdownListItemStyle}
+      listItemContainerStyle={styles.dropdownListItemContainer}
+      selectedItemContainerStyle={styles.dropdownSelectedItemContainer}
+      selectedItemLabelStyle={styles.dropdownSelectedItemLabel}
       closeAfterSelecting={true}
-      searchable={false}
-      listMode="SCROLLVIEW"
+      searchable={true}
+      searchPlaceholder="Search hospital..."
+      listMode="MODAL"
+      modalAnimationType="slide"
+      modalContentContainerStyle={styles.dropdownSmallModal}
       zIndex={2000}
       zIndexInverse={3000}
     />
   </View>
 );
 
-const UnitDropdown = ({
-  open,
-  setOpen,
-  value,
-  setValue,
-  items,
-  placeholder,
-  loading,
+const UnitDropdown = ({ 
+  open, 
+  setOpen, 
+  value, 
+  setValue, 
+  items, 
+  placeholder, 
+  loading, 
   disabled,
   styles,
-  error
+  error 
 }: {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -533,7 +544,7 @@ const UnitDropdown = ({
       items={items}
       setOpen={setOpen}
       setValue={setValue}
-      placeholder={placeholder}
+      placeholder={placeholder || 'Select'}
       loading={loading}
       disabled={disabled}
       arrowIconContainerStyle={styles.dropdownArrowContainer}
@@ -543,24 +554,30 @@ const UnitDropdown = ({
       placeholderStyle={styles.dropdownPlaceholderStyle}
       dropDownContainerStyle={styles.dropdownContainerStyle}
       listItemLabelStyle={styles.dropdownListItemStyle}
+      listItemContainerStyle={styles.dropdownListItemContainer}
+      selectedItemContainerStyle={styles.dropdownSelectedItemContainer}
+      selectedItemLabelStyle={styles.dropdownSelectedItemLabel}
       closeAfterSelecting={true}
-      searchable={false}
-      listMode="SCROLLVIEW"
+      searchable={true}
+      searchPlaceholder="Search unit..."
+      listMode="MODAL"
+      modalAnimationType="slide"
+      modalContentContainerStyle={styles.dropdownSmallModal}
       zIndex={1000}
       zIndexInverse={4000}
     />
   </View>
 );
 
-const StateDropdown = ({
-  open,
-  setOpen,
-  value,
-  setValue,
-  items,
-  placeholder,
+const StateDropdown = ({ 
+  open, 
+  setOpen, 
+  value, 
+  setValue, 
+  items, 
+  placeholder, 
   styles,
-  error
+  error 
 }: {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -579,7 +596,7 @@ const StateDropdown = ({
       items={items}
       setOpen={setOpen}
       setValue={setValue}
-      placeholder={placeholder}
+      placeholder={placeholder || 'Select'}
       arrowIconContainerStyle={styles.dropdownArrowContainer}
       arrowIconStyle={styles.dropdownArrowIcon}
       style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
@@ -587,22 +604,28 @@ const StateDropdown = ({
       placeholderStyle={styles.dropdownPlaceholderStyle}
       dropDownContainerStyle={styles.dropdownContainerStyle}
       listItemLabelStyle={styles.dropdownListItemStyle}
+      listItemContainerStyle={styles.dropdownListItemContainer}
+      selectedItemContainerStyle={styles.dropdownSelectedItemContainer}
+      selectedItemLabelStyle={styles.dropdownSelectedItemLabel}
       closeAfterSelecting={true}
-      searchable={false}
-      listMode="SCROLLVIEW"
+      searchable={true}
+      searchPlaceholder="Search state..."
+      listMode="MODAL"
+      modalAnimationType="slide"
+      modalContentContainerStyle={styles.dropdownSmallModal}
       zIndex={900}
       zIndexInverse={3100}
     />
   </View>
 );
 
-const CityDropdown = ({
-  open,
-  setOpen,
-  value,
-  setValue,
-  items,
-  placeholder,
+const CityDropdown = ({ 
+  open, 
+  setOpen, 
+  value, 
+  setValue, 
+  items, 
+  placeholder, 
   styles,
   error,
   disabled
@@ -625,7 +648,7 @@ const CityDropdown = ({
       items={items}
       setOpen={setOpen}
       setValue={setValue}
-      placeholder={placeholder}
+      placeholder={placeholder || 'Select'}
       disabled={disabled}
       arrowIconContainerStyle={styles.dropdownArrowContainer}
       arrowIconStyle={styles.dropdownArrowIcon}
@@ -634,24 +657,30 @@ const CityDropdown = ({
       placeholderStyle={styles.dropdownPlaceholderStyle}
       dropDownContainerStyle={styles.dropdownContainerStyle}
       listItemLabelStyle={styles.dropdownListItemStyle}
+      listItemContainerStyle={styles.dropdownListItemContainer}
+      selectedItemContainerStyle={styles.dropdownSelectedItemContainer}
+      selectedItemLabelStyle={styles.dropdownSelectedItemLabel}
       closeAfterSelecting={true}
-      searchable={false}
-      listMode="SCROLLVIEW"
+      searchable={true}
+      searchPlaceholder="Search city..."
+      listMode="MODAL"
+      modalAnimationType="slide"
+      modalContentContainerStyle={styles.dropdownSmallModal}
       zIndex={800}
       zIndexInverse={3200}
     />
   </View>
 );
 
-const CountryDropdown = ({
-  open,
-  setOpen,
-  value,
-  setValue,
-  items,
-  placeholder,
+const CountryDropdown = ({ 
+  open, 
+  setOpen, 
+  value, 
+  setValue, 
+  items, 
+  placeholder, 
   styles,
-  error
+  error 
 }: {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -670,7 +699,7 @@ const CountryDropdown = ({
       items={items}
       setOpen={setOpen}
       setValue={setValue}
-      placeholder={placeholder}
+      placeholder={placeholder || 'Select'}
       arrowIconContainerStyle={styles.dropdownArrowContainer}
       arrowIconStyle={styles.dropdownArrowIcon}
       style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
@@ -678,11 +707,15 @@ const CountryDropdown = ({
       placeholderStyle={styles.dropdownPlaceholderStyle}
       dropDownContainerStyle={styles.dropdownContainerStyle}
       listItemLabelStyle={styles.dropdownListItemStyle}
+      listItemContainerStyle={styles.dropdownListItemContainer}
+      selectedItemContainerStyle={styles.dropdownSelectedItemContainer}
+      selectedItemLabelStyle={styles.dropdownSelectedItemLabel}
       closeAfterSelecting={true}
-      searchable={false}
+      searchable={true}
+      searchPlaceholder="Search country..."
       listMode="MODAL"
-      modalTitle="Select Country"
       modalAnimationType="slide"
+      modalContentContainerStyle={styles.dropdownSmallModal}
       zIndex={700}
       zIndexInverse={3300}
     />
@@ -690,10 +723,61 @@ const CountryDropdown = ({
   </View>
 );
 
-const CheckboxField = ({
-  label,
+// Experience years dropdown (0-25 years)
+const ExperienceDropdown = ({
+  open,
+  setOpen,
   value,
-  onValueChange
+  setValue,
+  styles,
+  error
+}: {
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  value: string;
+  setValue: (callback: (prev: string) => string) => void;
+  styles: any;
+  error?: string;
+}) => {
+  const items = Array.from({ length: 26 }, (_, i) => ({ label: `${i} year${i === 1 ? '' : 's'}`, value: String(i) }));
+  return (
+    <View style={styles.inputContainer}>
+      <Text style={styles.inputLabel}>Experience</Text>
+      <DropDownPicker
+        open={open}
+        value={value}
+        items={items}
+        setOpen={setOpen}
+        setValue={setValue}
+        placeholder={'Select'}
+        arrowIconContainerStyle={styles.dropdownArrowContainer}
+        arrowIconStyle={styles.dropdownArrowIcon}
+        style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
+        textStyle={styles.dropdownTextStyle}
+        placeholderStyle={styles.dropdownPlaceholderStyle}
+        dropDownContainerStyle={styles.dropdownContainerStyle}
+        listItemLabelStyle={styles.dropdownListItemStyle}
+        listItemContainerStyle={styles.dropdownListItemContainer}
+        selectedItemContainerStyle={styles.dropdownSelectedItemContainer}
+        selectedItemLabelStyle={styles.dropdownSelectedItemLabel}
+        closeAfterSelecting={true}
+        searchable={false}
+        listMode="MODAL"
+        modalAnimationType="slide"
+      modalContentContainerStyle={styles.dropdownSmallModal}
+        zIndex={2600}
+        zIndexInverse={2400}
+      />
+    </View>
+  );
+};
+
+// (moved) SkillsDropdown defined after departmentRequiredSkills mapping
+
+const CheckboxField = ({ 
+  label, 
+  value, 
+  onValueChange 
 }: {
   label: string;
   value: boolean;
@@ -708,13 +792,13 @@ const CheckboxField = ({
 );
 
 // Accordion Section Component
-const AccordionSection = ({
-  title,
-  icon,
-  isExpanded,
-  onToggle,
+const AccordionSection = ({ 
+  title, 
+  icon, 
+  isExpanded, 
+  onToggle, 
   children,
-  isComplete
+  isComplete 
 }: {
   title: string;
   icon: string;
@@ -725,27 +809,27 @@ const AccordionSection = ({
 }) => {
   return (
     <View style={[styles.accordionSection, isExpanded && styles.accordionSectionExpanded]}>
-      <TouchableOpacity
-        style={styles.accordionHeader}
+      <TouchableOpacity 
+        style={styles.accordionHeader} 
         onPress={onToggle}
         activeOpacity={0.7}>
         <View style={styles.accordionHeaderLeft}>
           <View style={[styles.accordionIconContainer, isComplete && styles.accordionIconComplete]}>
-            <FontAwesomeIcon
-              icon={isComplete ? 'check-circle' : icon}
-              size={Responsive.iconSize(20)}
-              color={Colors.white}
+            <FontAwesomeIcon 
+              icon={isComplete ? 'check-circle' : icon} 
+              size={Responsive.iconSize(20)} 
+              color={Colors.white} 
             />
           </View>
           <Text style={styles.accordionTitle}>{title}</Text>
         </View>
-        <FontAwesomeIcon
-          icon={isExpanded ? 'chevron-up' : 'chevron-down'}
-          size={Responsive.iconSize(18)}
-          color={Colors.textSecondary}
+        <FontAwesomeIcon 
+          icon={isExpanded ? 'chevron-up' : 'chevron-down'} 
+          size={Responsive.iconSize(18)} 
+          color={Colors.textSecondary} 
         />
       </TouchableOpacity>
-
+      
       {isExpanded && (
         <View style={styles.accordionContent}>
           {children}
@@ -760,7 +844,7 @@ const CreateJobScreen: React.FC = () => {
   const route = useRoute();
   const { height } = Dimensions.get('window');
   const [isLoading, setIsLoading] = useState(false);
-
+  
   // Success modal state
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const modalSlideAnim = useRef(new Animated.Value(height)).current;
@@ -769,7 +853,7 @@ const CreateJobScreen: React.FC = () => {
   const sparkleScale3 = useRef(new Animated.Value(0)).current;
   const sparkleScale4 = useRef(new Animated.Value(0)).current;
   const checkmarkScale = useRef(new Animated.Value(0)).current;
-
+  
   const { user } = useAuth();
 
   // Get recreate job data from route params if available
@@ -845,6 +929,7 @@ const CreateJobScreen: React.FC = () => {
   const [stateDropdownOpen, setStateDropdownOpen] = useState(false);
   const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
+  const [skillsDropdownOpen, setSkillsDropdownOpen] = useState(false);
 
   // Validation and Toast states
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -896,6 +981,84 @@ const CreateJobScreen: React.FC = () => {
     'Physiotherapy': ['Orthopedic Physiotherapy', 'Neurological Physiotherapy', 'Cardiopulmonary Physiotherapy', 'Sports Rehabilitation'],
   };
 
+  // Department → suggested skills (4-5 per department)
+  const departmentRequiredSkills: Record<string, string[]> = {
+    'Emergency Medicine': ['Triage', 'ACLS', 'BLS', 'Rapid Assessment', 'Trauma Care'],
+    'General Medicine': ['History Taking', 'IV Cannulation', 'Medication Admin', 'Vitals Monitoring', 'Case Notes'],
+    'General Surgery': ['Pre-op Prep', 'Post-op Care', 'Suturing Assist', 'Instrument Handling', 'Sterile Technique'],
+    'Obstetrics & Gynecology': ['Antenatal Care', 'Labor Support', 'Fetal Monitoring', 'Postnatal Care', 'OR Assist'],
+    'Pediatrics': ['Growth Assessment', 'Immunization', 'Pediatric IV', 'Neonatal Care', 'Family Education'],
+    'Orthopedics': ['Cast Application', 'Traction Setup', 'Mobility Support', 'Post-op Ortho Care', 'Pain Management'],
+    'Cardiology': ['ECG', 'Telemetry', 'CPR', 'Cardiac Monitoring', 'Medication Titration'],
+    'Neurology': ['Neuro Checks', 'Stroke Protocol', 'Seizure Care', 'Mobility Support', 'Cognitive Assessments'],
+    'Urology': ['Catheter Care', 'OR Assist', 'Post-op Uro Care', 'Fluid Balance', 'Patient Education'],
+    'Nephrology': ['Dialysis Setup', 'Access Care', 'Fluid Management', 'Electrolyte Monitoring', 'Infection Control'],
+    'Gastroenterology': ['Endoscopy Assist', 'Diet Management', 'IV Therapy', 'GI Assessments', 'Patient Prep'],
+    'Oncology': ['Chemo Handling', 'Neutropenic Precautions', 'Pain Control', 'Vitals', 'Patient Education'],
+    'ENT': ['Ear Irrigation', 'Post-op ENT Care', 'Instrument Handling', 'Airway Care', 'Audiometry Assist'],
+    'Ophthalmology': ['Eye Drops Admin', 'Post-op Eye Care', 'Visual Acuity', 'Instrument Handling', 'OR Assist'],
+    'Dermatology': ['Wound Care', 'Dressing', 'Allergy Testing Assist', 'Topical Therapy', 'Patient Education'],
+    'Psychiatry': ['De-escalation', 'Observation', 'Medication Admin', 'Counsel Support', 'Care Plans'],
+    'Radiology': ['Patient Prep', 'Positioning Assist', 'Safety Protocols', 'Contrast Handling', 'Post-procedure Care'],
+    'Pathology': ['Sample Handling', 'Labeling', 'QC Basics', 'Lab Safety', 'Inventory'],
+    'Anesthesiology': ['Airway Assist', 'Monitoring', 'Equipment Prep', 'Recovery Support', 'Checklist'],
+    'Physiotherapy': ['Exercise Plans', 'Mobility Training', 'Respiratory Physio', 'Pain Modulation', 'Education'],
+  };
+
+// Skills dropdown – multi-select based on current department
+const SkillsDropdown = ({
+  open,
+  setOpen,
+  department,
+  value,
+  setValue,
+  styles,
+  error
+}: {
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  department: string;
+  value: string[];
+  setValue: (callback: (prev: string[]) => string[]) => void;
+  styles: any;
+  error?: string;
+}) => {
+  const skills = (departmentRequiredSkills as any)[department] || [];
+  const items = skills.map((s: string) => ({ label: s, value: s }));
+  return (
+    <View style={styles.inputContainer}>
+      <Text style={styles.inputLabel}>Required Skills</Text>
+      <DropDownPicker
+        multiple
+        mode="BADGE"
+        open={open}
+        value={value}
+        items={items}
+        setOpen={setOpen}
+        setValue={setValue}
+        placeholder={'Select'}
+        arrowIconContainerStyle={styles.dropdownArrowContainer}
+        arrowIconStyle={styles.dropdownArrowIcon}
+        style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
+        textStyle={styles.dropdownTextStyle}
+        placeholderStyle={styles.dropdownPlaceholderStyle}
+        dropDownContainerStyle={styles.dropdownContainerStyle}
+        listItemLabelStyle={styles.dropdownListItemStyle}
+        listItemContainerStyle={styles.dropdownListItemContainer}
+        selectedItemContainerStyle={styles.dropdownSelectedItemContainer}
+        selectedItemLabelStyle={styles.dropdownSelectedItemLabel}
+        searchable={false}
+        listMode="MODAL"
+        modalAnimationType="slide"
+        modalContentContainerStyle={styles.dropdownSmallModal}
+        closeAfterSelecting={false}
+        zIndex={2500}
+        zIndexInverse={2500}
+      />
+    </View>
+  );
+  };
+
   // Indian states and cities mapping
   const stateCityMapping: Record<string, string[]> = {
     'Andhra Pradesh': ['Hyderabad', 'Visakhapatnam', 'Vijayawada', 'Guntur', 'Nellore'],
@@ -931,8 +1094,8 @@ const CreateJobScreen: React.FC = () => {
   };
 
   const countryList = [
-    'India', 'United States', 'United Kingdom', 'Canada', 'Australia',
-    'New Zealand', 'Singapore', 'UAE', 'Saudi Arabia', 'Qatar',
+    'India', 'United States', 'United Kingdom', 'Canada', 'Australia', 
+    'New Zealand', 'Singapore', 'UAE', 'Saudi Arabia', 'Qatar', 
     'Kuwait', 'Oman', 'Bahrain', 'Bangladesh', 'Nepal', 'Sri Lanka'
   ];
 
@@ -976,7 +1139,7 @@ const CreateJobScreen: React.FC = () => {
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-
+    
     // Clear validation error for this field when user starts typing
     if (validationErrors[field]) {
       setValidationErrors(prev => {
@@ -985,11 +1148,11 @@ const CreateJobScreen: React.FC = () => {
         return newErrors;
       });
     }
-
+    
     if (field === 'department') {
-      setFormData(prev => ({ ...prev, department: value as string, specialization: '' }));
+      setFormData(prev => ({ ...prev, department: value as string, specialization: '', skills: '' }));
     }
-
+    
     if (field === 'hospitalId') {
       setFormData(prev => ({ ...prev, hospitalId: value as string, unitCode: '' }));
       setUnits([]);
@@ -997,7 +1160,7 @@ const CreateJobScreen: React.FC = () => {
         loadUnits(parseInt(value as string));
       }
     }
-
+    
     if (field === 'facilityState') {
       setFormData(prev => ({ ...prev, facilityState: value as string, facilityCity: '' }));
     }
@@ -1024,20 +1187,20 @@ const CreateJobScreen: React.FC = () => {
     setLoadingUnits(true);
     try {
       const response = await ApiService.getHospitalUnits(hospitalId);
-
+      
       if (!response.units || !Array.isArray(response.units)) {
         console.error('❌ No units array found in response:', response);
         setUnits([]);
         return;
       }
-
+      
       const unitList = response.units.map(unit => {
         return {
           code: unit.unitCode || '',
           name: unit.unitName || 'Unknown Unit'
         };
       });
-
+      
       setUnits(unitList);
     } catch (error) {
       console.error('❌ Failed to load units for hospital', hospitalId, ':', error);
@@ -1282,16 +1445,16 @@ const CreateJobScreen: React.FC = () => {
           let hours = parseInt(match12[1], 10);
           const minutes = match12[2];
           const period = match12[3].toUpperCase();
-
+          
           if (period === 'PM' && hours !== 12) {
             hours += 12;
           } else if (period === 'AM' && hours === 12) {
             hours = 0;
           }
-
+          
           return `${String(hours).padStart(2, '0')}:${minutes}`;
         }
-
+        
         // Already in 24-hour format, return as is
         return value;
       };
@@ -1343,9 +1506,9 @@ const CreateJobScreen: React.FC = () => {
       console.log('🔧 Job data being sent:', jobData);
 
       const response = await ApiService.createJob(jobData);
-
+      
       const compatibleStaffCount = (response as any).compatibleStaffCount || 0;
-      const message = compatibleStaffCount > 0
+      const message = compatibleStaffCount > 0 
         ? `job created successfully! found ${compatibleStaffCount} compatible staff members.`
         : 'job created successfully! no compatible staff found yet, but the job is posted.';
 
@@ -1361,489 +1524,528 @@ const CreateJobScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <GlobalHeader
+      <GlobalHeader 
         title="Create Job"
         backgroundColor="#FFFFFF"
         titleColor="#111827"
         onBackPress={() => navigation.goBack()}
         headerStyle={{ paddingTop: 10, paddingHorizontal: 20, paddingBottom: 16 }}
       />
-      <KeyboardAvoidingView
-        style={styles.flex1}
+      <KeyboardAvoidingView 
+        style={styles.flex1} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
-        <ScrollView
-          style={styles.content}
-          showsVerticalScrollIndicator={false}
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false} 
           keyboardShouldPersistTaps="always"
           keyboardDismissMode="none"
-          contentContainerStyle={styles.scrollContent}
-          nestedScrollEnabled={true}>
-          <View style={styles.formContainer}>
-
-            {/* Job Details Section */}
-            <AccordionSection
-              title="Job Details"
-              icon="briefcase"
-              isExpanded={expandedSections.jobDetails}
-              onToggle={() => toggleSection('jobDetails')}
-              isComplete={isSectionComplete('jobDetails')}>
+        contentContainerStyle={styles.scrollContent}
+        nestedScrollEnabled={true}>
+        <View style={styles.formContainer}>
+          
+          {/* Job Details Section */}
+          <AccordionSection
+            title="Job Details"
+            icon="briefcase"
+            isExpanded={expandedSections.jobDetails}
+            onToggle={() => toggleSection('jobDetails')}
+            isComplete={isSectionComplete('jobDetails')}>
               <View style={styles.fieldBlock}>
-                <InputField
-                  label="Job Title"
-                  value={formData.title}
-                  onChangeText={(text) => handleInputChange('title', text)}
-                  error={validationErrors.title}
-                  maxWords={150}
-                />
+            <InputField
+              label="Job Title"
+              value={formData.title}
+              onChangeText={(text) => handleInputChange('title', text)}
+              error={validationErrors.title}
+              maxWords={150}
+            />
               </View>
 
               <View style={[styles.fieldBlock, styles.tightBetweenTitleDesc]}>
-                <InputField
-                  label="Description"
-                  value={formData.description}
-                  onChangeText={(text) => handleInputChange('description', text)}
-                  multiline={true}
-                  numberOfLines={4}
-                  error={validationErrors.description}
-                  maxWords={150}
-                />
+            <InputField
+              label="Description"
+              value={formData.description}
+              onChangeText={(text) => handleInputChange('description', text)}
+              multiline={true}
+              numberOfLines={4}
+              error={validationErrors.description}
+              maxWords={150}
+            />
               </View>
 
               <View style={[styles.fieldBlock, styles.tightUpLarge]}>
-                <DepartmentDropdown
-                  open={departmentDropdownOpen}
-                  setOpen={(open) => {
-                    setDepartmentDropdownOpen(open);
-                    if (open) {
-                      setSpecializationDropdownOpen(false);
-                      setHospitalDropdownOpen(false);
-                      setUnitDropdownOpen(false);
-                    }
-                  }}
-                  value={formData.department}
-                  setValue={(callback) => {
-                    const newValue = callback(formData.department);
-                    handleInputChange('department', newValue);
-                  }}
-                  items={medicalDepartments.map(dept => ({
-                    label: dept,
-                    value: dept,
-                  }))}
-                  styles={styles}
-                  error={validationErrors.department}
-                />
+            <DepartmentDropdown 
+              open={departmentDropdownOpen}
+              setOpen={(open) => {
+                setDepartmentDropdownOpen(open);
+                if (open) {
+                  setSpecializationDropdownOpen(false);
+                  setHospitalDropdownOpen(false);
+                  setUnitDropdownOpen(false);
+                }
+              }}
+              value={formData.department}
+              setValue={(callback) => {
+                const newValue = callback(formData.department);
+                handleInputChange('department', newValue);
+              }}
+              items={medicalDepartments.map(dept => ({
+                label: dept,
+                value: dept,
+              }))}
+              styles={styles}
+              error={validationErrors.department}
+            />
               </View>
 
               <View style={styles.fieldBlock}>
-                <InputField
-                  label="Location"
-                  value={formData.location}
-                  onChangeText={(text) => handleInputChange('location', text)}
-                  error={validationErrors.location}
-                />
+            <InputField
+              label="Location"
+              value={formData.location}
+              onChangeText={(text) => handleInputChange('location', text)}
+              error={validationErrors.location}
+            />
               </View>
 
               <View style={[styles.roleSelector, styles.fieldBlock]}>
-                <Text style={styles.inputLabel}>Required Role</Text>
-                <View style={styles.roleButtons}>
-                  <TouchableOpacity
-                    style={[
-                      styles.roleButton,
-                      formData.requiredRole === 'DOCTOR' && styles.roleButtonActive,
-                    ]}
-                    onPress={() => handleInputChange('requiredRole', 'DOCTOR')}>
+              <Text style={styles.inputLabel}>Required Role</Text>
+              <View style={styles.roleButtons}>
+                <TouchableOpacity
+                  style={[
+                    styles.roleButton,
+                    formData.requiredRole === 'DOCTOR' && styles.roleButtonActive,
+                  ]}
+                  onPress={() => handleInputChange('requiredRole', 'DOCTOR')}>
                     <FontAwesomeIcon icon="stethoscope" size={Responsive.iconSize(16)} color={formData.requiredRole === 'DOCTOR' ? Colors.white : Colors.primary} />
-                    <Text style={[
-                      styles.roleButtonText,
-                      formData.requiredRole === 'DOCTOR' && styles.roleButtonTextActive,
-                    ]}>
-                      Doctor
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.roleButton,
-                      formData.requiredRole === 'NURSE' && styles.roleButtonActive,
-                    ]}
-                    onPress={() => handleInputChange('requiredRole', 'NURSE')}>
+                  <Text style={[
+                    styles.roleButtonText,
+                    formData.requiredRole === 'DOCTOR' && styles.roleButtonTextActive,
+                  ]}>
+                    Doctor
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.roleButton,
+                    formData.requiredRole === 'NURSE' && styles.roleButtonActive,
+                  ]}
+                  onPress={() => handleInputChange('requiredRole', 'NURSE')}>
                     <FontAwesomeIcon icon="user-nurse" size={Responsive.iconSize(16)} color={formData.requiredRole === 'NURSE' ? Colors.white : Colors.primary} />
-                    <Text style={[
-                      styles.roleButtonText,
-                      formData.requiredRole === 'NURSE' && styles.roleButtonTextActive,
-                    ]}>
-                      Nurse
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.roleButton,
-                      formData.requiredRole === 'AGENCY' && styles.roleButtonActive,
-                    ]}
-                    onPress={() => handleInputChange('requiredRole', 'AGENCY' as any)}>
+                  <Text style={[
+                    styles.roleButtonText,
+                    formData.requiredRole === 'NURSE' && styles.roleButtonTextActive,
+                  ]}>
+                    Nurse
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.roleButton,
+                    formData.requiredRole === 'AGENCY' && styles.roleButtonActive,
+                  ]}
+                  onPress={() => handleInputChange('requiredRole', 'AGENCY' as any)}>
                     <FontAwesomeIcon icon="building" size={Responsive.iconSize(16)} color={formData.requiredRole === 'AGENCY' ? Colors.white : Colors.primary} />
+                  <Text style={[
+                    styles.roleButtonText,
+                    formData.requiredRole === 'AGENCY' && styles.roleButtonTextActive,
+                  ]}>
+                    Agency
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {formData.requiredRole === 'DOCTOR' && (
+                <View style={styles.fieldBlock}>
+              <SpecializationDropdown 
+                open={specializationDropdownOpen}
+                setOpen={(open) => {
+                  setSpecializationDropdownOpen(open);
+                  if (open) {
+                    setDepartmentDropdownOpen(false);
+                    setHospitalDropdownOpen(false);
+                    setUnitDropdownOpen(false);
+                  }
+                }}
+                value={formData.specialization}
+                setValue={(callback) => {
+                  const newValue = callback(formData.specialization);
+                  handleInputChange('specialization', newValue);
+                }}
+                items={(departmentSpecializations[formData.department] || []).map(specialization => ({
+                  label: specialization,
+                  value: specialization,
+                }))}
+                styles={styles}
+                error={validationErrors.specialization}
+              />
+                </View>
+            )}
+          </AccordionSection>
+
+          {/* Schedule & Compensation Section */}
+          <AccordionSection
+            title="Schedule & Compensation"
+            icon="calendar"
+            isExpanded={expandedSections.scheduleCompensation}
+            onToggle={() => toggleSection('scheduleCompensation')}
+            isComplete={isSectionComplete('scheduleCompensation')}>
+            <View style={styles.row}>
+              <View style={styles.halfWidth}>
+                <DateField
+                  label="Start Date"
+                  value={formData.startDate}
+                  onChange={(text) => handleInputChange('startDate', text)}
+                  error={validationErrors.startDate}
+                  minimumDate={new Date()}
+                />
+              </View>
+              <View style={styles.halfWidth}>
+                <DateField
+                  label="End Date"
+                  value={formData.endDate}
+                  onChange={(text) => handleInputChange('endDate', text)}
+                  error={validationErrors.endDate}
+                />
+              </View>
+            </View>
+
+            <View style={styles.row}>
+              <View style={styles.halfWidth}>
+                <TimeField
+                  label="Start Time"
+                  value={formData.startTime}
+                  onChange={(text) => handleInputChange('startTime', text)}
+                  error={validationErrors.startTime}
+                />
+              </View>
+              <View style={styles.halfWidth}>
+                <TimeField
+                  label="End Time"
+                  value={formData.endTime}
+                  onChange={(text) => handleInputChange('endTime', text)}
+                  error={validationErrors.endTime}
+                />
+              </View>
+            </View>
+
+            <View style={styles.row}>
+              <View style={styles.halfWidth}>
+                <InputField
+                  label="Hourly Rate (₹)"
+                  value={formData.hourlyRate}
+                  onChangeText={(text) => handleInputChange('hourlyRate', text)}
+                  keyboardType="numeric"
+                  error={validationErrors.hourlyRate}
+                />
+              </View>
+              <View style={styles.halfWidth}>
+                <InputField
+                  label="Max Assignments"
+                  value={formData.maxAssignments}
+                  onChangeText={(text) => handleInputChange('maxAssignments', text)}
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+
+            <View style={styles.prioritySelector}>
+              <Text style={styles.inputLabel}>Priority</Text>
+              <View style={styles.priorityButtons}>
+                {['LOW', 'MEDIUM', 'HIGH', 'URGENT'].map((priority) => (
+                  <TouchableOpacity
+                    key={priority}
+                    style={[
+                      styles.priorityButton,
+                      formData.priority === priority && styles.priorityButtonActive,
+                    ]}
+                    onPress={() => handleInputChange('priority', priority)}>
                     <Text style={[
-                      styles.roleButtonText,
-                      formData.requiredRole === 'AGENCY' && styles.roleButtonTextActive,
+                      styles.priorityButtonText,
+                      formData.priority === priority && styles.priorityButtonTextActive,
                     ]}>
-                      Agency
+                      {priority}
                     </Text>
                   </TouchableOpacity>
-                </View>
+                ))}
               </View>
+            </View>
+          </AccordionSection>
 
-              {formData.requiredRole === 'DOCTOR' && (
-                <View style={styles.fieldBlock}>
-                  <SpecializationDropdown
+          {/* Facility & Location Section */}
+          <AccordionSection
+            title="Facility & Location"
+            icon="hospital"
+            isExpanded={expandedSections.facilityLocation}
+            onToggle={() => toggleSection('facilityLocation')}
+            isComplete={isSectionComplete('facilityLocation')}>
+            <InputField
+              label="Facility Name"
+              value={formData.facilityName}
+              onChangeText={(text) => handleInputChange('facilityName', text)}
+              error={validationErrors.facilityName}
+            />
+
+            <HospitalDropdown 
+              open={hospitalDropdownOpen}
+              setOpen={(open) => {
+                setHospitalDropdownOpen(open);
+                if (open) {
+                  setDepartmentDropdownOpen(false);
+                  setSpecializationDropdownOpen(false);
+                  setUnitDropdownOpen(false);
+                }
+              }}
+              value={formData.hospitalId}
+              setValue={(callback) => {
+                const newValue = callback(formData.hospitalId);
+                handleInputChange('hospitalId', newValue);
+              }}
+              items={hospitals.map(hospital => ({
+                label: hospital.name,
+                value: hospital.id.toString(),
+              }))}
+              loading={loadingHospitals}
+              styles={styles}
+              error={validationErrors.hospitalId}
+            />
+
+            <UnitDropdown 
+              open={unitDropdownOpen}
+              setOpen={(open) => {
+                setUnitDropdownOpen(open);
+                if (open) {
+                  setDepartmentDropdownOpen(false);
+                  setSpecializationDropdownOpen(false);
+                  setHospitalDropdownOpen(false);
+                }
+              }}
+              value={formData.unitCode}
+              setValue={(callback) => {
+                const newValue = callback(formData.unitCode);
+                handleInputChange('unitCode', newValue);
+              }}
+              items={units.map(unit => ({
+                label: unit.name,
+                value: unit.code,
+              }))}
+              loading={loadingUnits}
+              disabled={!formData.hospitalId || units.length === 0}
+              styles={styles}
+              error={validationErrors.unitCode}
+            />
+
+            <InputField
+              label="Street Address"
+              value={formData.facilityStreet}
+              onChangeText={(text) => handleInputChange('facilityStreet', text)}
+              error={validationErrors.facilityStreet}
+            />
+
+            <View style={styles.row}>
+              <View style={styles.halfWidth}>
+                <StateDropdown
+                  open={stateDropdownOpen}
+                  setOpen={(open) => {
+                    setStateDropdownOpen(open);
+                    if (open) {
+                      setDepartmentDropdownOpen(false);
+                      setSpecializationDropdownOpen(false);
+                      setHospitalDropdownOpen(false);
+                      setUnitDropdownOpen(false);
+                      setCityDropdownOpen(false);
+                      setCountryDropdownOpen(false);
+                    }
+                  }}
+                  value={formData.facilityState}
+                  setValue={(callback) => {
+                    const newValue = callback(formData.facilityState);
+                    handleInputChange('facilityState', newValue);
+                  }}
+                  items={Object.keys(stateCityMapping).map(state => ({
+                    label: state,
+                    value: state,
+                  }))}
+                  styles={styles}
+                  error={validationErrors.facilityState}
+                />
+              </View>
+              <View style={styles.halfWidth}>
+                <CityDropdown
+                  open={cityDropdownOpen}
+                  setOpen={(open) => {
+                    setCityDropdownOpen(open);
+                    if (open) {
+                      setDepartmentDropdownOpen(false);
+                      setSpecializationDropdownOpen(false);
+                      setHospitalDropdownOpen(false);
+                      setUnitDropdownOpen(false);
+                      setStateDropdownOpen(false);
+                      setCountryDropdownOpen(false);
+                    }
+                  }}
+                  value={formData.facilityCity}
+                  setValue={(callback) => {
+                    const newValue = callback(formData.facilityCity);
+                    handleInputChange('facilityCity', newValue);
+                  }}
+                  items={(stateCityMapping[formData.facilityState] || []).map(city => ({
+                    label: city,
+                    value: city,
+                  }))}
+                  styles={styles}
+                  error={validationErrors.facilityCity}
+                  disabled={!formData.facilityState}
+                />
+              </View>
+            </View>
+
+            <View style={styles.row}>
+              <View style={styles.halfWidth}>
+                <InputField
+                  label="ZIP Code"
+                  value={formData.facilityZipCode}
+                  onChangeText={(text) => handleInputChange('facilityZipCode', text)}
+                  keyboardType="numeric"
+                  error={validationErrors.facilityZipCode}
+                />
+              </View>
+              <View style={styles.halfWidth}>
+                <CountryDropdown
+                  open={countryDropdownOpen}
+                  setOpen={(open) => {
+                    setCountryDropdownOpen(open);
+                    if (open) {
+                      setDepartmentDropdownOpen(false);
+                      setSpecializationDropdownOpen(false);
+                      setHospitalDropdownOpen(false);
+                      setUnitDropdownOpen(false);
+                      setStateDropdownOpen(false);
+                      setCityDropdownOpen(false);
+                    }
+                  }}
+                  value={formData.facilityCountry}
+                  setValue={(callback) => {
+                    const newValue = callback(formData.facilityCountry);
+                    handleInputChange('facilityCountry', newValue);
+                  }}
+                  items={countryList.map(country => ({
+                    label: country,
+                    value: country,
+                  }))}
+                  styles={styles}
+                />
+              </View>
+            </View>
+          </AccordionSection>
+
+          {/* Contact Information Section */}
+          <AccordionSection
+            title="Contact Information"
+            icon="phone"
+            isExpanded={expandedSections.contactInfo}
+            onToggle={() => toggleSection('contactInfo')}
+            isComplete={isSectionComplete('contactInfo')}>
+            <InputField
+              label="Contact Name"
+              value={formData.contactName}
+              onChangeText={(text) => handleInputChange('contactName', text)}
+              error={validationErrors.contactName}
+            />
+
+            <View style={styles.row}>
+              <View style={styles.halfWidth}>
+                <InputField
+                  label="Contact Phone"
+                  value={formData.contactPhone}
+                  onChangeText={(text) => handleInputChange('contactPhone', text)}
+                  keyboardType="phone-pad"
+                  error={validationErrors.contactPhone}
+                />
+              </View>
+              <View style={styles.halfWidth}>
+                <InputField
+                  label="Contact Email"
+                  value={formData.contactEmail}
+                  onChangeText={(text) => handleInputChange('contactEmail', text)}
+                  keyboardType="email-address"
+                  error={validationErrors.contactEmail}
+                />
+              </View>
+            </View>
+
+            <InputField
+              label="Contact Position"
+              value={formData.contactPosition}
+              onChangeText={(text) => handleInputChange('contactPosition', text)}
+              error={validationErrors.contactPosition}
+            />
+          </AccordionSection>
+
+          {/* Requirements & Benefits Section */}
+          <AccordionSection
+            title="Requirements & Benefits"
+            icon="clipboard-list"
+            isExpanded={expandedSections.requirementsBenefits}
+            onToggle={() => toggleSection('requirementsBenefits')}
+            isComplete={isSectionComplete('requirementsBenefits')}>
+              {/* Experience + Department (side-by-side) */}
+              <View style={styles.row}>
+                <View style={styles.halfWidth}>
+                  <ExperienceDropdown
+                    open={departmentDropdownOpen}
+                    setOpen={setDepartmentDropdownOpen}
+                    value={(formData.experience || '').replace(/\s*years?$/i, '')}
+                    setValue={(cb) => {
+                      const next = cb((formData.experience || '').replace(/\s*years?$/i, ''));
+                      handleInputChange('experience', `${next} years`);
+                    }}
+                    styles={styles}
+                    error={validationErrors.experience}
+                  />
+                </View>
+                <View style={styles.halfWidth}>
+                  <DepartmentDropdown
                     open={specializationDropdownOpen}
                     setOpen={(open) => {
                       setSpecializationDropdownOpen(open);
                       if (open) {
-                        setDepartmentDropdownOpen(false);
-                        setHospitalDropdownOpen(false);
-                        setUnitDropdownOpen(false);
-                      }
-                    }}
-                    value={formData.specialization}
-                    setValue={(callback) => {
-                      const newValue = callback(formData.specialization);
-                      handleInputChange('specialization', newValue);
-                    }}
-                    items={(departmentSpecializations[formData.department] || []).map(specialization => ({
-                      label: specialization,
-                      value: specialization,
-                    }))}
-                    styles={styles}
-                    error={validationErrors.specialization}
-                  />
-                </View>
-              )}
-            </AccordionSection>
-
-            {/* Schedule & Compensation Section */}
-            <AccordionSection
-              title="Schedule & Compensation"
-              icon="calendar"
-              isExpanded={expandedSections.scheduleCompensation}
-              onToggle={() => toggleSection('scheduleCompensation')}
-              isComplete={isSectionComplete('scheduleCompensation')}>
-              <View style={styles.row}>
-                <View style={styles.halfWidth}>
-                  <DateField
-                    label="Start Date"
-                    value={formData.startDate}
-                    onChange={(text) => handleInputChange('startDate', text)}
-                    error={validationErrors.startDate}
-                    minimumDate={new Date()}
-                  />
-                </View>
-                <View style={styles.halfWidth}>
-                  <DateField
-                    label="End Date"
-                    value={formData.endDate}
-                    onChange={(text) => handleInputChange('endDate', text)}
-                    error={validationErrors.endDate}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.row}>
-                <View style={styles.halfWidth}>
-                  <TimeField
-                    label="Start Time"
-                    value={formData.startTime}
-                    onChange={(text) => handleInputChange('startTime', text)}
-                    error={validationErrors.startTime}
-                  />
-                </View>
-                <View style={styles.halfWidth}>
-                  <TimeField
-                    label="End Time"
-                    value={formData.endTime}
-                    onChange={(text) => handleInputChange('endTime', text)}
-                    error={validationErrors.endTime}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.row}>
-                <View style={styles.halfWidth}>
-                  <InputField
-                    label="Hourly Rate (₹)"
-                    value={formData.hourlyRate}
-                    onChangeText={(text) => handleInputChange('hourlyRate', text)}
-                    keyboardType="numeric"
-                    error={validationErrors.hourlyRate}
-                  />
-                </View>
-                <View style={styles.halfWidth}>
-                  <InputField
-                    label="Max Assignments"
-                    value={formData.maxAssignments}
-                    onChangeText={(text) => handleInputChange('maxAssignments', text)}
-                    keyboardType="numeric"
-                  />
-                </View>
-              </View>
-
-              <View style={styles.prioritySelector}>
-                <Text style={styles.inputLabel}>Priority</Text>
-                <View style={styles.priorityButtons}>
-                  {['LOW', 'MEDIUM', 'HIGH', 'URGENT'].map((priority) => (
-                    <TouchableOpacity
-                      key={priority}
-                      style={[
-                        styles.priorityButton,
-                        formData.priority === priority && styles.priorityButtonActive,
-                      ]}
-                      onPress={() => handleInputChange('priority', priority)}>
-                      <Text style={[
-                        styles.priorityButtonText,
-                        formData.priority === priority && styles.priorityButtonTextActive,
-                      ]}>
-                        {priority}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            </AccordionSection>
-
-            {/* Facility & Location Section */}
-            <AccordionSection
-              title="Facility & Location"
-              icon="hospital"
-              isExpanded={expandedSections.facilityLocation}
-              onToggle={() => toggleSection('facilityLocation')}
-              isComplete={isSectionComplete('facilityLocation')}>
-              <InputField
-                label="Facility Name"
-                value={formData.facilityName}
-                onChangeText={(text) => handleInputChange('facilityName', text)}
-                error={validationErrors.facilityName}
-              />
-
-              <HospitalDropdown
-                open={hospitalDropdownOpen}
-                setOpen={(open) => {
-                  setHospitalDropdownOpen(open);
-                  if (open) {
-                    setDepartmentDropdownOpen(false);
-                    setSpecializationDropdownOpen(false);
-                    setUnitDropdownOpen(false);
-                  }
-                }}
-                value={formData.hospitalId}
-                setValue={(callback) => {
-                  const newValue = callback(formData.hospitalId);
-                  handleInputChange('hospitalId', newValue);
-                }}
-                items={hospitals.map(hospital => ({
-                  label: hospital.name,
-                  value: hospital.id.toString(),
-                }))}
-                loading={loadingHospitals}
-                styles={styles}
-                error={validationErrors.hospitalId}
-              />
-
-              <UnitDropdown
-                open={unitDropdownOpen}
-                setOpen={(open) => {
-                  setUnitDropdownOpen(open);
-                  if (open) {
-                    setDepartmentDropdownOpen(false);
-                    setSpecializationDropdownOpen(false);
-                    setHospitalDropdownOpen(false);
-                  }
-                }}
-                value={formData.unitCode}
-                setValue={(callback) => {
-                  const newValue = callback(formData.unitCode);
-                  handleInputChange('unitCode', newValue);
-                }}
-                items={units.map(unit => ({
-                  label: unit.name,
-                  value: unit.code,
-                }))}
-                loading={loadingUnits}
-                disabled={!formData.hospitalId || units.length === 0}
-                styles={styles}
-                error={validationErrors.unitCode}
-              />
-
-              <InputField
-                label="Street Address"
-                value={formData.facilityStreet}
-                onChangeText={(text) => handleInputChange('facilityStreet', text)}
-                error={validationErrors.facilityStreet}
-              />
-
-              <View style={styles.row}>
-                <View style={styles.halfWidth}>
-                  <StateDropdown
-                    open={stateDropdownOpen}
-                    setOpen={(open) => {
-                      setStateDropdownOpen(open);
-                      if (open) {
-                        setDepartmentDropdownOpen(false);
-                        setSpecializationDropdownOpen(false);
-                        setHospitalDropdownOpen(false);
-                        setUnitDropdownOpen(false);
-                        setCityDropdownOpen(false);
-                        setCountryDropdownOpen(false);
-                      }
-                    }}
-                    value={formData.facilityState}
-                    setValue={(callback) => {
-                      const newValue = callback(formData.facilityState);
-                      handleInputChange('facilityState', newValue);
-                    }}
-                    items={Object.keys(stateCityMapping).map(state => ({
-                      label: state,
-                      value: state,
-                    }))}
-                    styles={styles}
-                    error={validationErrors.facilityState}
-                  />
-                </View>
-                <View style={styles.halfWidth}>
-                  <CityDropdown
-                    open={cityDropdownOpen}
-                    setOpen={(open) => {
-                      setCityDropdownOpen(open);
-                      if (open) {
-                        setDepartmentDropdownOpen(false);
-                        setSpecializationDropdownOpen(false);
-                        setHospitalDropdownOpen(false);
-                        setUnitDropdownOpen(false);
-                        setStateDropdownOpen(false);
-                        setCountryDropdownOpen(false);
-                      }
-                    }}
-                    value={formData.facilityCity}
-                    setValue={(callback) => {
-                      const newValue = callback(formData.facilityCity);
-                      handleInputChange('facilityCity', newValue);
-                    }}
-                    items={(stateCityMapping[formData.facilityState] || []).map(city => ({
-                      label: city,
-                      value: city,
-                    }))}
-                    styles={styles}
-                    error={validationErrors.facilityCity}
-                    disabled={!formData.facilityState}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.row}>
-                <View style={styles.halfWidth}>
-                  <InputField
-                    label="ZIP Code"
-                    value={formData.facilityZipCode}
-                    onChangeText={(text) => handleInputChange('facilityZipCode', text)}
-                    keyboardType="numeric"
-                    error={validationErrors.facilityZipCode}
-                  />
-                </View>
-                <View style={styles.halfWidth}>
-                  <CountryDropdown
-                    open={countryDropdownOpen}
-                    setOpen={(open) => {
-                      setCountryDropdownOpen(open);
-                      if (open) {
-                        setDepartmentDropdownOpen(false);
-                        setSpecializationDropdownOpen(false);
                         setHospitalDropdownOpen(false);
                         setUnitDropdownOpen(false);
                         setStateDropdownOpen(false);
                         setCityDropdownOpen(false);
+                        setCountryDropdownOpen(false);
                       }
                     }}
-                    value={formData.facilityCountry}
+                    value={formData.department}
                     setValue={(callback) => {
-                      const newValue = callback(formData.facilityCountry);
-                      handleInputChange('facilityCountry', newValue);
+                      const newValue = callback(formData.department);
+                      handleInputChange('department', newValue);
                     }}
-                    items={countryList.map(country => ({
-                      label: country,
-                      value: country,
-                    }))}
+                    items={medicalDepartments.map(dept => ({ label: dept, value: dept }))}
                     styles={styles}
-                  />
-                </View>
-              </View>
-            </AccordionSection>
-
-            {/* Contact Information Section */}
-            <AccordionSection
-              title="Contact Information"
-              icon="phone"
-              isExpanded={expandedSections.contactInfo}
-              onToggle={() => toggleSection('contactInfo')}
-              isComplete={isSectionComplete('contactInfo')}>
-              <InputField
-                label="Contact Name"
-                value={formData.contactName}
-                onChangeText={(text) => handleInputChange('contactName', text)}
-                error={validationErrors.contactName}
-              />
-
-              <View style={styles.row}>
-                <View style={styles.halfWidth}>
-                  <InputField
-                    label="Contact Phone"
-                    value={formData.contactPhone}
-                    onChangeText={(text) => handleInputChange('contactPhone', text)}
-                    keyboardType="phone-pad"
-                    error={validationErrors.contactPhone}
-                  />
-                </View>
-                <View style={styles.halfWidth}>
-                  <InputField
-                    label="Contact Email"
-                    value={formData.contactEmail}
-                    onChangeText={(text) => handleInputChange('contactEmail', text)}
-                    keyboardType="email-address"
-                    error={validationErrors.contactEmail}
+                    error={validationErrors.department}
                   />
                 </View>
               </View>
 
-              <InputField
-                label="Contact Position"
-                value={formData.contactPosition}
-                onChangeText={(text) => handleInputChange('contactPosition', text)}
-                error={validationErrors.contactPosition}
-              />
-            </AccordionSection>
-
-            {/* Requirements & Benefits Section */}
-            <AccordionSection
-              title="Requirements & Benefits"
-              icon="clipboard-list"
-              isExpanded={expandedSections.requirementsBenefits}
-              onToggle={() => toggleSection('requirementsBenefits')}
-              isComplete={isSectionComplete('requirementsBenefits')}>
-              <InputField
-                label="Experience Required"
-                value={formData.experience}
-                onChangeText={(text) => handleInputChange('experience', text)}
-                maxWords={150}
-                error={validationErrors.experience}
-              />
-
-              <InputField
-                label="Required Skills (comma-separated)"
-                value={formData.skills}
-                onChangeText={(text) => handleInputChange('skills', text)}
-                maxWords={150}
+              {/* Skills – multi-select based on department */}
+              <SkillsDropdown
+                open={skillsDropdownOpen}
+                setOpen={setSkillsDropdownOpen}
+                department={formData.department}
+                value={(formData.skills ? String(formData.skills).split(',').map(s => s.trim()).filter(Boolean) : []) as string[]}
+                setValue={(cb) => {
+                  const prev = (formData.skills ? String(formData.skills).split(',').map(s => s.trim()).filter(Boolean) : []) as string[];
+                  const next = cb(prev);
+                  handleInputChange('skills', next.join(', '));
+                }}
+                styles={styles}
                 error={validationErrors.skills}
-              />
+            />
 
-              <View style={styles.checkboxSection}>
-                <Text style={styles.inputLabel}>Benefits</Text>
+            <View style={styles.checkboxSection}>
+              <Text style={styles.inputLabel}>Benefits</Text>
                 {formData.requiredRole === 'DOCTOR' ? (
                   <>
                     <CheckboxField
@@ -1869,62 +2071,62 @@ const CreateJobScreen: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <CheckboxField
-                      label="Meal Allowance"
-                      value={formData.mealAllowance}
-                      onValueChange={(value) => handleInputChange('mealAllowance', value)}
-                    />
-                    <CheckboxField
-                      label="Parking"
-                      value={formData.parking}
-                      onValueChange={(value) => handleInputChange('parking', value)}
-                    />
-                    <CheckboxField
-                      label="Malpractice Insurance"
-                      value={formData.malpractice}
-                      onValueChange={(value) => handleInputChange('malpractice', value)}
-                    />
+              <CheckboxField
+                label="Meal Allowance"
+                value={formData.mealAllowance}
+                onValueChange={(value) => handleInputChange('mealAllowance', value)}
+              />
+              <CheckboxField
+                label="Parking"
+                value={formData.parking}
+                onValueChange={(value) => handleInputChange('parking', value)}
+              />
+              <CheckboxField
+                label="Malpractice Insurance"
+                value={formData.malpractice}
+                onValueChange={(value) => handleInputChange('malpractice', value)}
+              />
                   </>
                 )}
-              </View>
+            </View>
 
-            </AccordionSection>
+          </AccordionSection>
 
-            {/* Additional Information Section */}
-            <AccordionSection
-              title="Additional Information"
-              icon="info-circle"
-              isExpanded={expandedSections.additionalInfo}
-              onToggle={() => toggleSection('additionalInfo')}
-              isComplete={isSectionComplete('additionalInfo')}>
-              <InputField
-                label="Additional Notes"
-                value={formData.notes}
-                onChangeText={(text) => handleInputChange('notes', text)}
-                multiline={true}
-                numberOfLines={3}
+          {/* Additional Information Section */}
+          <AccordionSection
+            title="Additional Information"
+            icon="info-circle"
+            isExpanded={expandedSections.additionalInfo}
+            onToggle={() => toggleSection('additionalInfo')}
+            isComplete={isSectionComplete('additionalInfo')}>
+            <InputField
+              label="Additional Notes"
+              value={formData.notes}
+              onChangeText={(text) => handleInputChange('notes', text)}
+              multiline={true}
+              numberOfLines={3}
                 error={validationErrors.notes}
-              />
-            </AccordionSection>
+            />
+          </AccordionSection>
 
-            <TouchableOpacity
-              style={[styles.createButton, isLoading && styles.createButtonDisabled]}
-              onPress={handleCreateJob}
-              disabled={isLoading}>
-              {isLoading ? (
-                <ActivityIndicator color={Colors.white} />
-              ) : (
-                <Text style={styles.createButtonText}>Create Job</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
+          <TouchableOpacity
+            style={[styles.createButton, isLoading && styles.createButtonDisabled]}
+            onPress={handleCreateJob}
+            disabled={isLoading}>
+            {isLoading ? (
+              <ActivityIndicator color={Colors.white} />
+            ) : (
+              <Text style={styles.createButtonText}>Create Job</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
       </KeyboardAvoidingView>
-      <ToastModal
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onClose={() => setToast({ ...toast, visible: false })}
+      <ToastModal 
+        visible={toast.visible} 
+        message={toast.message} 
+        type={toast.type} 
+        onClose={() => setToast({ ...toast, visible: false })} 
       />
 
       {/* Success Modal */}
@@ -1932,7 +2134,7 @@ const CreateJobScreen: React.FC = () => {
         <Modal transparent visible={showSuccessModal} animationType="none" statusBarTranslucent>
           <View style={styles.modalOverlay}>
             <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={handleSuccessDone} />
-            <Animated.View
+            <Animated.View 
               style={[
                 styles.modalContainer,
                 {
@@ -1940,76 +2142,76 @@ const CreateJobScreen: React.FC = () => {
                 }
               ]}
             >
-              <View style={styles.modalIconContainer}>
-                {/* Sparkles around checkmark */}
-                <Animated.View
-                  style={[
-                    styles.sparkle,
-                    styles.sparkle1,
-                    {
-                      transform: [{ scale: sparkleScale1 }]
-                    }
-                  ]}
-                >
-                  <FontAwesomeIcon icon="star" size={20} color="#FFD700" />
-                </Animated.View>
-
-                <Animated.View
-                  style={[
-                    styles.sparkle,
-                    styles.sparkle2,
-                    {
-                      transform: [{ scale: sparkleScale2 }]
-                    }
-                  ]}
-                >
-                  <FontAwesomeIcon icon="star" size={18} color="#C0C0C0" />
-                </Animated.View>
-
-                <Animated.View
-                  style={[
-                    styles.sparkle,
-                    styles.sparkle3,
-                    {
-                      transform: [{ scale: sparkleScale3 }]
-                    }
-                  ]}
-                >
-                  <FontAwesomeIcon icon="star" size={18} color="#FFB6C1" />
-                </Animated.View>
-
-                <Animated.View
-                  style={[
-                    styles.sparkle,
-                    styles.sparkle4,
-                    {
-                      transform: [{ scale: sparkleScale4 }]
-                    }
-                  ]}
-                >
-                  <FontAwesomeIcon icon="star" size={16} color="#87CEEB" />
-                </Animated.View>
-
-                {/* Checkmark */}
-                <Animated.View
-                  style={{
-                    transform: [{ scale: checkmarkScale }]
-                  }}
-                >
-                  <FontAwesomeIcon icon="check-circle" size={Responsive.iconSize(64)} color="#4CAF50" />
-                </Animated.View>
-              </View>
-
-              <Text style={styles.modalTitle}>Job Created Successfully!</Text>
-
-              <Text style={styles.modalMessage}>
-                Your job posting has been created and is now live. Compatible healthcare professionals will be notified and can apply.
-              </Text>
-
-              <TouchableOpacity style={styles.modalDoneButton} onPress={handleSuccessDone}>
-                <Text style={styles.modalDoneButtonText}>Done</Text>
-              </TouchableOpacity>
-            </Animated.View>
+            <View style={styles.modalIconContainer}>
+              {/* Sparkles around checkmark */}
+              <Animated.View 
+                style={[
+                  styles.sparkle,
+                  styles.sparkle1,
+                  {
+                    transform: [{ scale: sparkleScale1 }]
+                  }
+                ]}
+              >
+                <FontAwesomeIcon icon="star" size={20} color="#FFD700" />
+              </Animated.View>
+              
+              <Animated.View 
+                style={[
+                  styles.sparkle,
+                  styles.sparkle2,
+                  {
+                    transform: [{ scale: sparkleScale2 }]
+                  }
+                ]}
+              >
+                <FontAwesomeIcon icon="star" size={18} color="#C0C0C0" />
+              </Animated.View>
+              
+              <Animated.View 
+                style={[
+                  styles.sparkle,
+                  styles.sparkle3,
+                  {
+                    transform: [{ scale: sparkleScale3 }]
+                  }
+                ]}
+              >
+                <FontAwesomeIcon icon="star" size={18} color="#FFB6C1" />
+              </Animated.View>
+              
+              <Animated.View 
+                style={[
+                  styles.sparkle,
+                  styles.sparkle4,
+                  {
+                    transform: [{ scale: sparkleScale4 }]
+                  }
+                ]}
+              >
+                <FontAwesomeIcon icon="star" size={16} color="#87CEEB" />
+              </Animated.View>
+              
+              {/* Checkmark */}
+              <Animated.View
+                style={{
+                  transform: [{ scale: checkmarkScale }]
+                }}
+              >
+                <FontAwesomeIcon icon="check-circle" size={Responsive.iconSize(64)} color="#4CAF50" />
+              </Animated.View>
+            </View>
+            
+            <Text style={styles.modalTitle}>Job Created Successfully!</Text>
+            
+            <Text style={styles.modalMessage}>
+              Your job posting has been created and is now live. Compatible healthcare professionals will be notified and can apply.
+            </Text>
+            
+            <TouchableOpacity style={styles.modalDoneButton} onPress={handleSuccessDone}>
+              <Text style={styles.modalDoneButtonText}>Done</Text>
+            </TouchableOpacity>
+          </Animated.View>
           </View>
         </Modal>
       )}
@@ -2303,6 +2505,32 @@ const styles = StyleSheet.create({
   dropdownListItemStyle: {
     fontSize: Typography.fontSize.base,
     color: Colors.textPrimary,
+  },
+  dropdownListItemContainer: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  dropdownSelectedItemContainer: {
+    backgroundColor: Colors.primary + '10',
+  },
+  dropdownSelectedItemLabel: {
+    fontFamily: Typography.fontFamily.medium,
+    color: Colors.primary,
+  },
+  dropdownModalTitle: {
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily.bold,
+    color: Colors.textPrimary,
+  },
+  dropdownSmallModal: {
+    alignSelf: 'stretch',
+    width: '100%',
+    marginTop: 'auto',
+    maxHeight: '60%',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingBottom: 8,
   },
   dropdownArrowContainer: {
     justifyContent: 'center',
