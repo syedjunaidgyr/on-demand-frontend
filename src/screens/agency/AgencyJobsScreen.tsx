@@ -23,7 +23,6 @@ import { FontAwesomeIcon } from '../../utils/icons';
 import { Colors } from '../../constants/colors';
 import Responsive from '../../utils/responsive';
 import GlobalHeader from '../../components/GlobalHeader';
-import HRFooterNavigation from '../../components/HRFooterNavigation';
 import { Job } from '../../types';
 import { useAuth } from '../../navigation/AppNavigator';
 
@@ -433,21 +432,6 @@ const AgencyJobsScreen: React.FC = () => {
         scrollEventThrottle={16}
       />
 
-      <HRFooterNavigation 
-        activeRoute="Jobs" 
-        scrollY={scrollY}
-        isLoading={isLoading}
-        todaysJobsCount={jobs.filter(j => {
-          try {
-            if (!j.startDate) return false;
-            const d = new Date(j.startDate);
-            const t = new Date();
-            return d.getFullYear() === t.getFullYear() && d.getMonth() === t.getMonth() && d.getDate() === t.getDate();
-          } catch {
-            return false;
-          }
-        }).length}
-      />
 
       <AssignBottomSheet
         visible={assignVisible}

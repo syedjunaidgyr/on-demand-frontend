@@ -733,15 +733,15 @@ const CheckInOutScreen: React.FC = () => {
     });
 
     return (
-      <View style={styles.assignmentCard}>
+    <View style={styles.assignmentCard}>
         <View style={styles.cardTopRow}>
           <Text style={styles.cardTimeText} numberOfLines={1}>
             {startDateText}{timeRangeText ? `, ${timeRangeText}` : ''}
           </Text>
           <View style={[styles.topStatusPill, { backgroundColor: statusCfg.color }]}> 
             <Text style={styles.topStatusText}>{statusCfg.text}</Text>
-          </View>
         </View>
+            </View>
         <View style={styles.cardDivider} />
 
         <View style={styles.profileRow}>
@@ -759,7 +759,7 @@ const CheckInOutScreen: React.FC = () => {
               {!!location && (
                 <Text style={styles.subtitleText} numberOfLines={1}>{location}</Text>
               )}
-            </View>
+      </View>
 
             <View style={styles.assignmentRow}>
               {!!priority && (
@@ -767,8 +767,8 @@ const CheckInOutScreen: React.FC = () => {
                   <Text style={styles.infoLabel}>Priority</Text>
                   <View style={[styles.priorityBadgeInline, { backgroundColor: getPriorityColor(priority) + '20', borderColor: getPriorityColor(priority) }]}>
                     <Text style={[styles.priorityBadgeTextInline, { color: getPriorityColor(priority) }]} numberOfLines={1}>{priority}</Text>
-                  </View>
-                </View>
+        </View>
+        </View>
               )}
               {!!requiredRole && (
                 <View style={styles.infoCol}>
@@ -780,27 +780,27 @@ const CheckInOutScreen: React.FC = () => {
                 <Text style={styles.infoLabel}>Rate</Text>
                 <Text style={styles.infoValue} numberOfLines={1} ellipsizeMode="tail">₹{typeof hourlyRate === 'string' ? hourlyRate : String(hourlyRate)}/hr</Text>
               </View>
-            </View>
+        </View>
 
             {!!department && (
               <View style={styles.priorityRow}>
                 <Text style={styles.infoLabel}>Department</Text>
                 <Text style={styles.infoValue} numberOfLines={1} ellipsizeMode="tail">{department}</Text>
-              </View>
-            )}
+          </View>
+        )}
 
             {!!job.description && (
               <Text style={[styles.assignmentDescription, { marginTop: Spacing.sm }]} numberOfLines={4}>
                 {job.description}
-              </Text>
+          </Text>
             )}
-          </View>
         </View>
+      </View>
 
         {/* Activity Actions - Add and View */}
         {canAddActivity && (
           <View style={styles.activityActionsRow}>
-            <TouchableOpacity
+              <TouchableOpacity
               style={styles.addActivityButton}
               onPress={() => {
                 setActivityAssignmentId(assignment.id);
@@ -810,8 +810,8 @@ const CheckInOutScreen: React.FC = () => {
             >
               <FontAwesomeIcon icon="plus" size={Responsive.iconSize(16)} color={Colors.white} />
               <Text style={styles.addActivityButtonText}>Add Activity</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+              </TouchableOpacity>
+              <TouchableOpacity
               style={styles.viewActivitiesButton}
               onPress={async () => {
                 try {
@@ -829,13 +829,13 @@ const CheckInOutScreen: React.FC = () => {
               <FontAwesomeIcon icon="list" size={Responsive.iconSize(16)} color={Colors.primary} />
               <Text style={styles.viewActivitiesButtonText}>View Activities</Text>
             </TouchableOpacity>
-          </View>
+      </View>
         )}
 
         {/* Per-card actions removed; use floating button */}
         <View style={styles.checkInOutActions} />
-      </View>
-    );
+    </View>
+  );
   };
 
   if (isLoading) {

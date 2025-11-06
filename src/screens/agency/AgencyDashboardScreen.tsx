@@ -270,7 +270,6 @@ const AgencyDashboardScreen: React.FC = () => {
           </View>
         </ScrollView>
 
-        <HRFooterNavigation activeRoute="Dashboard" scrollY={undefined as any} isLoading={isLoading} />
       </View>
     </SafeAreaView>
   );

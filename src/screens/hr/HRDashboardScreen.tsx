@@ -21,7 +21,6 @@ import { useAppColors } from '../../hooks/useAppColors';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import LinearGradient from 'react-native-linear-gradient';
-import HRFooterNavigation from '../../components/HRFooterNavigation';
 
 import ApiService from '../../services/api';
 import { useAuth } from '../../navigation/AppNavigator';
@@ -86,6 +85,10 @@ const HRDashboardScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showLoginSuccessModal, setShowLoginSuccessModal] = useState(false);
+  // Smooth modal animations
+  const loginModalOpacity = React.useRef(new Animated.Value(0)).current;
+  const loginModalScale = React.useRef(new Animated.Value(0.95)).current;
+  const loginModalTimerRef = React.useRef<any>(null);
   // Pending check-in approvals
   const [showApprovalsModal, setShowApprovalsModal] = useState(false);
   const [pendingCheckIns, setPendingCheckIns] = useState<any[]>([]);
@@ -113,6 +116,37 @@ const HRDashboardScreen: React.FC = () => {
       } catch {}
     })();
   }, []);
+
+  // Animate login success modal in/out for smoother UX
+  useEffect(() => {
+    if (showLoginSuccessModal) {
+      loginModalOpacity.setValue(0);
+      loginModalScale.setValue(0.95);
+      Animated.parallel([
+        Animated.timing(loginModalOpacity, { toValue: 1, duration: 180, useNativeDriver: true }),
+        Animated.spring(loginModalScale, { toValue: 1, useNativeDriver: true })
+      ]).start();
+
+      // Auto-close after 3 seconds
+      if (loginModalTimerRef.current) {
+        clearTimeout(loginModalTimerRef.current);
+      }
+      loginModalTimerRef.current = setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(loginModalOpacity, { toValue: 0, duration: 150, useNativeDriver: true }),
+          Animated.timing(loginModalScale, { toValue: 0.95, duration: 150, useNativeDriver: true })
+        ]).start(() => setShowLoginSuccessModal(false));
+      }, 1000);
+    } else {
+      // Reset values so next open animates in
+      loginModalOpacity.setValue(0);
+      loginModalScale.setValue(0.95);
+      if (loginModalTimerRef.current) {
+        clearTimeout(loginModalTimerRef.current);
+        loginModalTimerRef.current = null;
+      }
+    }
+  }, [showLoginSuccessModal, loginModalOpacity, loginModalScale]);
 
   const loadDashboardData = async () => {
     try {
@@ -348,7 +382,7 @@ const HRDashboardScreen: React.FC = () => {
           <Text style={styles.iconStatValue}>{value.toLocaleString()}</Text>
         </View>
       </View>
-      <Text style={styles.iconStatTitle}>{title}</Text>
+      <Text style={styles.iconStatTitle} numberOfLines={1} ellipsizeMode="tail">{title}</Text>
     </TouchableOpacity>
   );
 
@@ -748,7 +782,6 @@ const HRDashboardScreen: React.FC = () => {
         <Image source={require('../../assets/footer_logo.png')} style={styles.companyLogo} resizeMode="contain" />
       </View>
 
-      <HRFooterNavigation activeRoute="Dashboard" scrollY={scrollY} isLoading={isLoading} />
       </View>
 
       {/* Login Success Modal (same style as LoginScreen) */}
@@ -756,11 +789,25 @@ const HRDashboardScreen: React.FC = () => {
         transparent
         visible={showLoginSuccessModal}
         animationType="fade"
-        onRequestClose={() => setShowLoginSuccessModal(false)}
+        onRequestClose={() => {
+          Animated.parallel([
+            Animated.timing(loginModalOpacity, { toValue: 0, duration: 150, useNativeDriver: true }),
+            Animated.timing(loginModalScale, { toValue: 0.95, duration: 150, useNativeDriver: true })
+          ]).start(() => setShowLoginSuccessModal(false));
+        }}
       >
         <View style={styles.modalOverlay}>
-          <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowLoginSuccessModal(false)} />
-          <View style={styles.modalContent}>
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => {
+              Animated.parallel([
+                Animated.timing(loginModalOpacity, { toValue: 0, duration: 150, useNativeDriver: true }),
+                Animated.timing(loginModalScale, { toValue: 0.95, duration: 150, useNativeDriver: true })
+              ]).start(() => setShowLoginSuccessModal(false));
+            }}
+          />
+          <Animated.View style={[styles.modalContent, { opacity: loginModalOpacity, transform: [{ scale: loginModalScale }] }] }>
             <View style={styles.successIconContainer}>
               <FontAwesomeIcon 
                 icon="check-circle" 
@@ -770,13 +817,7 @@ const HRDashboardScreen: React.FC = () => {
             </View>
             <Text style={styles.successTitle}>Login Successful!</Text>
             <Text style={styles.successMessage}>Welcome back! You have successfully signed in.</Text>
-            <TouchableOpacity
-              style={styles.modalDoneButton}
-              onPress={() => setShowLoginSuccessModal(false)}
-            >
-              <Text style={styles.modalDoneButtonText}>Done</Text>
-            </TouchableOpacity>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
     </SafeAreaView>

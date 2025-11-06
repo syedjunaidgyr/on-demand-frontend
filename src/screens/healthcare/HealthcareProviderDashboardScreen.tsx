@@ -19,7 +19,6 @@ import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import LinearGradient from 'react-native-linear-gradient';
 import GlobalHeader from '../../components/GlobalHeader';
-import HRFooterNavigation from '../../components/HRFooterNavigation';
 
 import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
@@ -36,6 +35,7 @@ import {
 } from '../../components/SkeletonComponents';
 import { useGlobalStyles } from '../../theme/globalStyles';
 import { useAppColors } from '../../hooks/useAppColors';
+import HRFooterNavigation from '../../components/HRFooterNavigation';
 
 const HealthcareProviderDashboardScreen: React.FC = () => {
   const navigation = useNavigation();
