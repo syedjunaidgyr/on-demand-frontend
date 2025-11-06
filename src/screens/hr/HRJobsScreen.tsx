@@ -23,7 +23,6 @@ import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import LinearGradient from 'react-native-linear-gradient';
 import GlobalHeader from '../../components/GlobalHeader';
-import HRFooterNavigation from '../../components/HRFooterNavigation';
 
 import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
@@ -629,22 +628,6 @@ const HRJobsScreen: React.FC = () => {
           </View>
         </TouchableOpacity>
       )}
-      
-      <HRFooterNavigation 
-        activeRoute="Jobs" 
-        scrollY={scrollY}
-        isLoading={isLoading}
-        todaysJobsCount={jobs.filter(j => {
-          try {
-            if (!j.startDate) return false;
-            const d = new Date(j.startDate);
-            const t = new Date();
-            return d.getFullYear() === t.getFullYear() && d.getMonth() === t.getMonth() && d.getDate() === t.getDate();
-          } catch {
-            return false;
-          }
-        }).length}
-      />
       <AssignBottomSheet
         visible={assignVisible}
         onClose={() => setAssignVisible(false)}

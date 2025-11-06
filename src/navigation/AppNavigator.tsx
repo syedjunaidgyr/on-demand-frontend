@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { NavigationContainer, DefaultTheme as NavDefaultTheme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { TransitionPresets } from '@react-navigation/bottom-tabs';
 import { FontAwesomeIcon } from '../utils/icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -63,6 +64,7 @@ import AdminHospitalManagementScreen from '../screens/admin/AdminHospitalManagem
 import GeolocationTest from '../components/GeolocationTest';
 
 import { Colors } from '../constants/colors';
+import { Typography } from '../constants/typography';
 import { User, Job, JobAssignment } from '../types';
 import { setGlobalLogoutHandler } from '../services/api';
 import { NotificationProvider, setGlobalRefreshNotifications } from '../contexts/NotificationContext';
@@ -186,9 +188,25 @@ const HRTabNavigator = () => {
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.textTertiary,
         tabBarStyle: {
-          display: 'none',
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 1,
+          borderTopColor: '#E5E7EB',
+          paddingBottom: 8,
+          paddingTop: 8,
+          height: 60,
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontFamily: Typography.fontFamily.medium,
+          marginTop: 4,
         },
         headerShown: false,
+        ...TransitionPresets.FadeTransition,
       })}>
       <MainTab.Screen name="HRDashboard" component={HRDashboardScreen} options={{ title: 'Dashboard' }} />
       <MainTab.Screen name="HRJobs" component={HRJobsScreen} options={{ title: 'Jobs' }} />
@@ -223,9 +241,25 @@ const HealthcareProviderTabNavigator = () => {
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.textTertiary,
         tabBarStyle: {
-          display: 'none',
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 1,
+          borderTopColor: '#E5E7EB',
+          paddingBottom: 8,
+          paddingTop: 8,
+          height: 60,
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontFamily: Typography.fontFamily.medium,
+          marginTop: 4,
         },
         headerShown: false,
+        ...TransitionPresets.FadeTransition,
       })}>
       <MainTab.Screen name="HealthcareProviderDashboard" component={HealthcareProviderDashboardScreen} options={{ title: 'Dashboard' }} />
       <MainTab.Screen name="Assignments" component={AssignmentScreen} options={{ title: 'Job Assignments' }} />
@@ -260,9 +294,25 @@ const AgencyTabNavigator = () => {
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.textTertiary,
         tabBarStyle: {
-          display: 'none',
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 1,
+          borderTopColor: '#E5E7EB',
+          paddingBottom: 8,
+          paddingTop: 8,
+          height: 60,
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontFamily: Typography.fontFamily.medium,
+          marginTop: 4,
         },
         headerShown: false,
+        ...TransitionPresets.FadeTransition,
       })}>
       <MainTab.Screen name="AgencyDashboard" component={AgencyDashboardScreen} options={{ title: 'Dashboard' }} />
       <MainTab.Screen name="AgencyJobs" component={AgencyJobsScreen} options={{ title: 'Jobs' }} />
@@ -297,9 +347,25 @@ const HospitalAdminTabNavigator = () => {
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.textTertiary,
         tabBarStyle: {
-          display: 'none',
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 1,
+          borderTopColor: '#E5E7EB',
+          paddingBottom: 8,
+          paddingTop: 8,
+          height: 60,
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontFamily: Typography.fontFamily.medium,
+          marginTop: 4,
         },
         headerShown: false,
+        ...TransitionPresets.FadeTransition,
       })}>
       <MainTab.Screen name="HospitalAdminDashboard" component={HospitalAdminDashboardScreen} options={{ title: 'Dashboard' }} />
       <MainTab.Screen name="HospitalAdminJobs" component={HospitalAdminJobsScreen as any} options={{ title: 'Jobs' }} />

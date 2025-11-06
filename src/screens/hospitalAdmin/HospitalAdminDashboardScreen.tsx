@@ -6,7 +6,6 @@ import LinearGradient from 'react-native-linear-gradient';
 import { FontAwesomeIcon } from '../../utils/icons';
 import { Typography } from '../../constants/typography';
 import Responsive from '../../utils/responsive';
-import HRFooterNavigation from '../../components/HRFooterNavigation';
 import { useGlobalStyles } from '../../theme/globalStyles';
 import { Colors } from '../../constants/colors';
 import { useAppColors } from '../../hooks/useAppColors';
@@ -475,7 +474,6 @@ const HospitalAdminDashboardScreen: React.FC = () => {
         <Image source={require('../../assets/footer_logo.png')} style={styles.companyLogo} resizeMode="contain" />
       </View>
 
-      <HRFooterNavigation activeRoute="Dashboard" scrollY={scrollY} isLoading={isLoading} />
       </View>
     </SafeAreaView>
   );

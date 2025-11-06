@@ -19,7 +19,6 @@ import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import LinearGradient from 'react-native-linear-gradient';
 import GlobalHeader from '../../components/GlobalHeader';
-import HRFooterNavigation from '../../components/HRFooterNavigation';
 
 import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
@@ -1151,7 +1150,6 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
         <Image source={require('../../assets/footer_logo.png')} style={styles.companyLogo} resizeMode="contain" />
       </View>
 
-      <HRFooterNavigation activeRoute="Dashboard" scrollY={scrollY} isLoading={isLoading} />
         </View>
       </SafeAreaView>
     </View>

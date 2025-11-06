@@ -19,7 +19,6 @@ import { Typography } from '../../constants/typography';
 import { Colors } from '../../constants/colors';
 import Responsive from '../../utils/responsive';
 import { useGlobalStyles } from '../../theme/globalStyles';
-import HRFooterNavigation from '../../components/HRFooterNavigation';
 import ApiService from '../../services/api';
 import { useNotifications } from '../../contexts/NotificationContext';
 
@@ -266,7 +265,6 @@ const AgencyDashboardScreen: React.FC = () => {
           </View>
         </ScrollView>
 
-        <HRFooterNavigation activeRoute="Dashboard" scrollY={undefined as any} isLoading={isLoading} />
       </View>
     </SafeAreaView>
   );

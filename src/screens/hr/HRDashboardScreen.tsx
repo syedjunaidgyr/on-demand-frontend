@@ -20,7 +20,6 @@ import { useGlobalStyles } from '../../theme/globalStyles';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import LinearGradient from 'react-native-linear-gradient';
-import HRFooterNavigation from '../../components/HRFooterNavigation';
 
 import ApiService from '../../services/api';
 import { useAuth } from '../../navigation/AppNavigator';
@@ -781,7 +780,6 @@ const HRDashboardScreen: React.FC = () => {
         <Image source={require('../../assets/footer_logo.png')} style={styles.companyLogo} resizeMode="contain" />
       </View>
 
-      <HRFooterNavigation activeRoute="Dashboard" scrollY={scrollY} isLoading={isLoading} />
       </View>
 
       {/* Login Success Modal (same style as LoginScreen) */}
