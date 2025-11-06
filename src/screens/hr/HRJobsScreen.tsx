@@ -32,9 +32,13 @@ import ApiService from '../../services/api';
 import Responsive from '../../utils/responsive';
 import { SkeletonJobCard, SkeletonSearchBar } from '../../components/SkeletonComponents';
 import { usePermissions } from '../../hooks/usePermissions';
+import { useGlobalStyles } from '../../theme/globalStyles';
+import { useAppColors } from '../../hooks/useAppColors';
 
 const HRJobsScreen: React.FC = () => {
   const navigation = useNavigation();
+  const g = useGlobalStyles();
+  const appColors = useAppColors();
   const { hasPermission, loading: permissionsLoading } = usePermissions();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -532,21 +536,21 @@ const HRJobsScreen: React.FC = () => {
   });
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" translucent={false} />
+    <SafeAreaView style={g.appBackground}>
+      <StatusBar backgroundColor={appColors.background} barStyle={appColors.background === '#FFFFFF' ? 'dark-content' : 'light-content'} translucent={false} />
       <GlobalHeader 
         title="Job Management"
-        backgroundColor="#FFFFFF"
-        titleColor="#111827"
+        backgroundColor={appColors.accentText}
+        titleColor={appColors.textPrimary}
         onBackPress={() => navigation.goBack()}
         headerStyle={{ paddingTop: 10, paddingHorizontal: 20, paddingBottom: 16 }}
         rightComponent={
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <TouchableOpacity onPress={() => setShowSearch(prev => !prev)} style={styles.headerIconButton}>
-              <FontAwesomeIcon icon="search" size={20} color="#111827" />
+              <FontAwesomeIcon icon="search" size={20} color={appColors.textPrimary} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setFilterVisible(true)} style={styles.headerIconButton}>
-              <FontAwesomeIcon icon="filter" size={20} color="#111827" />
+              <FontAwesomeIcon icon="filter" size={20} color={appColors.textPrimary} />
             </TouchableOpacity>
           </View>
         }
@@ -558,19 +562,19 @@ const HRJobsScreen: React.FC = () => {
       ) : (
         showSearch ? (
           <View style={styles.searchContainer}>
-            <View style={styles.searchBar}>
-              <FontAwesomeIcon icon="search" size={16} color={Colors.textSecondary} />
+            <View style={[styles.searchBar, { backgroundColor: appColors.accentText }]}>
+              <FontAwesomeIcon icon="search" size={16} color={appColors.textSecondary} />
               <TextInput
-                style={styles.searchInput}
+                style={[styles.searchInput, { color: appColors.textPrimary }]}
                 placeholder="Search jobs (title, location, department, etc.)"
-                placeholderTextColor={Colors.textTertiary}
+                placeholderTextColor={appColors.textSecondary}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 autoFocus
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <FontAwesomeIcon icon="times" size={16} color={Colors.textTertiary} />
+                  <FontAwesomeIcon icon="times" size={16} color={appColors.textSecondary} />
                 </TouchableOpacity>
               )}
             </View>
@@ -594,7 +598,7 @@ const HRJobsScreen: React.FC = () => {
         renderItem={({ item }) => <JobCard job={item} />}
         contentContainerStyle={styles.listContainer}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={appColors.primary} colors={[appColors.primary]} />
         }
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
@@ -610,13 +614,13 @@ const HRJobsScreen: React.FC = () => {
 
       {/* Floating Action Button */}
       <TouchableOpacity 
-        style={styles.fab} 
+        style={[styles.fab, { backgroundColor: appColors.primary }]} 
         onPress={handleCreateJob} 
         activeOpacity={0.8}
       >
         <View style={styles.fabContent}>
-          <FontAwesomeIcon icon="plus" size={Responsive.iconSize(20)} color={Colors.white} />
-          <Text style={styles.fabText}>Add Job</Text>
+          <FontAwesomeIcon icon="plus" size={Responsive.iconSize(20)} color={appColors.accentText} />
+          <Text style={[styles.fabText, { color: appColors.accentText }]}>Add Job</Text>
         </View>
       </TouchableOpacity>
       
@@ -1327,7 +1331,6 @@ const FilterBottomSheet = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   loadingContainer: {
     flex: 1,
@@ -1379,13 +1382,11 @@ const styles = StyleSheet.create({
   searchContainer: {
     paddingHorizontal: Responsive.scale(Spacing.md),
     paddingBottom: Responsive.verticalScale(Spacing.xs),
-    backgroundColor: Colors.background,
     marginTop: Responsive.verticalScale(Spacing.md),
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     borderRadius: BorderRadius['2xl'] || BorderRadius.xl,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
@@ -1397,7 +1398,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.regular,
-    color: Colors.textPrimary,
     marginLeft: Spacing.sm,
     paddingVertical: 0,
   },

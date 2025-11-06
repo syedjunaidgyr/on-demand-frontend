@@ -19,6 +19,7 @@ import { Typography } from '../../constants/typography';
 import { Colors } from '../../constants/colors';
 import Responsive from '../../utils/responsive';
 import { useGlobalStyles } from '../../theme/globalStyles';
+import { useAppColors } from '../../hooks/useAppColors';
 import HRFooterNavigation from '../../components/HRFooterNavigation';
 import ApiService from '../../services/api';
 import { useNotifications } from '../../contexts/NotificationContext';
@@ -34,6 +35,7 @@ interface AgencyDashboardData {
 const AgencyDashboardScreen: React.FC = () => {
   const navigation = useNavigation();
   const g = useGlobalStyles();
+  const appColors = useAppColors();
   const { unreadCount } = useNotifications();
   const [data, setData] = useState<AgencyDashboardData | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -93,11 +95,11 @@ const AgencyDashboardScreen: React.FC = () => {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
+      <SafeAreaView style={g.appBackground}>
+        <StatusBar backgroundColor={appColors.background} barStyle={appColors.background === '#FFFFFF' ? 'dark-content' : 'light-content'} />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6366F1" />
-          <Text style={styles.loadingText}>Loading dashboard...</Text>
+          <ActivityIndicator size="large" color={appColors.primary} />
+          <Text style={[styles.loadingText, { color: appColors.textSecondary }]}>Loading dashboard...</Text>
         </View>
       </SafeAreaView>
     );
@@ -105,14 +107,16 @@ const AgencyDashboardScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={g.appBackground}>
-      <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" translucent={false} />
-      <View style={styles.innerContainer}>
+      <StatusBar backgroundColor={appColors.background} barStyle={appColors.background === '#FFFFFF' ? 'dark-content' : 'light-content'} translucent={false} />
+      <View style={[styles.innerContainer, { backgroundColor: appColors.background }]}>
         {/* Header */}
-        <View style={styles.simpleHeader}>
+        <View style={[styles.simpleHeader, { backgroundColor: appColors.accentText }]}>
           <View style={styles.headerContent}>
             <View style={styles.headerLeft}>
-              <Text style={styles.headerGreeting}>Hello <Text style={styles.headerRole}>Agency</Text></Text>
-              <Text style={styles.headerName}>
+              <Text style={[styles.headerGreeting, { color: appColors.textSecondary }]}>
+                Hello <Text style={[styles.headerRole, { color: appColors.primary }]}>Agency</Text>
+              </Text>
+              <Text style={[styles.headerName, { color: appColors.textPrimary }]}>
                 {userProfile ? `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() || 'Welcome back!' : 'Welcome back!'}
               </Text>
             </View>
@@ -148,16 +152,16 @@ const AgencyDashboardScreen: React.FC = () => {
           style={styles.scrollableContent}
           contentContainerStyle={styles.scrollContentContainer}
           showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366F1" colors={["#6366F1"]} />}>
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={appColors.primary} colors={[appColors.primary]} />}>
 
           <View style={styles.dashboardTitleSection}>
-            <Text style={styles.dashboardTitle}>Agency Dashboard</Text>
+            <Text style={[styles.dashboardTitle, { color: appColors.textPrimary }]}>Agency Dashboard</Text>
           </View>
 
           {/* Top stats (styled like HR) */}
           <View style={styles.mainStatsGrid}>
-            <StatCard title="Hospitals Linked" value={data?.hospitals?.total || 0} icon="hospital" />
-            <StatCard title="Upcoming Jobs" value={data?.jobs?.upcoming || 0} icon="briefcase" />
+            <StatCard title="Hospitals Linked" value={data?.hospitals?.total || 0} icon="hospital" appColors={appColors} />
+            <StatCard title="Upcoming Jobs" value={data?.jobs?.upcoming || 0} icon="briefcase" appColors={appColors} />
           </View>
 
           {/* Overview row */}
@@ -181,33 +185,33 @@ const AgencyDashboardScreen: React.FC = () => {
 
           {/* Quick Actions */}
           <View style={styles.quickActionsSection}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
+            <Text style={[styles.sectionTitle, { color: appColors.textPrimary }]}>Quick Actions</Text>
             <View style={styles.quickActionsRow}>
-              <TouchableOpacity style={styles.quickActionCard} onPress={() => (navigation as any).navigate('AgencyNurses')} activeOpacity={0.85}>
+              <TouchableOpacity style={[styles.quickActionCard, { backgroundColor: appColors.accentText }]} onPress={() => (navigation as any).navigate('AgencyNurses')} activeOpacity={0.85}>
                 <View style={[styles.quickIconWrap, { backgroundColor: '#10B98122' }]}>
                   <FontAwesomeIcon icon="user-plus" size={16} color="#10B981" />
                 </View>
-                <Text style={styles.quickTitle}>Onboard Nurse</Text>
-                <Text style={styles.quickSub}>Add nurse to agency</Text>
+                <Text style={[styles.quickTitle, { color: appColors.textPrimary }]}>Onboard Nurse</Text>
+                <Text style={[styles.quickSub, { color: appColors.textSecondary }]}>Add nurse to agency</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.quickActionCard} onPress={() => (navigation as any).navigate('AgencyJobs')} activeOpacity={0.85}>
-                <View style={[styles.quickIconWrap, { backgroundColor: '#2563EB22' }]}>
-                  <FontAwesomeIcon icon="briefcase" size={16} color="#2563EB" />
+              <TouchableOpacity style={[styles.quickActionCard, { backgroundColor: appColors.accentText }]} onPress={() => (navigation as any).navigate('AgencyJobs')} activeOpacity={0.85}>
+                <View style={[styles.quickIconWrap, { backgroundColor: appColors.primary + '22' }]}>
+                  <FontAwesomeIcon icon="briefcase" size={16} color={appColors.primary} />
                 </View>
-                <Text style={styles.quickTitle}>Jobs</Text>
-                <Text style={styles.quickSub}>Browse and assign</Text>
+                <Text style={[styles.quickTitle, { color: appColors.textPrimary }]}>Jobs</Text>
+                <Text style={[styles.quickSub, { color: appColors.textSecondary }]}>Browse and assign</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           {/* Recent Jobs */}
           <View style={styles.listSection}>
-            <Text style={styles.sectionTitle}>Recent Jobs</Text>
-            <View style={styles.listCard}>
+            <Text style={[styles.sectionTitle, { color: appColors.textPrimary }]}>Recent Jobs</Text>
+            <View style={[styles.listCard, { backgroundColor: appColors.accentText }]}>
               {recentJobs.length === 0 ? (
                 <View style={styles.emptyRow}>
-                  <FontAwesomeIcon icon="briefcase" size={14} color="#9CA3AF" />
-                  <Text style={styles.emptyText}>No jobs found</Text>
+                  <FontAwesomeIcon icon="briefcase" size={14} color={appColors.textSecondary} />
+                  <Text style={[styles.emptyText, { color: appColors.textSecondary }]}>No jobs found</Text>
                 </View>
               ) : (
                 recentJobs.map((j: any) => {
@@ -215,15 +219,15 @@ const AgencyDashboardScreen: React.FC = () => {
                   return (
                     <TouchableOpacity key={`job-${j.id}`} style={styles.row} activeOpacity={0.8} onPress={() => (navigation as any).navigate('AgencyJobs')}>
                       <View style={styles.rowLeft}>
-                        <View style={[styles.rowIcon, { backgroundColor: '#2563EB15' }]}>
-                          <FontAwesomeIcon icon="briefcase" size={14} color="#2563EB" />
+                        <View style={[styles.rowIcon, { backgroundColor: appColors.primary + '15' }]}>
+                          <FontAwesomeIcon icon="briefcase" size={14} color={appColors.primary} />
                         </View>
                         <View style={styles.rowTextWrap}>
-                          <Text style={styles.rowTitle} numberOfLines={1}>{j.title || '—'}</Text>
-                          <Text style={styles.rowSub} numberOfLines={1}>{j.location || '—'} · {date}</Text>
+                          <Text style={[styles.rowTitle, { color: appColors.textPrimary }]} numberOfLines={1}>{j.title || '—'}</Text>
+                          <Text style={[styles.rowSub, { color: appColors.textSecondary }]} numberOfLines={1}>{j.location || '—'} · {date}</Text>
                         </View>
                       </View>
-                      <Text style={[styles.badge, { backgroundColor: '#111827', color: '#FFFFFF' }]}>{(j.status || '').toString().replace('_',' ')}</Text>
+                      <Text style={[styles.badge, { backgroundColor: appColors.textPrimary, color: appColors.accentText }]}>{(j.status || '').toString().replace('_',' ')}</Text>
                     </TouchableOpacity>
                   );
                 })
@@ -233,12 +237,12 @@ const AgencyDashboardScreen: React.FC = () => {
 
           {/* Recent Nurses */}
           <View style={styles.listSection}>
-            <Text style={styles.sectionTitle}>Recent Nurses</Text>
-            <View style={styles.listCard}>
+            <Text style={[styles.sectionTitle, { color: appColors.textPrimary }]}>Recent Nurses</Text>
+            <View style={[styles.listCard, { backgroundColor: appColors.accentText }]}>
               {recentNurses.length === 0 ? (
                 <View style={styles.emptyRow}>
-                  <FontAwesomeIcon icon="users" size={14} color="#9CA3AF" />
-                  <Text style={styles.emptyText}>No nurses found</Text>
+                  <FontAwesomeIcon icon="users" size={14} color={appColors.textSecondary} />
+                  <Text style={[styles.emptyText, { color: appColors.textSecondary }]}>No nurses found</Text>
                 </View>
               ) : (
                 recentNurses.map((n: any) => (
@@ -248,11 +252,11 @@ const AgencyDashboardScreen: React.FC = () => {
                         <FontAwesomeIcon icon="user-nurse" size={14} color="#10B981" />
                       </View>
                       <View style={styles.rowTextWrap}>
-                        <Text style={styles.rowTitle} numberOfLines={1}>{`${n.firstName || ''} ${n.lastName || ''}`.trim() || '—'}</Text>
-                        <Text style={styles.rowSub} numberOfLines={1}>{n.email || '—'}</Text>
+                        <Text style={[styles.rowTitle, { color: appColors.textPrimary }]} numberOfLines={1}>{`${n.firstName || ''} ${n.lastName || ''}`.trim() || '—'}</Text>
+                        <Text style={[styles.rowSub, { color: appColors.textSecondary }]} numberOfLines={1}>{n.email || '—'}</Text>
                       </View>
                     </View>
-                    <Text style={[styles.badge, { backgroundColor: '#F3F4F6', color: '#374151' }]}>{(n.role || 'NURSE')}</Text>
+                    <Text style={[styles.badge, { backgroundColor: appColors.background, color: appColors.textPrimary }]}>{(n.role || 'NURSE')}</Text>
                   </TouchableOpacity>
                 ))
               )}
@@ -272,15 +276,15 @@ const AgencyDashboardScreen: React.FC = () => {
   );
 };
 
-const StatCard = ({ title, value, icon }: { title: string; value: number; icon: string }) => (
+const StatCard = ({ title, value, icon, appColors }: { title: string; value: number; icon: string; appColors: any }) => (
   <View style={styles.statCard}>
-    <View style={styles.statContainer}>
+    <View style={[styles.statContainer, { backgroundColor: appColors.accentText }]}>
       <View style={styles.statIconWrapper}>
-        <FontAwesomeIcon icon={icon} size={Responsive.iconSize(22)} color="#1C2A3A" />
+        <FontAwesomeIcon icon={icon} size={Responsive.iconSize(22)} color={appColors.textPrimary} />
       </View>
       <View style={styles.statContent}>
-        <Text style={styles.statValue}>{(value || 0).toLocaleString()}</Text>
-        <Text style={styles.statTitle}>{title}</Text>
+        <Text style={[styles.statValue, { color: appColors.textPrimary }]}>{(value || 0).toLocaleString()}</Text>
+        <Text style={[styles.statTitle, { color: appColors.textPrimary }]}>{title}</Text>
       </View>
     </View>
   </View>
@@ -303,14 +307,11 @@ const IconStatItem = ({ title, value, icon, iconColor = '#3B82F6' }: { title: st
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F9FF',
   },
   innerContainer: {
     flex: 1,
-    backgroundColor: '#F3F9FF',
   },
   simpleHeader: {
-    backgroundColor: '#FFFFFF',
     paddingTop: Platform.OS === 'android' ? 10 : 0,
     paddingHorizontal: 20,
     paddingBottom: 16,
@@ -331,18 +332,15 @@ const styles = StyleSheet.create({
   headerRole: {
     fontSize: 16,
     fontFamily: Typography.fontFamily.medium,
-    color: '#6366F1',
   },
   headerGreeting: {
     fontSize: 16,
     fontFamily: Typography.fontFamily.regular,
-    color: '#6B7280',
     marginBottom: 2,
   },
   headerName: {
     fontSize: 24,
     fontFamily: Typography.fontFamily.bold,
-    color: '#111827',
   },
   headerRight: {
     flexDirection: 'row',
@@ -415,13 +413,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
     fontFamily: Typography.fontFamily.medium,
-    color: '#6B7280',
   },
   dashboardTitleSection: {
     paddingHorizontal: 20,
@@ -431,7 +427,6 @@ const styles = StyleSheet.create({
   dashboardTitle: {
     fontSize: 16,
     fontFamily: Typography.fontFamily.bold,
-    color: '#111827',
     letterSpacing: -0.3,
   },
   mainStatsGrid: {
@@ -446,7 +441,6 @@ const styles = StyleSheet.create({
     minHeight: 100,
   },
   statContainer: {
-    backgroundColor: '#ffffff',
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -464,7 +458,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
@@ -476,14 +469,12 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 28,
     fontFamily: Typography.fontFamily.bold,
-    color: '#1C2A3A',
     lineHeight: 32,
     letterSpacing: -0.5,
   },
   statTitle: {
     fontSize: 13,
     fontFamily: Typography.fontFamily.medium,
-    color: '#1C2A3A',
     marginTop: 2,
     letterSpacing: 0.1,
   },
@@ -546,7 +537,6 @@ const styles = StyleSheet.create({
   iconStatTitle: {
     fontSize: 12,
     fontFamily: Typography.fontFamily.regular,
-    color: '#374151',
     textAlign: 'center',
     lineHeight: 15,
     maxWidth: 80,
@@ -558,7 +548,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontFamily: Typography.fontFamily.bold,
-    color: '#111827',
     marginBottom: 8,
     letterSpacing: -0.3,
   },
@@ -568,7 +557,6 @@ const styles = StyleSheet.create({
   },
   quickActionCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 24,
     minHeight: 120,
@@ -593,14 +581,12 @@ const styles = StyleSheet.create({
   quickTitle: {
     fontSize: 16,
     fontFamily: Typography.fontFamily.bold,
-    color: '#111827',
     marginBottom: 1,
     letterSpacing: -0.2,
   },
   quickSub: {
     fontSize: 13,
     fontFamily: Typography.fontFamily.medium,
-    color: '#6B7280',
     marginTop: 2,
   },
   poweredByContainer: {
@@ -616,7 +602,6 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   listCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -653,13 +638,11 @@ const styles = StyleSheet.create({
   rowTitle: {
     fontSize: 15,
     fontFamily: Typography.fontFamily.medium,
-    color: '#111827',
     marginBottom: 4,
   },
   rowSub: {
     fontSize: 13,
     fontFamily: Typography.fontFamily.regular,
-    color: '#6B7280',
     marginTop: 0,
   },
   badge: {
@@ -680,12 +663,10 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 12,
     fontFamily: Typography.fontFamily.medium,
-    color: '#9CA3AF',
   },
   poweredByText: {
     fontSize: 11,
     fontFamily: Typography.fontFamily.medium,
-    color: '#6B7280',
     marginRight: 6,
   },
   companyLogo: {

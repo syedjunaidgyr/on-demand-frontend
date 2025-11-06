@@ -17,6 +17,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGlobalStyles } from '../../theme/globalStyles';
+import { useAppColors } from '../../hooks/useAppColors';
 import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -75,6 +76,7 @@ interface DashboardStats {
 const HRDashboardScreen: React.FC = () => {
   const navigation = useNavigation();
   const g = useGlobalStyles();
+  const appColors = useAppColors();
   const { unreadCount } = useNotifications();
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
@@ -270,13 +272,13 @@ const HRDashboardScreen: React.FC = () => {
       onPress={onPress}
       disabled={!onPress}
       activeOpacity={0.8}>
-      <View style={styles.statContainer}>
+      <View style={[styles.statContainer, { backgroundColor: appColors.accentText }]}>
         <View style={styles.statIconWrapper}>
-          <FontAwesomeIcon icon={icon} size={Responsive.iconSize(22)} color="#1C2A3A" />
+          <FontAwesomeIcon icon={icon} size={Responsive.iconSize(22)} color={appColors.textPrimary} />
         </View>
         <View style={styles.statContent}>
-          <Text style={styles.statValue}>{value.toLocaleString()}</Text>
-          <Text style={styles.statTitle}>{title}</Text>
+          <Text style={[styles.statValue, { color: appColors.textPrimary }]}>{value.toLocaleString()}</Text>
+          <Text style={[styles.statTitle, { color: appColors.textPrimary }]}>{title}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -309,12 +311,12 @@ const HRDashboardScreen: React.FC = () => {
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         activeOpacity={1}>
-        <Animated.View style={[styles.quickActionCard, { transform: [{ scale: scaleAnim }] }]}>
+        <Animated.View style={[styles.quickActionCard, { backgroundColor: appColors.accentText, transform: [{ scale: scaleAnim }] }]}>
           <LinearGradient colors={gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.quickActionGradient}>
             <FontAwesomeIcon icon={icon} size={Responsive.iconSize(18)} color="#FFFFFF" />
           </LinearGradient>
-          <Text style={styles.quickActionTitle} numberOfLines={2} ellipsizeMode="tail">{title}</Text>
-          <Text style={styles.quickActionSubtitle} numberOfLines={2} ellipsizeMode="tail">{subtitle}</Text>
+          <Text style={[styles.quickActionTitle, { color: appColors.textPrimary }]} numberOfLines={2} ellipsizeMode="tail">{title}</Text>
+          <Text style={[styles.quickActionSubtitle, { color: appColors.textSecondary }]} numberOfLines={2} ellipsizeMode="tail">{subtitle}</Text>
         </Animated.View>
       </TouchableOpacity>
     );
@@ -361,23 +363,23 @@ const HRDashboardScreen: React.FC = () => {
     <SafeAreaView style={g.appBackground}>
       {/* STATUS BAR – PERFECT MATCH */}
       <StatusBar
-        backgroundColor="#FFFFFF"
-        barStyle="dark-content"
+        backgroundColor={appColors.background}
+        barStyle={appColors.background === '#FFFFFF' ? 'dark-content' : 'light-content'}
         translucent={false}
       />
 
-      <View style={styles.innerContainer}>
+      <View style={[styles.innerContainer, { backgroundColor: appColors.background }]}>
         {/* Simple Header */}
         {isLoading || !userProfile ? (
           <SkeletonHeader />
         ) : (
-          <View style={styles.simpleHeader}>
+          <View style={[styles.simpleHeader, { backgroundColor: appColors.accentText }]}>
             <View style={styles.headerContent}>
               <View style={styles.headerLeft}>
-                <Text style={styles.headerGreeting}>
-                  Hello <Text style={styles.headerRole}>Admin</Text>
+                <Text style={[styles.headerGreeting, { color: appColors.textSecondary }]}>
+                  Hello <Text style={[styles.headerRole, { color: appColors.primary }]}>Admin</Text>
                 </Text>
-                <Text style={styles.headerName}>
+                <Text style={[styles.headerName, { color: appColors.textPrimary }]}>
                   {userProfile ? `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() : 'Loading...'}!
                 </Text>
               </View>
@@ -428,7 +430,7 @@ const HRDashboardScreen: React.FC = () => {
           )}
           scrollEventThrottle={16}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366F1" colors={['#6366F1']} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={appColors.primary} colors={[appColors.primary]} />
           }>
 
           {/* Dashboard Title */}
@@ -436,7 +438,7 @@ const HRDashboardScreen: React.FC = () => {
             {isLoading ? (
               <SkeletonTitle width={150} height={16} />
             ) : (
-              <Text style={styles.dashboardTitle}>HR Dashboard</Text>
+              <Text style={[styles.dashboardTitle, { color: appColors.textPrimary }]}>HR Dashboard</Text>
             )}
           </View>
 
@@ -474,12 +476,12 @@ const HRDashboardScreen: React.FC = () => {
               {isLoading ? (
                 <SkeletonTitle width={100} height={16} />
               ) : (
-                <Text style={styles.sectionTitle}>Overview</Text>
+                <Text style={[styles.sectionTitle, { color: appColors.textPrimary }]}>Overview</Text>
               )}
               {!isLoading && (
                 <TouchableOpacity onPress={scrollToEnd} style={styles.scrollToEndButton}>
-                  <Text style={styles.viewAllText}>See All</Text>
-                  <FontAwesomeIcon icon="arrow-right" size={Responsive.iconSize(14)} color="#6366F1" />
+                  <Text style={[styles.viewAllText, { color: appColors.primary }]}>See All</Text>
+                  <FontAwesomeIcon icon="arrow-right" size={Responsive.iconSize(14)} color={appColors.primary} />
                 </TouchableOpacity>
               )}
             </View>
@@ -527,7 +529,7 @@ const HRDashboardScreen: React.FC = () => {
             {isLoading ? (
               <SkeletonTitle width={120} height={16} style={{ marginBottom: 16 }} />
             ) : (
-              <Text style={styles.sectionTitle}>Quick Actions</Text>
+              <Text style={[styles.sectionTitle, { color: appColors.textPrimary }]}>Quick Actions</Text>
             )}
             {isLoading || !stats ? (
               <View style={styles.quickActionsGrid}>
@@ -566,11 +568,11 @@ const HRDashboardScreen: React.FC = () => {
               {isLoading ? (
                 <SkeletonTitle width={120} height={16} />
               ) : (
-                <Text style={styles.sectionTitle}>Recent Jobs</Text>
+                <Text style={[styles.sectionTitle, { color: appColors.textPrimary }]}>Recent Jobs</Text>
               )}
               {!isLoading && stats && (
                 <TouchableOpacity onPress={() => (navigation as any).navigate('HRJobs')}>
-                  <Text style={styles.viewAllText}>View All</Text>
+                  <Text style={[styles.viewAllText, { color: appColors.primary }]}>View All</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -595,25 +597,25 @@ const HRDashboardScreen: React.FC = () => {
                         </LinearGradient>
                       </View>
                       <View style={styles.listContent}>
-                        <Text style={styles.listTitle} numberOfLines={1}>{job.title}</Text>
-                        <Text style={styles.listSubtitle} numberOfLines={1}>{job.department} to {job.location}</Text>
+                        <Text style={[styles.listTitle, { color: appColors.textPrimary }]} numberOfLines={1}>{job.title}</Text>
+                        <Text style={[styles.listSubtitle, { color: appColors.textSecondary }]} numberOfLines={1}>{job.department} to {job.location}</Text>
                         <View style={styles.listFooter}>
                           <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(job.priority) + '20' }]}>
                             <Text style={[styles.priorityText, { color: getPriorityColor(job.priority) }]}>{job.priority}</Text>
                           </View>
-                          <Text style={styles.listRate}>₹{job.hourlyRate}/hr</Text>
+                          <Text style={[styles.listRate, { color: appColors.textPrimary }]}>₹{job.hourlyRate}/hr</Text>
                         </View>
                       </View>
-                      <Text style={styles.listTime}>{formatDate(job.createdAt)}</Text>
+                      <Text style={[styles.listTime, { color: appColors.textSecondary }]}>{formatDate(job.createdAt)}</Text>
                     </TouchableOpacity>
                   ))
                 ) : (
                   <View style={styles.emptyState}>
                     <View style={styles.emptyIcon}>
-                      <FontAwesomeIcon icon="briefcase" size={Responsive.iconSize(32)} color="#D1D5DB" />
+                      <FontAwesomeIcon icon="briefcase" size={Responsive.iconSize(32)} color={appColors.textSecondary} />
                     </View>
-                    <Text style={styles.emptyTitle}>No Recent Jobs</Text>
-                    <Text style={styles.emptySubtitle}>Job postings will appear here</Text>
+                    <Text style={[styles.emptyTitle, { color: appColors.textPrimary }]}>No Recent Jobs</Text>
+                    <Text style={[styles.emptySubtitle, { color: appColors.textSecondary }]}>Job postings will appear here</Text>
                   </View>
                 )}
               </View>
@@ -626,11 +628,11 @@ const HRDashboardScreen: React.FC = () => {
               {isLoading ? (
                 <SkeletonTitle width={160} height={16} />
               ) : (
-                <Text style={styles.sectionTitle}>Recent Assignments</Text>
+                <Text style={[styles.sectionTitle, { color: appColors.textPrimary }]}>Recent Assignments</Text>
               )}
               {!isLoading && stats && (
                 <TouchableOpacity>
-                  <Text style={styles.viewAllText}>View All</Text>
+                  <Text style={[styles.viewAllText, { color: appColors.primary }]}>View All</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -674,28 +676,28 @@ const HRDashboardScreen: React.FC = () => {
                           </LinearGradient>
                         </View>
                         <View style={styles.listContent}>
-                          <Text style={styles.listTitle} numberOfLines={1}>
+                          <Text style={[styles.listTitle, { color: appColors.textPrimary }]} numberOfLines={1}>
                             {assignment.user?.firstName} {assignment.user?.lastName}
                           </Text>
-                          <Text style={styles.listSubtitle} numberOfLines={1}>{assignment.job?.title}</Text>
+                          <Text style={[styles.listSubtitle, { color: appColors.textSecondary }]} numberOfLines={1}>{assignment.job?.title}</Text>
                           <View style={styles.listFooter}>
                             <View style={[styles.statusBadge, { backgroundColor: statusColor + '20' }]}>
                               <Text style={[styles.statusText, { color: statusColor }]}>{assignment.status}</Text>
                             </View>
-                            <Text style={styles.listRate}>₹{assignment.hourlyRate}/hr</Text>
+                            <Text style={[styles.listRate, { color: appColors.textPrimary }]}>₹{assignment.hourlyRate}/hr</Text>
                           </View>
                         </View>
-                        <Text style={styles.listTime}>{formatDate(assignment.updatedAt)}</Text>
+                        <Text style={[styles.listTime, { color: appColors.textSecondary }]}>{formatDate(assignment.updatedAt)}</Text>
                       </View>
                     );
                   })
                 ) : (
                   <View style={styles.emptyState}>
                     <View style={styles.emptyIcon}>
-                      <FontAwesomeIcon icon="list" size={Responsive.iconSize(32)} color="#D1D5DB" />
+                      <FontAwesomeIcon icon="list" size={Responsive.iconSize(32)} color={appColors.textSecondary} />
                     </View>
-                    <Text style={styles.emptyTitle}>No Recent Assignments</Text>
-                    <Text style={styles.emptySubtitle}>Assignment updates will appear here</Text>
+                    <Text style={[styles.emptyTitle, { color: appColors.textPrimary }]}>No Recent Assignments</Text>
+                    <Text style={[styles.emptySubtitle, { color: appColors.textSecondary }]}>Assignment updates will appear here</Text>
                   </View>
                 )}
               </View>
@@ -787,14 +789,11 @@ const HRDashboardScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F9FF',
   },
   innerContainer: {
     flex: 1,
-    backgroundColor: '#F3F9FF',
   },
   simpleHeader: {
-    backgroundColor: '#FFFFFF',
     paddingTop: Platform.OS === 'android' ? 10 : 0,
     paddingHorizontal: 20,
     paddingBottom: 16,
@@ -916,7 +915,6 @@ const styles = StyleSheet.create({
   dashboardTitle: {
     fontSize: 16,
     fontFamily: Typography.fontFamily.bold,
-    color: '#111827',
     letterSpacing: -0.3,
   },
   mainStatsGrid: {
@@ -987,7 +985,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontFamily: Typography.fontFamily.bold,
-    color: '#111827',
     letterSpacing: -0.3,
   },
   scrollToEndButton: {
@@ -998,7 +995,6 @@ const styles = StyleSheet.create({
   viewAllText: {
     fontSize: 14,
     fontFamily: Typography.fontFamily.medium,
-    color: '#6366F1',
     marginTop: 2,
   },
   overviewScroll: {
@@ -1122,13 +1118,11 @@ const styles = StyleSheet.create({
   listTitle: {
     fontSize: 15,
     fontFamily: Typography.fontFamily.medium,
-    color: '#111827',
     marginBottom: 4,
   },
   listSubtitle: {
     fontSize: 13,
     fontFamily: Typography.fontFamily.regular,
-    color: '#6B7280',
     marginBottom: 8,
   },
   listFooter: {
@@ -1160,12 +1154,10 @@ const styles = StyleSheet.create({
   listRate: {
     fontSize: 13,
     fontFamily: Typography.fontFamily.bold,
-    color: '#111827',
   },
   listTime: {
     fontSize: 12,
     fontFamily: Typography.fontFamily.medium,
-    color: '#9CA3AF',
   },
   emptyState: {
     alignItems: 'center',
@@ -1184,13 +1176,11 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontFamily: Typography.fontFamily.medium,
-    color: '#374151',
     marginBottom: 4,
   },
   emptySubtitle: {
     fontSize: 14,
     fontFamily: Typography.fontFamily.regular,
-    color: '#9CA3AF',
     textAlign: 'center',
   },
   iconStatItem: {
