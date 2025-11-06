@@ -425,11 +425,9 @@ const AssignmentScreen: React.FC = () => {
         onBackPress={() => navigation.goBack()}
       />
 
-      <ScrollView
+      <View
         style={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }>
+      >
         
         {/* Search Bar */}
         {!isLoading && (
@@ -456,36 +454,45 @@ const AssignmentScreen: React.FC = () => {
         </View>
         )}
 
-        {isLoading ? (
-          <>
-            {[...Array(5)].map((_, i) => (
-              <SkeletonJobCard key={i} />
-            ))}
-          </>
-        ) : (
-          <>
-        {filteredAssignments.length > 0 ? (
-          filteredAssignments.map((assignment) => (
-            <AssignmentCard key={assignment.id} assignment={assignment} />
-          ))
-        ) : (
-          <View style={styles.emptyState}>
-            <FontAwesomeIcon icon="clipboard-list" size={Responsive.iconSize(64)} color={Colors.textTertiary} />
-            <Text style={styles.emptyStateTitle}>No Job Assignments</Text>
-            <Text style={styles.emptyStateText}>
-              You don't have any job assignments at the moment. HR will assign compatible jobs to you based on your profile.
-            </Text>
-            <TouchableOpacity 
-              style={[styles.primaryButton, { backgroundColor: roleConfig.color }]}
-              onPress={onRefresh}>
-              <FontAwesomeIcon icon="sync" size={Responsive.iconSize(16)} color={Colors.white} />
-              <Text style={styles.primaryButtonText}>Refresh</Text>
-            </TouchableOpacity>
-          </View>
-            )}
-          </>
-        )}
-      </ScrollView>
+        <ScrollView
+          style={styles.cardsScroll}
+          contentContainerStyle={styles.cardsScrollContent}
+          showsVerticalScrollIndicator={true}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          {isLoading ? (
+            <>
+              {[...Array(5)].map((_, i) => (
+                <SkeletonJobCard key={i} />
+              ))}
+            </>
+          ) : (
+            <>
+            {filteredAssignments.length > 0 ? (
+              filteredAssignments.map((assignment) => (
+                <AssignmentCard key={assignment.id} assignment={assignment} />
+              ))
+            ) : (
+              <View style={styles.emptyState}>
+                <FontAwesomeIcon icon="clipboard-list" size={Responsive.iconSize(64)} color={Colors.textTertiary} />
+                <Text style={styles.emptyStateTitle}>No Job Assignments</Text>
+                <Text style={styles.emptyStateText}>
+                  You don't have any job assignments at the moment. HR will assign compatible jobs to you based on your profile.
+                </Text>
+                <TouchableOpacity 
+                  style={[styles.primaryButton, { backgroundColor: roleConfig.color }]}
+                  onPress={onRefresh}>
+                  <FontAwesomeIcon icon="sync" size={Responsive.iconSize(16)} color={Colors.white} />
+                  <Text style={styles.primaryButtonText}>Refresh</Text>
+                </TouchableOpacity>
+              </View>
+              )}
+            </>
+          )}
+        </ScrollView>
+      </View>
 
       {/* Job Details Bottom Sheet */}
       <Modal visible={detailsVisible} transparent animationType="slide" onRequestClose={() => setDetailsVisible(false)}>
@@ -722,6 +729,12 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: Spacing.lg,
+  },
+  cardsScroll: {
+    flex: 1,
+  },
+  cardsScrollContent: {
+    paddingBottom: Spacing.lg,
   },
   searchContainer: {
     marginBottom: Spacing.md,

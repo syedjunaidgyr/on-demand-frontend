@@ -282,14 +282,14 @@ const HRJobsScreen: React.FC = () => {
 
   const handleCreateJob = () => {
     // Check permission before navigating
-    if (!hasPermission('JOB_CREATE')) {
-      Alert.alert(
-        'Access Denied',
-        'You do not have permission to create jobs. Please contact your administrator.',
-        [{ text: 'OK' }]
-      );
-      return;
-    }
+    // if (!hasPermission('JOB_CREATE')) {
+    //   Alert.alert(
+    //     'Access Denied',
+    //     'You do not have permission to create jobs. Please contact your administrator.',
+    //     [{ text: 'OK' }]
+    //   );
+    //   return;
+    // }
     (navigation as any).navigate('CreateJob');
   };
 
@@ -393,7 +393,6 @@ const HRJobsScreen: React.FC = () => {
     const subtitleLeft = job.location || '—';
     const subtitleRight = timeRange;
     const displayStatus = getDisplayStatus(job);
-    const assignmentStatus = getAssignmentDisplayStatus(job);
     
     return (
       <TouchableOpacity 
@@ -425,14 +424,8 @@ const HRJobsScreen: React.FC = () => {
               <Text style={styles.subtitleDot}> • </Text>
               <Text style={styles.subtitleText} numberOfLines={1}>{subtitleRight}</Text>
               <Text style={styles.subtitleDot}> • </Text>
-              {/* Assignment status pill (primary) */}
-              <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor(assignmentStatus) + '1A', marginRight: 6 }]}>
-                <Text style={[styles.inlineStatusText, { color: getStatusColor(assignmentStatus) }]} numberOfLines={1}>
-                  {assignmentStatus}
-                </Text>
-              </View>
-              {/* Job status pill (secondary) */}
-              <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor(displayStatus) + '14' }]}> 
+              {/* Status pill */}
+              <View style={[styles.inlineStatusPill, { backgroundColor: getStatusColor(displayStatus) + '1A' }]}> 
                 <Text style={[styles.inlineStatusText, { color: getStatusColor(displayStatus) }]} numberOfLines={1}>
                   {displayStatus}
                 </Text>
@@ -626,12 +619,6 @@ const HRJobsScreen: React.FC = () => {
           <Text style={styles.fabText}>Add Job</Text>
         </View>
       </TouchableOpacity>
-      {/* Floating Action Button - Only show if user has JOB_CREATE permission */}
-      {!permissionsLoading && hasPermission('JOB_CREATE') && (
-        <TouchableOpacity style={styles.fab} onPress={handleCreateJob}>
-          <FontAwesomeIcon icon="plus" size={24} color={Colors.white}  />
-        </TouchableOpacity>
-      )}
       
       <HRFooterNavigation 
         activeRoute="Jobs" 

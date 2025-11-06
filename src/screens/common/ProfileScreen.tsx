@@ -178,6 +178,11 @@ const ProfileScreen: React.FC = () => {
           <View style={styles.headerButtons}>
             <TouchableOpacity 
               style={styles.headerButton}
+              onPress={() => (navigation as any).navigate('ThemeSettings')}>
+              <FontAwesomeIcon icon="palette" size={Responsive.iconSize(20)} color="#111827" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.headerButton}
               onPress={() => (navigation as any).navigate('ProfileSettings')}>
               <FontAwesomeIcon icon="cog" size={Responsive.iconSize(20)} color="#111827" />
             </TouchableOpacity>

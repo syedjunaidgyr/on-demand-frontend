@@ -321,7 +321,18 @@ class ApiService {
   }
 
   // Agency assign nurses to a job
-  async assignNursesToAgencyJob(jobId: string | number, body: { mode: 'FULL' | 'PARTIAL'; hourlyRate: number; assignments: Array<{ userId: string | number }> }): Promise<any> {
+  async assignNursesToAgencyJob(
+    jobId: string | number, 
+    body: { 
+      mode: 'FULL' | 'SEGMENTS'; 
+      hourlyRate: number; 
+      assignments: Array<{ 
+        userId: string | number; 
+        startDate?: string; 
+        endDate?: string; 
+      }> 
+    }
+  ): Promise<any> {
     try {
       const url = `/agency/jobs/${jobId}/assign`;
       const response = await this.api.post(url, body);
@@ -1120,6 +1131,10 @@ class ApiService {
   }
 
   // User-level theme selection
+  async getProfileThemes(): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get('/auth/profile/themes');
+    return response.data;
+  }
   async updateUserTheme(themeId: string): Promise<any> {
     const response: AxiosResponse<any> = await this.api.put('/auth/profile/theme', { themeId });
     return response.data;

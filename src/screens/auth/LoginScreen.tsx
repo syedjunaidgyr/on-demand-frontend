@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -30,7 +30,6 @@ import Responsive from '../../utils/responsive';
 
 const { width, height } = Dimensions.get('window');
 
-// Device size detection for responsive design - now using Responsive utility
 const IS_SMALL_DEVICE = Responsive.isSmallScreen();
 const IS_VERY_SMALL_DEVICE = Responsive.getScreenHeight() < 600;
 
@@ -47,6 +46,9 @@ const LoginScreen: React.FC = () => {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const passwordInputRef = useRef<TextInput>(null);
+  const emailInputRef = useRef<TextInput>(null);
 
   const performLogin = async (isRetry = false) => {
     if (!isRetry) {
@@ -70,20 +72,16 @@ const LoginScreen: React.FC = () => {
       const response = await ApiService.login({ email, password });
       console.log('✅ Login successful, updating auth context...');
       
-      // Set flag to show success on HRDashboard, then proceed
       try { await AsyncStorage.setItem('SHOW_LOGIN_SUCCESS', '1'); } catch {}
       login(response.user);
       console.log('✅ Auth context updated, navigating to dashboard');
 
-      // Register device push token after successful login
       try {
-        // Request permissions on login (iOS + Android 13+)
         if (Platform.OS === 'ios') {
           await messaging().requestPermission();
         } else if (Platform.OS === 'android' && Platform.Version >= 33) {
           await PermissionsAndroid.request('android.permission.POST_NOTIFICATIONS');
         }
-        // Ensure device is registered for remote messages
         if (!messaging().isDeviceRegisteredForRemoteMessages) {
           await messaging().registerDeviceForRemoteMessages();
         }
@@ -102,8 +100,6 @@ const LoginScreen: React.FC = () => {
         console.log('⚠️ Unable to register push token post-login:', (e as any)?.message);
       }
     } catch (error: any) {
-      // console.error('❌ Login error:', error);
-      
       let errorMsg = 'Login failed. Please try again.';
       
       if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
@@ -136,12 +132,31 @@ const LoginScreen: React.FC = () => {
       setIsLoading(false);
     }
   };
-  // Hide bottom overlay when keyboard is visible (prevents grey patch overlap)
+
   useEffect(() => {
-    const showSub = Keyboard.addListener('keyboardDidShow', () => setIsKeyboardVisible(true));
-    const hideSub = Keyboard.addListener('keyboardDidHide', () => setIsKeyboardVisible(false));
-    return () => { showSub.remove(); hideSub.remove(); };
+    const showSub = Keyboard.addListener('keyboardDidShow', () => {
+      setIsKeyboardVisible(true);
+    });
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      setIsKeyboardVisible(false);
+    });
+    return () => { 
+      showSub.remove(); 
+      hideSub.remove(); 
+    };
   }, []);
+
+  const handleEmailFocus = () => {
+    // Scroll down when email is focused to reveal password field
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  };
+
+  const handleEmailSubmit = () => {
+    // Move to password field when user presses "Next" on email
+    passwordInputRef.current?.focus();
+  };
 
   const handleLogin = () => {
     Keyboard.dismiss();
@@ -152,8 +167,6 @@ const LoginScreen: React.FC = () => {
     navigation.navigate('Register' as never);
   };
 
-  //
-
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView 
@@ -163,17 +176,14 @@ const LoginScreen: React.FC = () => {
         keyboardVerticalOffset={0}
       >
         <ScrollView
+          ref={scrollViewRef}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.scrollContent}
-          contentInsetAdjustmentBehavior="never"
-          overScrollMode="never"
           showsVerticalScrollIndicator={false}
+          bounces={false}
         >
-          <View style={styles.content}>
-            {/* Top Spacer */}
-            <View style={styles.topSpacer} />
-            
-            {/* Logo Section */}
+          {/* Logo Section - Hidden when keyboard is visible */}
+          {!isKeyboardVisible && (
             <View style={styles.logoContainer}>
               <View style={styles.logoPlaceholder}>
                 <View style={styles.logoWrapper}>
@@ -188,9 +198,10 @@ const LoginScreen: React.FC = () => {
                 <Text style={styles.logoSubtext2}>Clinical Professionals</Text>
               </View>
             </View>
+          )}
 
-            {/* Welcome Card */}
-            <View style={styles.card}>
+          {/* Welcome Card */}
+          <View style={[styles.card, isKeyboardVisible && styles.cardKeyboardVisible]}>
             <Text style={styles.welcomeText}>Welcome Back!</Text>
             <Text style={styles.subtitleText}>Sign in to continue</Text>
 
@@ -199,6 +210,7 @@ const LoginScreen: React.FC = () => {
               <View style={styles.inputWrapper}>
                 <FontAwesomeIcon icon="envelope" size={Responsive.iconSize(18)} color={Colors.textTertiary} style={styles.inputIcon} />
                 <TextInput
+                  ref={emailInputRef}
                   style={styles.input}
                   placeholder="Email Address"
                   placeholderTextColor={Colors.textTertiary}
@@ -208,6 +220,8 @@ const LoginScreen: React.FC = () => {
                   autoCapitalize="none"
                   autoCorrect={false}
                   returnKeyType="next"
+                  onFocus={handleEmailFocus}
+                  onSubmitEditing={handleEmailSubmit}
                 />
               </View>
             </View>
@@ -217,6 +231,7 @@ const LoginScreen: React.FC = () => {
               <View style={styles.inputWrapper}>
                 <FontAwesomeIcon icon="lock" size={Responsive.iconSize(18)} color={Colors.textTertiary} style={styles.inputIcon} />
                 <TextInput
+                  ref={passwordInputRef}
                   style={styles.input}
                   placeholder="Password"
                   placeholderTextColor={Colors.textTertiary}
@@ -255,7 +270,6 @@ const LoginScreen: React.FC = () => {
             {retryMessage ? (
               <Text style={styles.retryMessage}>{retryMessage}</Text>
             ) : null}
-
           </View>
 
           {/* Don't have account - Outside Card */}
@@ -268,13 +282,12 @@ const LoginScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-            {/* Bottom Spacer */}
-            <View style={styles.bottomSpacer} />
-          </View>
+          {/* Extra spacing at bottom for scroll */}
+          <View style={{ height: 100 }} />
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Powered By Section - hide when keyboard is open to avoid grey patch */}
+      {/* Powered By Section - hide when keyboard is open */}
       {!isKeyboardVisible && (
         <View style={styles.poweredByContainer}>
           <Text style={styles.poweredByText}>Powered by</Text>
@@ -340,10 +353,6 @@ const LoginScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: Responsive.wp('5%'),
-  },
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
@@ -351,19 +360,14 @@ const styles = StyleSheet.create({
   keyboardView: {
     flex: 1,
   },
-  content: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: Responsive.wp('5%'),
-  },
-  topSpacer: {
-    flex: 0.4,
-  },
-  bottomSpacer: {
-    flex: 0.4,
+    paddingTop: Responsive.verticalScale(20),
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: Responsive.verticalScale(height * 0.05),
+    marginBottom: Responsive.verticalScale(30),
     marginTop: Responsive.verticalScale(20),
   },
   logoPlaceholder: {
@@ -419,6 +423,9 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: Responsive.wp('84%'),
   },
+  cardKeyboardVisible: {
+    marginTop: Responsive.verticalScale(20),
+  },
   welcomeText: {
     fontSize: Responsive.fontSize(24),
     fontFamily: Typography.fontFamily.bold,
@@ -434,7 +441,7 @@ const styles = StyleSheet.create({
     marginBottom: Responsive.verticalScale(24),
   },
   inputContainer: {
-    marginBottom: Responsive.verticalScale(height * 0.02),
+    marginBottom: Responsive.verticalScale(16),
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -463,11 +470,11 @@ const styles = StyleSheet.create({
   signInButton: {
     backgroundColor: Colors.primary,
     borderRadius: BorderRadius.lg,
-    paddingVertical: Responsive.verticalScale(height * 0.02),
+    paddingVertical: Responsive.verticalScale(14),
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: Responsive.verticalScale(height * 0.01),
-    marginBottom: Responsive.verticalScale(height * 0.02),
+    marginTop: Responsive.verticalScale(8),
+    marginBottom: Responsive.verticalScale(12),
     ...Shadow.md,
   },
   signInButtonDisabled: {
@@ -491,8 +498,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Responsive.verticalScale(12),
-    marginTop: Responsive.verticalScale(16),
+    paddingVertical: Responsive.verticalScale(16),
+    marginTop: Responsive.verticalScale(12),
     marginHorizontal: Responsive.wp('8%'),
   },
   accountLinkText: {

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Healthcare Staffing Management System - Workflow Overview</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 20mm;
+            background: white;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        h2 {
+            color: #34495e;
+            border-left: 4px solid #3498db;
+            padding-left: 15px;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #555;
+            margin-top: 20px;
+        }
+        .step {
+            margin: 25px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-left: 5px solid #3498db;
+            border-radius: 5px;
+        }
+        .step-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3498db;
+            margin-bottom: 10px;
+        }
+        ul {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+        li {
+            margin: 8px 0;
+        }
+        .features {
+            background: #e8f5e9;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .benefits {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .benefit-card {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #ffc107;
+        }
+        .flow-diagram {
+            background: #f0f0f0;
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .roles {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .role-card {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #2196f3;
+        }
+        @media print {
+            body {
+                max-width: 100%;
+                padding: 15mm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Healthcare Staffing Management System</h1>
+    <h2>Complete End-to-End Workflow Overview</h2>
+    
+    <div class="step">
+        <div class="step-number">1. Staff Registration</div>
+        <p>New healthcare staff (Doctors/Nurses) register through the mobile application.</p>
+        <p><strong>Registration includes:</strong></p>
+        <ul>
+            <li>Personal information (name, email, phone)</li>
+            <li>Professional credentials (license number, specialization)</li>
+            <li>Department and location preferences</li>
+            <li>Emergency contact information</li>
+        </ul>
+        <p>Staff account is created and verified.</p>
+    </div>
+
+    <div class="step">
+        <div class="step-number">2. Job Creation by Admin/HR</div>
+        <p>Admin or HR personnel create job postings through the system.</p>
+        <p><strong>Job details include:</strong></p>
+        <ul>
+            <li>Job title and description</li>
+            <li>Department and specialization requirements</li>
+            <li>Date and time schedule (start/end dates, shift times)</li>
+            <li>Location and facility details</li>
+            <li>Hourly rate and priority level</li>
+            <li>Required qualifications</li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <div class="step-number">3. Staff Job Acceptance</div>
+        <p>Registered staff members can view available jobs matching their profile.</p>
+        <p><strong>Staff can browse and filter jobs by:</strong></p>
+        <ul>
+            <li>Department</li>
+            <li>Location</li>
+            <li>Date range</li>
+            <li>Rate range</li>
+        </ul>
+        <p>Staff members accept jobs that match their availability and qualifications. Multiple staff can accept the same job posting.</p>
+    </div>
+
+    <div class="step">
+        <div class="step-number">4. HR Candidate Selection</div>
+        <p>HR/Admin reviews all candidates who accepted the job.</p>
+        <p><strong>HR can view candidate profiles including:</strong></p>
+        <ul>
+            <li>Qualifications and experience</li>
+            <li>Specialization and department match</li>
+            <li>Previous performance history</li>
+        </ul>
+        <p>HR selects the most suitable candidate for the job. Selected candidate is confirmed, and other candidates are automatically notified.</p>
+    </div>
+
+    <div class="step">
+        <div class="step-number">5. Check-In Process</div>
+        <p>On the scheduled day, staff member arrives at the facility.</p>
+        <p>Staff initiates check-in through the mobile app.</p>
+        <p><strong>Two check-in methods available:</strong></p>
+        <ul>
+            <li><strong>Manual Check-In:</strong> Staff manually confirms location using GPS</li>
+            <li><strong>QR Code Check-In:</strong> Staff scans a QR code generated by the system</li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <div class="step-number">6. QR Code Generation & Scanning</div>
+        <p>System generates a unique QR code for each job assignment.</p>
+        <p><strong>QR code contains:</strong></p>
+        <ul>
+            <li>Assignment ID</li>
+            <li>Job details</li>
+            <li>Facility location</li>
+            <li>Time stamp information</li>
+        </ul>
+        <p>Staff member scans the QR code using the mobile app camera. Location is automatically captured via GPS during scan. Check-in data is submitted for approval.</p>
+    </div>
+
+    <div class="step">
+        <div class="step-number">7. HR Approval of Check-In</div>
+        <p>HR/Admin receives notification of pending check-in.</p>
+        <p><strong>HR reviews the check-in details:</strong></p>
+        <ul>
+            <li>Verification of location (GPS coordinates)</li>
+            <li>Time verification</li>
+            <li>Staff member identity</li>
+        </ul>
+        <p>HR approves or rejects the check-in. Staff member receives confirmation once approved. Job status changes to "IN_PROGRESS".</p>
+    </div>
+
+    <div class="step">
+        <div class="step-number">8. Check-Out Process</div>
+        <p>At the end of the shift, staff member checks out.</p>
+        <p><strong>Check-out includes:</strong></p>
+        <ul>
+            <li>Location verification (GPS)</li>
+            <li>Time stamp</li>
+            <li>Shift completion confirmation</li>
+        </ul>
+        <p>Staff can check-out via manual check-out or QR code scanning. Job status updates to "COMPLETED" or "CHECKED_OUT".</p>
+    </div>
+
+    <div class="step">
+        <div class="step-number">9. Reports & Analytics</div>
+        <p>Comprehensive reporting system available for HR/Admin.</p>
+        <p><strong>Reports include:</strong></p>
+        <ul>
+            <li><strong>Job Reports:</strong> All created jobs with status, assignments, and completion rates</li>
+            <li><strong>Assignment Reports:</strong> Staff assignments with check-in/check-out times</li>
+            <li><strong>Check-In/Check-Out Reports:</strong> Detailed attendance tracking with location data</li>
+            <li><strong>Staff Performance Reports:</strong> Individual staff activity and job history</li>
+        </ul>
+        <p><strong>Reports can be:</strong></p>
+        <ul>
+            <li>Filtered by date range, department, status, location</li>
+            <li>Exported to PDF or Excel formats</li>
+            <li>Viewed with detailed analytics and summaries</li>
+        </ul>
+    </div>
+
+    <h2>Key Features & Benefits</h2>
+
+    <div class="benefits">
+        <div class="benefit-card">
+            <h3>✅ Automated Workflow</h3>
+            <ul>
+                <li>Streamlined process from job creation to completion</li>
+                <li>Real-time status updates and notifications</li>
+                <li>Automated candidate management</li>
+            </ul>
+        </div>
+        <div class="benefit-card">
+            <h3>✅ Location Verification</h3>
+            <ul>
+                <li>GPS-based location tracking for check-in/check-out</li>
+                <li>Ensures staff presence at correct facility</li>
+                <li>Reduces time fraud and attendance issues</li>
+            </ul>
+        </div>
+        <div class="benefit-card">
+            <h3>✅ QR Code Technology</h3>
+            <ul>
+                <li>Quick and secure check-in process</li>
+                <li>Reduces manual errors</li>
+                <li>Efficient attendance tracking</li>
+            </ul>
+        </div>
+        <div class="benefit-card">
+            <h3>✅ Approval Workflow</h3>
+            <ul>
+                <li>HR oversight on all check-ins</li>
+                <li>Quality control and verification</li>
+                <li>Prevents unauthorized access</li>
+            </ul>
+        </div>
+        <div class="benefit-card">
+            <h3>✅ Comprehensive Reporting</h3>
+            <ul>
+                <li>Complete visibility into operations</li>
+                <li>Data-driven decision making</li>
+                <li>Exportable reports for record keeping</li>
+            </ul>
+        </div>
+    </div>
+
+    <h2>User Roles</h2>
+
+    <div class="roles">
+        <div class="role-card">
+            <h3>1. Healthcare Staff (Doctors/Nurses)</h3>
+            <ul>
+                <li>Register and manage profile</li>
+                <li>View and accept jobs</li>
+                <li>Check-in and check-out</li>
+                <li>View job history</li>
+            </ul>
+        </div>
+        <div class="role-card">
+            <h3>2. HR/Admin Personnel</h3>
+            <ul>
+                <li>Create and manage job postings</li>
+                <li>Review and select candidates</li>
+                <li>Approve check-ins</li>
+                <li>Generate reports</li>
+                <li>Manage staff assignments</li>
+            </ul>
+        </div>
+    </div>
+
+    <h2>System Flow Diagram</h2>
+    <div class="flow-diagram">
+        Staff Registration → Job Creation → Job Acceptance → Candidate Selection<br>
+                                                              ↓<br>
+        Check-Out ← HR Approval ← QR Scan/Manual ← Check-In ← Job Assignment Confirmed<br>
+             ↓<br>
+        Reports & Analytics
+    </div>
+
+    <p style="margin-top: 40px; text-align: center; color: #666; font-style: italic;">
+        This workflow ensures efficient management of healthcare staffing operations with complete transparency, accountability, and streamlined processes.
+    </p>
+</body>
+</html>
+

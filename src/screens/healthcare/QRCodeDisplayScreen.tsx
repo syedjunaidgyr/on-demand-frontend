@@ -7,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Share,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { FontAwesomeIcon } from '../../utils/icons';
@@ -47,30 +46,6 @@ const QRCodeDisplayScreen: React.FC = () => {
     action,
     jobTitle: assignment.job?.title || 'Assignment',
     providerName: assignment.user ? `${assignment.user.firstName} ${assignment.user.lastName}` : 'Unknown Provider',
-    // Include GPS location data if available
-    gpsLocation: locationData ? {
-      latitude: locationData.latitude,
-      longitude: locationData.longitude,
-      accuracy: locationData.accuracy,
-      timestamp: locationData.timestamp
-    } : undefined,
-  };
-
-  const handleShare = async () => {
-    setIsProcessing(true);
-    try {
-      const qrDataString = JSON.stringify(qrData);
-      
-      await Share.share({
-        title: `QR Code - ${assignment.job?.title}`,
-        message: `QR Code for ${action} - ${assignment.job?.title}\n\nQR Data: ${qrDataString}`,
-      });
-    } catch (error) {
-      console.error('Share error:', error);
-      Alert.alert('Error', 'Failed to share QR code');
-    } finally {
-      setIsProcessing(false);
-    }
   };
 
   const handleSaveToGallery = async () => {
@@ -92,29 +67,14 @@ const QRCodeDisplayScreen: React.FC = () => {
     }
   };
 
-  const handlePrint = async () => {
-    setIsProcessing(true);
-    try {
-      const qrDataString = JSON.stringify(qrData);
-      
-      await Share.share({
-        title: `Print QR Code - ${assignment.job?.title}`,
-        message: `Print QR Code for ${action}\n\nQR Data: ${qrDataString}`,
-      });
-    } catch (error) {
-      console.error('Print error:', error);
-      Alert.alert('Error', 'Failed to prepare QR code for printing');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <GlobalHeader
         title={assignment.isApprovalPending && action === 'checkin' ? 'Awaiting Approval' : `QR Code - ${action === 'checkin' ? 'Check In' : 'Check Out'}`}
-        backgroundColor={Colors.primary}
+        backgroundColor="#FFFFFF"
+        titleColor="#111827"
         onBackPress={() => navigation.goBack()}
+        headerStyle={{ paddingTop: 10, paddingHorizontal: 20, paddingBottom: 16 }}
       />
       
       <ScrollView style={styles.content}>
@@ -122,32 +82,7 @@ const QRCodeDisplayScreen: React.FC = () => {
           <Text style={styles.infoTitle}>Assignment Details</Text>
           <Text style={styles.infoText}>Job: {assignment.job?.title}</Text>
           <Text style={styles.infoText}>Location: {assignment.job?.location}</Text>
-          <Text style={styles.infoText}>
-            Provider: {assignment.user?.firstName} {assignment.user?.lastName}
-          </Text>
-          {assignment.isApprovalPending && action === 'checkin' && (
-            <Text style={[styles.infoText, { color: Colors.warning }]}>
-              Check-in submitted. Awaiting HR/Admin approval.
-            </Text>
-          )}
-          
-          {locationData && (
-            <View style={styles.locationContainer}>
-              <Text style={styles.locationTitle}>📍 GPS Location Verified</Text>
-              <Text style={styles.locationText}>
-                Latitude: {locationData.latitude.toFixed(6)}
-              </Text>
-              <Text style={styles.locationText}>
-                Longitude: {locationData.longitude.toFixed(6)}
-              </Text>
-              <Text style={styles.locationText}>
-                Accuracy: {Math.round(locationData.accuracy)}m
-              </Text>
-              <Text style={styles.locationText}>
-                Captured: {new Date(locationData.timestamp).toLocaleString()}
-              </Text>
-            </View>
-          )}
+          {/* Provider and approval notice removed per requirement */}
         </View>
 
         <View style={styles.qrContainer}>
@@ -165,22 +100,6 @@ const QRCodeDisplayScreen: React.FC = () => {
             disabled={isProcessing}>
             <FontAwesomeIcon icon="download" size={Responsive.iconSize(20)} color={Colors.white} />
             <Text style={styles.actionButtonText}>Save to Gallery</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: Colors.primary }]}
-            onPress={handleShare}
-            disabled={isProcessing}>
-            <FontAwesomeIcon icon="share" size={Responsive.iconSize(20)} color={Colors.white} />
-            <Text style={styles.actionButtonText}>Share</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: Colors.warning }]}
-            onPress={handlePrint}
-            disabled={isProcessing}>
-            <FontAwesomeIcon icon="print" size={Responsive.iconSize(20)} color={Colors.white} />
-            <Text style={styles.actionButtonText}>Print</Text>
           </TouchableOpacity>
         </View>
 

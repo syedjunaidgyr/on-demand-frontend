@@ -144,7 +144,10 @@ const HRDashboardScreen: React.FC = () => {
 
       const jobsResponse = await ApiService.getAllJobs();
       const jobs = (jobsResponse as any).jobs || jobsResponse.data || [];
-      const totalJobs = jobs.length;
+      const paginationInfo: any = (jobsResponse as any).pagination || jobsResponse || {};
+      const totalJobs = (typeof paginationInfo.total === 'number'
+        ? paginationInfo.total
+        : (typeof paginationInfo.totalCount === 'number' ? paginationInfo.totalCount : jobs.length));
       const activeJobs = jobs.filter((job: any) => job.status === 'ACTIVE').length;
       const assignedJobs = jobs.filter((job: any) => (job.assignments?.length || 0) > 0).length;
 
