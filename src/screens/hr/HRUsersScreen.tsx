@@ -11,6 +11,7 @@ import {
   TextInput,
   Animated,
   ScrollView,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -26,9 +27,13 @@ import ApiService from '../../services/api';
 import Responsive from '../../utils/responsive';
 import { SkeletonUserCard, SkeletonSearchBar } from '../../components/SkeletonComponents';
 import { usePermissions } from '../../hooks/usePermissions';
+import { useGlobalStyles } from '../../theme/globalStyles';
+import { useAppColors } from '../../hooks/useAppColors';
 
 const HRUsersScreen: React.FC = () => {
   const navigation = useNavigation();
+  const g = useGlobalStyles();
+  const appColors = useAppColors();
   const { hasPermission, loading: permissionsLoading } = usePermissions();
   const scrollY = React.useRef(new Animated.Value(0)).current;
   const [users, setUsers] = useState<User[]>([]);
@@ -239,10 +244,10 @@ const HRUsersScreen: React.FC = () => {
       activeOpacity={0.8}>
       {/* Top row: Join date + edit */}
       <View style={styles.cardTopRow}>
-        <Text style={styles.cardTimeText}>Joined {formatDate(user.createdAt)}</Text>
+        <Text style={[styles.cardTimeText, { color: appColors.textSecondary }]}>Joined {formatDate(user.createdAt)}</Text>
         {!permissionsLoading && hasPermission('USER_UPDATE') && (
           <TouchableOpacity style={styles.editTopButton} onPress={() => handleUserPress(user)}>
-            <FontAwesomeIcon icon="edit" size={Responsive.iconSize(16)} color={Colors.textSecondary} />
+            <FontAwesomeIcon icon="edit" size={Responsive.iconSize(16)} color={appColors.textSecondary} />
           </TouchableOpacity>
         )}
       </View>
@@ -256,22 +261,22 @@ const HRUsersScreen: React.FC = () => {
           </Text>
         </View>
         <View style={styles.profileContent}>
-          <Text style={styles.cardTitle} numberOfLines={1}>
+          <Text style={[styles.cardTitle, { color: appColors.textPrimary }]} numberOfLines={1}>
             {user.firstName} {user.lastName}
           </Text>
           {/* Subtitle row: Email • Department • Status */}
           <View style={styles.subtitleRow}>
             {!!user.email && (
-              <Text style={styles.subtitleText} numberOfLines={1}>{user.email}</Text>
+              <Text style={[styles.subtitleText, { color: appColors.textSecondary }]} numberOfLines={1}>{user.email}</Text>
             )}
             {!!user.email && !!user.department && (
-              <Text style={styles.subtitleDot}> • </Text>
+              <Text style={[styles.subtitleDot, { color: appColors.textSecondary }]}> • </Text>
             )}
             {!!user.department && (
-              <Text style={styles.subtitleText} numberOfLines={1}>{user.department}</Text>
+              <Text style={[styles.subtitleText, { color: appColors.textSecondary }]} numberOfLines={1}>{user.department}</Text>
             )}
             {(!!user.email || !!user.department) && (
-              <Text style={styles.subtitleDot}> • </Text>
+              <Text style={[styles.subtitleDot, { color: appColors.textSecondary }]}> • </Text>
             )}
             <View style={[styles.inlineStatusPill, { backgroundColor: (user.isActive ? '#10B981' : '#EF4444') + '1A' }]}>
               <Text style={[styles.inlineStatusText, { color: user.isActive ? '#10B981' : '#EF4444' }]} numberOfLines={1}>
@@ -283,16 +288,16 @@ const HRUsersScreen: React.FC = () => {
           {/* Compact info row: Role, Phone, Location */}
           <View style={styles.assignmentRow}>
             <View style={styles.infoCol}>
-              <Text style={styles.infoLabel}>Role</Text>
-              <Text style={styles.infoValue} numberOfLines={1}>{user.role}</Text>
+              <Text style={[styles.infoLabel, { color: appColors.textSecondary }]}>Role</Text>
+              <Text style={[styles.infoValue, { color: appColors.textPrimary }]} numberOfLines={1}>{user.role}</Text>
             </View>
             <View style={styles.infoCol}>
-              <Text style={styles.infoLabel}>Phone</Text>
-              <Text style={styles.infoValue} numberOfLines={1}>{user.phone || '—'}</Text>
+              <Text style={[styles.infoLabel, { color: appColors.textSecondary }]}>Phone</Text>
+              <Text style={[styles.infoValue, { color: appColors.textPrimary }]} numberOfLines={1}>{user.phone || '—'}</Text>
             </View>
             <View style={styles.infoCol}>
-              <Text style={styles.infoLabel}>Location</Text>
-              <Text style={styles.infoValue} numberOfLines={1}>{user.location || '—'}</Text>
+              <Text style={[styles.infoLabel, { color: appColors.textSecondary }]}>Location</Text>
+              <Text style={[styles.infoValue, { color: appColors.textPrimary }]} numberOfLines={1}>{user.location || '—'}</Text>
             </View>
           </View>
         </View>
@@ -304,28 +309,29 @@ const HRUsersScreen: React.FC = () => {
     if (!isLoading) return null;
     return (
       <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color={Colors.primary} />
+        <ActivityIndicator size="small" color={appColors.primary} />
       </View>
     );
   };
 
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={g.appBackground}>
+      <StatusBar backgroundColor={appColors.background} barStyle={appColors.background === '#FFFFFF' ? 'dark-content' : 'light-content'} translucent={false} />
       {/* Global Header */}
       <GlobalHeader
         title="Staff Management"
         showBackButton={true}
-        backgroundColor="#FFFFFF"
-        titleColor="#111827"
+        backgroundColor={appColors.accentText}
+        titleColor={appColors.textPrimary}
         headerStyle={{ paddingTop: 10, paddingHorizontal: 20, paddingBottom: 16 }}
         onBackPress={() => navigation.goBack()}
         rightComponent={
           <TouchableOpacity 
-            style={styles.filterButton} 
+            style={[styles.filterButton, { backgroundColor: appColors.primary }]} 
             onPress={openFilterModal}
             activeOpacity={0.7}>
-            <FontAwesomeIcon icon="filter" size={Responsive.iconSize(20)} color={Colors.white} />
+            <FontAwesomeIcon icon="filter" size={Responsive.iconSize(20)} color={appColors.accentText} />
           </TouchableOpacity>
         }
       />
@@ -342,12 +348,12 @@ const HRUsersScreen: React.FC = () => {
         <SkeletonSearchBar />
       ) : (
         <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <FontAwesomeIcon icon="search" size={Responsive.iconSize(18)} color={Colors.primary} />
+          <View style={[styles.searchBar, { backgroundColor: appColors.accentText }]}>
+            <FontAwesomeIcon icon="search" size={Responsive.iconSize(18)} color={appColors.primary} />
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: appColors.textPrimary }]}
               placeholder="Search by name or department"
-              placeholderTextColor={Colors.textTertiary}
+              placeholderTextColor={appColors.textSecondary}
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
@@ -355,7 +361,7 @@ const HRUsersScreen: React.FC = () => {
               <TouchableOpacity 
                 onPress={() => setSearchQuery('')}
                 activeOpacity={0.6}>
-                <FontAwesomeIcon icon="times" size={Responsive.iconSize(18)} color={Colors.textTertiary} />
+                <FontAwesomeIcon icon="times" size={Responsive.iconSize(18)} color={appColors.textSecondary} />
               </TouchableOpacity>
             )}
           </View>
@@ -379,7 +385,7 @@ const HRUsersScreen: React.FC = () => {
           renderItem={({ item }) => <UserCard user={item} />}
           contentContainerStyle={styles.listContainer}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={appColors.primary} colors={[appColors.primary]} />
           }
           // Disabled infinite scroll since we load all users at once
           // onEndReached={loadMore}
@@ -393,14 +399,14 @@ const HRUsersScreen: React.FC = () => {
           scrollEventThrottle={16}
           ListEmptyComponent={() => (
             <View style={styles.emptyState}>
-              <FontAwesomeIcon icon="users" size={Responsive.iconSize(48)} color={Colors.textTertiary} />
-              <Text style={styles.emptyTitle}>No Users Found</Text>
-              <Text style={styles.emptySubtitle}>
+              <FontAwesomeIcon icon="users" size={Responsive.iconSize(48)} color={appColors.textSecondary} />
+              <Text style={[styles.emptyTitle, { color: appColors.textPrimary }]}>No Users Found</Text>
+              <Text style={[styles.emptySubtitle, { color: appColors.textSecondary }]}>
                 {searchQuery ? 'Try adjusting your search terms' : 'No users available at the moment'}
               </Text>
               {!searchQuery && (
-                <TouchableOpacity style={styles.retryButton} onPress={() => loadUsers(1, true)}>
-                  <Text style={styles.retryButtonText}>Refresh</Text>
+                <TouchableOpacity style={[styles.retryButton, { backgroundColor: appColors.primary }]} onPress={() => loadUsers(1, true)}>
+                  <Text style={[styles.retryButtonText, { color: appColors.accentText }]}>Refresh</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -477,14 +483,13 @@ const HRUsersScreen: React.FC = () => {
         </Animated.View>
       )}
       
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   loadingContainer: {
     flex: 1,
@@ -519,13 +524,11 @@ const styles = StyleSheet.create({
   searchContainer: {
     paddingHorizontal: Responsive.scale(Spacing.md),
     paddingBottom: Responsive.verticalScale(Spacing.xs),
-    backgroundColor: Colors.background,
     marginTop: Responsive.verticalScale(Spacing.md),
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.white,
     borderRadius: BorderRadius['2xl'] || BorderRadius.xl,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
@@ -599,7 +602,6 @@ const styles = StyleSheet.create({
   cardTimeText: {
     fontSize: Typography.fontSize.sm,
     fontFamily: Typography.fontFamily.medium,
-    color: Colors.textTertiary,
     marginBottom: Spacing.xs,
   },
   editTopButton: {
@@ -641,7 +643,6 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: Typography.fontSize.lg,
     fontFamily: Typography.fontFamily.bold,
-    color: Colors.textPrimary,
     marginBottom: 2,
     flexShrink: 1,
   },
@@ -654,7 +655,6 @@ const styles = StyleSheet.create({
   subtitleText: {
     fontSize: Typography.fontSize.sm,
     fontFamily: Typography.fontFamily.regular,
-    color: Colors.textSecondary,
     flexShrink: 1,
     maxWidth: '45%',
   },
@@ -685,13 +685,11 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: Typography.fontSize.xs,
     fontFamily: Typography.fontFamily.medium,
-    color: Colors.textTertiary,
   },
   infoValue: {
     marginTop: 2,
     fontSize: Typography.fontSize.sm,
     fontFamily: Typography.fontFamily.bold,
-    color: Colors.textPrimary,
   },
   footerLoader: {
     paddingVertical: Spacing.lg,
@@ -705,25 +703,21 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: Typography.fontSize.lg,
     fontFamily: Typography.fontFamily.bold,
-    color: Colors.textPrimary,
     marginTop: Spacing.md,
     marginBottom: Spacing.sm,
   },
   emptySubtitle: {
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.regular,
-    color: Colors.textSecondary,
     textAlign: 'center',
     marginBottom: Spacing.lg,
   },
   retryButton: {
-    backgroundColor: Colors.primary,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.lg,
   },
   retryButtonText: {
-    color: Colors.white,
     fontSize: Typography.fontSize.base,
     fontFamily: Typography.fontFamily.bold,
   },
