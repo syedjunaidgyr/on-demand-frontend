@@ -35,7 +35,6 @@ import {
 } from '../../components/SkeletonComponents';
 import { useGlobalStyles } from '../../theme/globalStyles';
 import { useAppColors } from '../../hooks/useAppColors';
-import HRFooterNavigation from '../../components/HRFooterNavigation';
 
 const HealthcareProviderDashboardScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -1147,7 +1146,6 @@ const HealthcareProviderDashboardScreen: React.FC = () => {
         <Image source={require('../../assets/footer_logo.png')} style={styles.companyLogo} resizeMode="contain" />
       </View>
 
-      <HRFooterNavigation activeRoute="Dashboard" scrollY={scrollY} isLoading={isLoading} />
       </View>
     </SafeAreaView>
   );
