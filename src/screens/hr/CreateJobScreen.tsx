@@ -16,7 +16,6 @@ import {
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import DropDownPicker from 'react-native-dropdown-picker';
 import { FontAwesomeIcon } from '../../utils/icons';
 import GlobalHeader from '../../components/GlobalHeader';
 
@@ -26,6 +25,7 @@ import { Spacing, BorderRadius, Shadow } from '../../constants/spacing';
 import ApiService from '../../services/api';
 import Responsive from '../../utils/responsive';
 import { useAuth } from '../../navigation/AppNavigator';
+import { useAppColors } from '../../hooks/useAppColors';
 
 const { width } = Dimensions.get('window');
 
@@ -365,362 +365,334 @@ const TimeField = ({
 };
 
 // Dropdown components
-const DepartmentDropdown = ({ 
-  open, 
-  setOpen, 
-  value, 
-  setValue, 
-  items, 
-  placeholder, 
-  styles,
-  error 
-}: {
+type SingleSelectItem = { label: string; value: string };
+
+type SingleSelectDropdownProps = {
+  label: string;
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   value: string;
   setValue: (callback: (prev: string) => string) => void;
-  items: Array<{ label: string, value: string }>;
+  items: SingleSelectItem[];
   placeholder?: string;
   styles: any;
   error?: string;
-}) => (
-  <View style={styles.inputContainer}>
-    <Text style={styles.inputLabel}>Department</Text>
-    <DropDownPicker
-      open={open}
-      value={value}
-      items={items}
-      setOpen={setOpen}
-      setValue={setValue}
-      placeholder={placeholder || 'Select'}
-      arrowIconContainerStyle={styles.dropdownArrowContainer}
-      arrowIconStyle={styles.dropdownArrowIcon}
-      style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
-      textStyle={styles.dropdownTextStyle}
-      placeholderStyle={styles.dropdownPlaceholderStyle}
-      dropDownContainerStyle={styles.dropdownContainerStyle}
-      listItemLabelStyle={styles.dropdownListItemStyle}
-      listItemContainerStyle={styles.dropdownListItemContainer}
-      selectedItemContainerStyle={styles.dropdownSelectedItemContainer}
-      selectedItemLabelStyle={styles.dropdownSelectedItemLabel}
-      closeAfterSelecting={true}
-      searchable={false}
-      listMode="MODAL"
-      modalAnimationType="slide"
-      modalContentContainerStyle={styles.dropdownSmallModal}
-      zIndex={4000}
-      zIndexInverse={1000}
-    />
-  </View>
-);
+  loading?: boolean;
+  allowSearch?: boolean;
+  disabled?: boolean;
+};
 
-const SpecializationDropdown = ({ 
-  open, 
-  setOpen, 
-  value, 
-  setValue, 
-  items, 
-  placeholder, 
-  styles,
-  error 
-}: {
-  open: boolean;
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  value: string;
-  setValue: (callback: (prev: string) => string) => void;
-  items: Array<{ label: string, value: string }>;
-  placeholder?: string;
-  styles: any;
-  error?: string;
-}) => (
-  <View style={styles.inputContainer}>
-    <Text style={styles.inputLabel}>Specialization</Text>
-    <DropDownPicker
-      open={open}
-      value={value}
-      items={items}
-      setOpen={setOpen}
-      setValue={setValue}
-      placeholder={placeholder || 'Select'}
-      arrowIconContainerStyle={styles.dropdownArrowContainer}
-      arrowIconStyle={styles.dropdownArrowIcon}
-      style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
-      textStyle={styles.dropdownTextStyle}
-      placeholderStyle={styles.dropdownPlaceholderStyle}
-      dropDownContainerStyle={styles.dropdownContainerStyle}
-      listItemLabelStyle={styles.dropdownListItemStyle}
-      closeAfterSelecting={true}
-      searchable={false}
-      listMode="MODAL"
-      modalAnimationType="slide"
-      modalContentContainerStyle={styles.dropdownSmallModal}
-      zIndex={3000}
-      zIndexInverse={2000}
-    />
-  </View>
-);
-
-const HospitalDropdown = ({ 
-  open, 
-  setOpen, 
-  value, 
-  setValue, 
-  items, 
-  placeholder, 
-  loading, 
-  styles,
-  error 
-}: {
-  open: boolean;
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  value: string;
-  setValue: (callback: (prev: string) => string) => void;
-  items: Array<{ label: string, value: string }>;
-  placeholder?: string;
-  loading: boolean;
-  styles: any;
-  error?: string;
-}) => (
-  <View style={styles.inputContainer}>
-    <Text style={styles.inputLabel}>Hospital</Text>
-    <DropDownPicker
-      open={open}
-      value={value}
-      items={items}
-      setOpen={setOpen}
-      setValue={setValue}
-      placeholder={placeholder || 'Select'}
-      loading={loading}
-      arrowIconContainerStyle={styles.dropdownArrowContainer}
-      arrowIconStyle={styles.dropdownArrowIcon}
-      style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
-      textStyle={styles.dropdownTextStyle}
-      placeholderStyle={styles.dropdownPlaceholderStyle}
-      dropDownContainerStyle={styles.dropdownContainerStyle}
-      listItemLabelStyle={styles.dropdownListItemStyle}
-      listItemContainerStyle={styles.dropdownListItemContainer}
-      selectedItemContainerStyle={styles.dropdownSelectedItemContainer}
-      selectedItemLabelStyle={styles.dropdownSelectedItemLabel}
-      closeAfterSelecting={true}
-      searchable={true}
-      searchPlaceholder="Search hospital..."
-      listMode="MODAL"
-      modalAnimationType="slide"
-      modalContentContainerStyle={styles.dropdownSmallModal}
-      zIndex={2000}
-      zIndexInverse={3000}
-    />
-  </View>
-);
-
-const UnitDropdown = ({ 
-  open, 
-  setOpen, 
-  value, 
-  setValue, 
-  items, 
-  placeholder, 
-  loading, 
-  disabled,
-  styles,
-  error 
-}: {
-  open: boolean;
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  value: string;
-  setValue: (callback: (prev: string) => string) => void;
-  items: Array<{ label: string, value: string }>;
-  placeholder?: string;
-  loading: boolean;
-  disabled: boolean;
-  styles: any;
-  error?: string;
-}) => (
-  <View style={styles.inputContainer}>
-    <Text style={styles.inputLabel}>Unit</Text>
-    <DropDownPicker
-      open={open}
-      value={value}
-      items={items}
-      setOpen={setOpen}
-      setValue={setValue}
-      placeholder={placeholder || 'Select'}
-      loading={loading}
-      disabled={disabled}
-      arrowIconContainerStyle={styles.dropdownArrowContainer}
-      arrowIconStyle={styles.dropdownArrowIcon}
-      style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
-      textStyle={styles.dropdownTextStyle}
-      placeholderStyle={styles.dropdownPlaceholderStyle}
-      dropDownContainerStyle={styles.dropdownContainerStyle}
-      listItemLabelStyle={styles.dropdownListItemStyle}
-      listItemContainerStyle={styles.dropdownListItemContainer}
-      selectedItemContainerStyle={styles.dropdownSelectedItemContainer}
-      selectedItemLabelStyle={styles.dropdownSelectedItemLabel}
-      closeAfterSelecting={true}
-      searchable={true}
-      searchPlaceholder="Search unit..."
-      listMode="MODAL"
-      modalAnimationType="slide"
-      modalContentContainerStyle={styles.dropdownSmallModal}
-      zIndex={1000}
-      zIndexInverse={4000}
-    />
-  </View>
-);
-
-const StateDropdown = ({ 
-  open, 
-  setOpen, 
-  value, 
-  setValue, 
-  items, 
-  placeholder, 
-  styles,
-  error 
-}: {
-  open: boolean;
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  value: string;
-  setValue: (callback: (prev: string) => string) => void;
-  items: Array<{ label: string, value: string }>;
-  placeholder?: string;
-  styles: any;
-  error?: string;
-}) => (
-  <View style={styles.inputContainer}>
-    <Text style={styles.inputLabel}>State</Text>
-    <DropDownPicker
-      open={open}
-      value={value}
-      items={items}
-      setOpen={setOpen}
-      setValue={setValue}
-      placeholder={placeholder || 'Select'}
-      arrowIconContainerStyle={styles.dropdownArrowContainer}
-      arrowIconStyle={styles.dropdownArrowIcon}
-      style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
-      textStyle={styles.dropdownTextStyle}
-      placeholderStyle={styles.dropdownPlaceholderStyle}
-      dropDownContainerStyle={styles.dropdownContainerStyle}
-      listItemLabelStyle={styles.dropdownListItemStyle}
-      listItemContainerStyle={styles.dropdownListItemContainer}
-      selectedItemContainerStyle={styles.dropdownSelectedItemContainer}
-      selectedItemLabelStyle={styles.dropdownSelectedItemLabel}
-      closeAfterSelecting={true}
-      searchable={true}
-      searchPlaceholder="Search state..."
-      listMode="MODAL"
-      modalAnimationType="slide"
-      modalContentContainerStyle={styles.dropdownSmallModal}
-      zIndex={900}
-      zIndexInverse={3100}
-    />
-  </View>
-);
-
-const CityDropdown = ({ 
-  open, 
-  setOpen, 
-  value, 
-  setValue, 
-  items, 
-  placeholder, 
+const SingleSelectDropdown: React.FC<SingleSelectDropdownProps> = ({
+  label,
+  open,
+  setOpen,
+  value,
+  setValue,
+  items,
+  placeholder,
   styles,
   error,
-  disabled
-}: {
+  loading,
+  allowSearch = false,
+  disabled = false,
+}) => {
+  const appColors = useAppColors();
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    if (!open) {
+      setSearchTerm('');
+    }
+  }, [open]);
+
+  const selectedItem = items.find((item) => item.value === value);
+  const displayLabel = selectedItem?.label ?? placeholder ?? `Select ${label}`;
+
+  const filteredItems = allowSearch
+    ? items.filter((item) =>
+        item.label.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : items;
+
+  return (
+    <View style={styles.inputContainer}>
+      <Text style={styles.inputLabel}>{label}</Text>
+      <TouchableOpacity
+        style={[
+          styles.dropdownTrigger,
+          disabled && styles.dropdownTriggerDisabled,
+          error && styles.dropdownTriggerError,
+        ]}
+        activeOpacity={disabled ? 1 : 0.8}
+        onPress={() => {
+          if (!disabled) {
+            setOpen(true);
+          }
+        }}
+        disabled={disabled}>
+        <Text
+          style={[
+            styles.dropdownTriggerText,
+            !selectedItem && styles.dropdownTriggerPlaceholder,
+            disabled && styles.dropdownTriggerDisabledText,
+            {
+              color: selectedItem
+                ? appColors.textPrimary
+                : appColors.textSecondary,
+            },
+          ]}
+          numberOfLines={1}>
+          {displayLabel}
+        </Text>
+        <FontAwesomeIcon
+          icon={open ? 'chevron-up' : 'chevron-down'}
+          size={14}
+          color={appColors.textSecondary}
+          style={disabled ? { opacity: 0.5 } : undefined}
+        />
+      </TouchableOpacity>
+
+      <Modal
+        visible={open}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOpen(false)}>
+        <View style={styles.dropdownBackdrop}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setOpen(false)}
+          />
+          <View style={[styles.dropdownModal, { backgroundColor: appColors.accentText }]}>
+            <View style={styles.dropdownModalHeader}>
+              <Text style={[styles.dropdownModalTitle, { color: appColors.textPrimary }]}>
+                {`Select ${label}`}
+              </Text>
+              <TouchableOpacity onPress={() => setOpen(false)}>
+                <FontAwesomeIcon icon="times" size={18} color={appColors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {loading ? (
+              <View style={styles.dropdownLoading}>
+                <ActivityIndicator color={appColors.primary} />
+              </View>
+            ) : (
+              <>
+                {allowSearch && (
+                  <View style={[styles.dropdownSearchContainer, { borderColor: appColors.border }]}>
+                    <FontAwesomeIcon icon="search" size={14} color={appColors.textSecondary} />
+                    <TextInput
+                      style={[styles.dropdownSearchInput, { color: appColors.textPrimary }]}
+                      placeholder={`Search ${label}`}
+                      placeholderTextColor={appColors.textSecondary}
+                      value={searchTerm}
+                      onChangeText={setSearchTerm}
+                    />
+                  </View>
+                )}
+                <ScrollView style={styles.dropdownList}>
+                  {filteredItems.length === 0 ? (
+                    <Text style={[styles.dropdownEmptyText, { color: appColors.textSecondary }]}>
+                      No options available
+                    </Text>
+                  ) : (
+                    filteredItems.map((option) => {
+                      const isSelected = option.value === value;
+                      return (
+                        <TouchableOpacity
+                          key={option.value}
+                          style={[
+                            styles.dropdownOption,
+                            isSelected && {
+                              backgroundColor: appColors.primary + '15',
+                              borderColor: appColors.primary,
+                            },
+                          ]}
+                          activeOpacity={0.8}
+                          onPress={() => {
+                            setValue(() => option.value);
+                            setOpen(false);
+                          }}>
+                          <Text style={[styles.dropdownOptionLabel, { color: appColors.textPrimary }]}>
+                            {option.label}
+                          </Text>
+                          {isSelected && (
+                            <FontAwesomeIcon icon="check" size={14} color={appColors.primary} />
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })
+                  )}
+                </ScrollView>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+};
+
+type MultiSelectDropdownProps = {
+  label: string;
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  value: string;
-  setValue: (callback: (prev: string) => string) => void;
-  items: Array<{ label: string, value: string }>;
+  value: string[];
+  setValue: (callback: (prev: string[]) => string[]) => void;
+  items: SingleSelectItem[];
   placeholder?: string;
   styles: any;
   error?: string;
-  disabled?: boolean;
-}) => (
-  <View style={styles.inputContainer}>
-    <Text style={styles.inputLabel}>City</Text>
-    <DropDownPicker
-      open={open}
-      value={value}
-      items={items}
-      setOpen={setOpen}
-      setValue={setValue}
-      placeholder={placeholder || 'Select'}
-      disabled={disabled}
-      arrowIconContainerStyle={styles.dropdownArrowContainer}
-      arrowIconStyle={styles.dropdownArrowIcon}
-      style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
-      textStyle={styles.dropdownTextStyle}
-      placeholderStyle={styles.dropdownPlaceholderStyle}
-      dropDownContainerStyle={styles.dropdownContainerStyle}
-      listItemLabelStyle={styles.dropdownListItemStyle}
-      listItemContainerStyle={styles.dropdownListItemContainer}
-      selectedItemContainerStyle={styles.dropdownSelectedItemContainer}
-      selectedItemLabelStyle={styles.dropdownSelectedItemLabel}
-      closeAfterSelecting={true}
-      searchable={true}
-      searchPlaceholder="Search city..."
-      listMode="MODAL"
-      modalAnimationType="slide"
-      modalContentContainerStyle={styles.dropdownSmallModal}
-      zIndex={800}
-      zIndexInverse={3200}
-    />
-  </View>
+};
+
+const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
+  label,
+  open,
+  setOpen,
+  value,
+  setValue,
+  items,
+  placeholder,
+  styles,
+  error,
+}) => {
+  const appColors = useAppColors();
+
+  const toggleValue = (optionValue: string) => {
+    setValue((prev) => {
+      if (prev.includes(optionValue)) {
+        return prev.filter((item) => item !== optionValue);
+      }
+      return [...prev, optionValue];
+    });
+  };
+
+  const displayText =
+    value.length === 0
+      ? placeholder || `Select ${label}`
+      : value.length <= 2
+      ? value.join(', ')
+      : `${value.slice(0, 2).join(', ')} +${value.length - 2} more`;
+
+  return (
+    <View style={styles.inputContainer}>
+      <Text style={styles.inputLabel}>{label}</Text>
+      <TouchableOpacity
+        style={[
+          styles.dropdownTrigger,
+          error && styles.dropdownTriggerError,
+        ]}
+        activeOpacity={0.8}
+        onPress={() => setOpen(true)}>
+        <Text
+          style={[
+            styles.dropdownTriggerText,
+            value.length === 0 && styles.dropdownTriggerPlaceholder,
+            { color: value.length ? appColors.textPrimary : appColors.textSecondary },
+          ]}
+          numberOfLines={1}>
+          {displayText}
+        </Text>
+        <FontAwesomeIcon
+          icon={open ? 'chevron-up' : 'chevron-down'}
+          size={14}
+          color={appColors.textSecondary}
+        />
+      </TouchableOpacity>
+
+      <Modal
+        visible={open}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOpen(false)}>
+        <View style={styles.dropdownBackdrop}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setOpen(false)}
+          />
+          <View style={[styles.dropdownModalLarge, { backgroundColor: appColors.accentText }]}>
+            <View style={styles.dropdownModalHeader}>
+              <Text style={[styles.dropdownModalTitle, { color: appColors.textPrimary }]}>
+                {`Select ${label}`}
+              </Text>
+              <TouchableOpacity onPress={() => setOpen(false)}>
+                <FontAwesomeIcon icon="times" size={18} color={appColors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.dropdownList}>
+              {items.length === 0 ? (
+                <Text style={[styles.dropdownEmptyText, { color: appColors.textSecondary }]}>
+                  No options available
+                </Text>
+              ) : (
+                items.map((option) => {
+                  const isSelected = value.includes(option.value);
+                  return (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[
+                        styles.dropdownOption,
+                        isSelected && {
+                          backgroundColor: appColors.primary + '15',
+                          borderColor: appColors.primary,
+                        },
+                      ]}
+                      activeOpacity={0.8}
+                      onPress={() => toggleValue(option.value)}>
+                      <Text style={[styles.dropdownOptionLabel, { color: appColors.textPrimary }]}>
+                        {option.label}
+                      </Text>
+                      {isSelected && (
+                        <FontAwesomeIcon icon="check" size={14} color={appColors.primary} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })
+              )}
+            </ScrollView>
+            <TouchableOpacity
+              style={[styles.modalPrimaryButton, { backgroundColor: appColors.primary }]}
+              activeOpacity={0.85}
+              onPress={() => setOpen(false)}>
+              <Text style={[styles.modalPrimaryButtonText, { color: appColors.accentText }]}>
+                Done
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+};
+
+const DepartmentDropdown = (props: Omit<SingleSelectDropdownProps, 'label'>) => (
+  <SingleSelectDropdown label="Department" allowSearch {...props} />
 );
 
-const CountryDropdown = ({ 
-  open, 
-  setOpen, 
-  value, 
-  setValue, 
-  items, 
-  placeholder, 
-  styles,
-  error 
-}: {
-  open: boolean;
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  value: string;
-  setValue: (callback: (prev: string) => string) => void;
-  items: Array<{ label: string, value: string }>;
-  placeholder?: string;
-  styles: any;
-  error?: string;
-}) => (
-  <View style={styles.inputContainer}>
-    <Text style={styles.inputLabel}>Country</Text>
-    <DropDownPicker
-      open={open}
-      value={value}
-      items={items}
-      setOpen={setOpen}
-      setValue={setValue}
-      placeholder={placeholder || 'Select'}
-      arrowIconContainerStyle={styles.dropdownArrowContainer}
-      arrowIconStyle={styles.dropdownArrowIcon}
-      style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
-      textStyle={styles.dropdownTextStyle}
-      placeholderStyle={styles.dropdownPlaceholderStyle}
-      dropDownContainerStyle={styles.dropdownContainerStyle}
-      listItemLabelStyle={styles.dropdownListItemStyle}
-      listItemContainerStyle={styles.dropdownListItemContainer}
-      selectedItemContainerStyle={styles.dropdownSelectedItemContainer}
-      selectedItemLabelStyle={styles.dropdownSelectedItemLabel}
-      closeAfterSelecting={true}
-      searchable={true}
-      searchPlaceholder="Search country..."
-      listMode="MODAL"
-      modalAnimationType="slide"
-      modalContentContainerStyle={styles.dropdownSmallModal}
-      zIndex={700}
-      zIndexInverse={3300}
-    />
-    {error && <Text numberOfLines={1} style={styles.errorText}>{error}</Text>}
-  </View>
+const SpecializationDropdown = (props: Omit<SingleSelectDropdownProps, 'label'>) => (
+  <SingleSelectDropdown label="Specialization" allowSearch {...props} />
+);
+
+const HospitalDropdown = (props: Omit<SingleSelectDropdownProps, 'label'>) => (
+  <SingleSelectDropdown label="Hospital" allowSearch {...props} />
+);
+
+const UnitDropdown = (props: Omit<SingleSelectDropdownProps, 'label'>) => (
+  <SingleSelectDropdown label="Unit" allowSearch {...props} />
+);
+
+const StateDropdown = (props: Omit<SingleSelectDropdownProps, 'label'>) => (
+  <SingleSelectDropdown label="State" allowSearch {...props} />
+);
+
+const CityDropdown = (props: Omit<SingleSelectDropdownProps, 'label'>) => (
+  <SingleSelectDropdown label="City" allowSearch {...props} />
+);
+
+const CountryDropdown = (props: Omit<SingleSelectDropdownProps, 'label'>) => (
+  <SingleSelectDropdown label="Country" allowSearch {...props} />
 );
 
 // Experience years dropdown (0-25 years)
@@ -741,34 +713,17 @@ const ExperienceDropdown = ({
 }) => {
   const items = Array.from({ length: 26 }, (_, i) => ({ label: `${i} year${i === 1 ? '' : 's'}`, value: String(i) }));
   return (
-    <View style={styles.inputContainer}>
-      <Text style={styles.inputLabel}>Experience</Text>
-      <DropDownPicker
-        open={open}
-        value={value}
-        items={items}
-        setOpen={setOpen}
-        setValue={setValue}
-        placeholder={'Select'}
-        arrowIconContainerStyle={styles.dropdownArrowContainer}
-        arrowIconStyle={styles.dropdownArrowIcon}
-        style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
-        textStyle={styles.dropdownTextStyle}
-        placeholderStyle={styles.dropdownPlaceholderStyle}
-        dropDownContainerStyle={styles.dropdownContainerStyle}
-        listItemLabelStyle={styles.dropdownListItemStyle}
-        listItemContainerStyle={styles.dropdownListItemContainer}
-        selectedItemContainerStyle={styles.dropdownSelectedItemContainer}
-        selectedItemLabelStyle={styles.dropdownSelectedItemLabel}
-        closeAfterSelecting={true}
-        searchable={false}
-        listMode="MODAL"
-        modalAnimationType="slide"
-      modalContentContainerStyle={styles.dropdownSmallModal}
-        zIndex={2600}
-        zIndexInverse={2400}
-      />
-    </View>
+    <SingleSelectDropdown
+      label="Experience"
+      open={open}
+      setOpen={setOpen}
+      value={value}
+      setValue={setValue}
+      items={items}
+      placeholder="Select"
+      styles={styles}
+      error={error}
+    />
   );
 };
 
@@ -1026,36 +981,17 @@ const SkillsDropdown = ({
   const skills = (departmentRequiredSkills as any)[department] || [];
   const items = skills.map((s: string) => ({ label: s, value: s }));
   return (
-    <View style={styles.inputContainer}>
-      <Text style={styles.inputLabel}>Required Skills</Text>
-      <DropDownPicker
-        multiple
-        mode="BADGE"
-        open={open}
-        value={value}
-        items={items}
-        setOpen={setOpen}
-        setValue={setValue}
-        placeholder={'Select'}
-        arrowIconContainerStyle={styles.dropdownArrowContainer}
-        arrowIconStyle={styles.dropdownArrowIcon}
-        style={[styles.dropdownStyle, error && styles.dropdownStyleError]}
-        textStyle={styles.dropdownTextStyle}
-        placeholderStyle={styles.dropdownPlaceholderStyle}
-        dropDownContainerStyle={styles.dropdownContainerStyle}
-        listItemLabelStyle={styles.dropdownListItemStyle}
-        listItemContainerStyle={styles.dropdownListItemContainer}
-        selectedItemContainerStyle={styles.dropdownSelectedItemContainer}
-        selectedItemLabelStyle={styles.dropdownSelectedItemLabel}
-        searchable={false}
-        listMode="MODAL"
-        modalAnimationType="slide"
-        modalContentContainerStyle={styles.dropdownSmallModal}
-        closeAfterSelecting={false}
-        zIndex={2500}
-        zIndexInverse={2500}
-      />
-    </View>
+    <MultiSelectDropdown
+      label="Required Skills"
+      open={open}
+      setOpen={setOpen}
+      value={value}
+      setValue={setValue}
+      items={items}
+      placeholder="Select"
+      styles={styles}
+      error={error}
+    />
   );
   };
 
@@ -2466,80 +2402,136 @@ const styles = StyleSheet.create({
   tightUpLarge: {
     marginTop: -Spacing.lg,
   },
-  dropdownStyle: {
-    backgroundColor: Colors.backgroundSecondary,
-    borderColor: Colors.border,
-    borderWidth: 1,
-    borderRadius: BorderRadius.lg,
-    height: 44,
-    paddingVertical: 0,
+  dropdownTrigger: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dropdownTextStyle: {
-    fontSize: Typography.fontSize.base,
-    fontFamily: Typography.fontFamily.regular,
-    color: Colors.textPrimary,
-    lineHeight: 20,
-  },
-  dropdownPlaceholderStyle: {
-    fontSize: Typography.fontSize.base,
-    fontFamily: Typography.fontFamily.regular,
-    color: Colors.textTertiary,
-    lineHeight: 20,
-  },
-  dropdownContainerStyle: {
-    backgroundColor: Colors.white,
-    borderColor: Colors.border,
+    justifyContent: 'space-between',
     borderWidth: 1,
+    borderColor: Colors.border,
     borderRadius: BorderRadius.lg,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: Colors.white,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm + 2,
   },
-  dropdownListItemStyle: {
+  dropdownTriggerDisabled: {
+    backgroundColor: Colors.backgroundSecondary,
+    borderColor: Colors.borderLight,
+  },
+  dropdownTriggerError: {
+    borderColor: Colors.error,
+  },
+  dropdownTriggerText: {
+    flex: 1,
+    marginRight: Spacing.sm,
     fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.medium,
     color: Colors.textPrimary,
   },
-  dropdownListItemContainer: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
+  dropdownTriggerPlaceholder: {
+    fontFamily: Typography.fontFamily.regular,
   },
-  dropdownSelectedItemContainer: {
-    backgroundColor: Colors.primary + '10',
+  dropdownTriggerDisabledText: {
+    opacity: 0.6,
   },
-  dropdownSelectedItemLabel: {
-    fontFamily: Typography.fontFamily.medium,
-    color: Colors.primary,
+  dropdownBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.lg,
+  },
+  dropdownModal: {
+    width: '100%',
+    maxHeight: '75%',
+    borderRadius: BorderRadius.xl || 24,
+    padding: Spacing.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 12,
+  },
+  dropdownModalLarge: {
+    width: '100%',
+    maxHeight: '80%',
+    borderRadius: BorderRadius.xl || 24,
+    padding: Spacing.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 12,
+  },
+  dropdownModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.md,
   },
   dropdownModalTitle: {
     fontSize: Typography.fontSize.lg,
     fontFamily: Typography.fontFamily.bold,
     color: Colors.textPrimary,
   },
-  dropdownSmallModal: {
-    alignSelf: 'stretch',
-    width: '100%',
-    marginTop: 'auto',
-    maxHeight: '60%',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingBottom: 8,
-  },
-  dropdownArrowContainer: {
-    justifyContent: 'center',
+  dropdownLoading: {
+    paddingVertical: Spacing.xl,
     alignItems: 'center',
-    height: '100%',
+    justifyContent: 'center',
   },
-  dropdownArrowIcon: {
-    marginTop: 0,
-    marginBottom: 0,
+  dropdownSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    marginBottom: Spacing.sm,
+    backgroundColor: Colors.backgroundSecondary,
+  },
+  dropdownSearchInput: {
+    flex: 1,
+    marginLeft: Spacing.sm,
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.textPrimary,
+  },
+  dropdownList: {
+    flexGrow: 0,
+  },
+  dropdownEmptyText: {
+    textAlign: 'center',
+    paddingVertical: Spacing.lg,
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.regular,
+    color: Colors.textSecondary,
+  },
+  dropdownOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    marginBottom: Spacing.xs,
+  },
+  dropdownOptionLabel: {
+    flex: 1,
+    marginRight: Spacing.sm,
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.medium,
+  },
+  modalPrimaryButton: {
+    marginTop: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalPrimaryButtonText: {
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily.medium,
   },
   inputWithClear: {
     flexDirection: 'row',
@@ -2595,9 +2587,6 @@ const styles = StyleSheet.create({
   },
   // Error styles
   textInputError: {
-    borderColor: Colors.error,
-  },
-  dropdownStyleError: {
     borderColor: Colors.error,
   },
   errorText: {
