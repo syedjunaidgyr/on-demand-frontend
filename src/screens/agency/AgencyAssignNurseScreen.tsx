@@ -20,7 +20,7 @@ interface Segment {
   endDate: Date | null;
   showStartPicker: boolean;
   showEndPicker: boolean;
-  showDoctorPicker: boolean;
+  showNursePicker: boolean;
 }
 
 const AgencyAssignNurseScreen: React.FC = () => {
@@ -33,15 +33,15 @@ const AgencyAssignNurseScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [pool, setPool] = useState<any[]>([]);
-  const [doctors, setDoctors] = useState<any[]>([]);
+  const [nurses, setNurses] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | number | null>(null);
   const [job, setJob] = useState<any>(null);
   const [segments, setSegments] = useState<Segment[]>([
-    { id: '1', userId: null, startDate: null, endDate: null, showStartPicker: false, showEndPicker: false, showDoctorPicker: false }
+    { id: '1', userId: null, startDate: null, endDate: null, showStartPicker: false, showEndPicker: false, showNursePicker: false }
   ]);
-  const [showDoctorModal, setShowDoctorModal] = useState(false);
-  const [selectedSegmentForDoctor, setSelectedSegmentForDoctor] = useState<string | null>(null);
+  const [showNurseModal, setShowNurseModal] = useState(false);
+  const [selectedSegmentForNurse, setSelectedSegmentForNurse] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -61,9 +61,9 @@ const AgencyAssignNurseScreen: React.FC = () => {
 
         const res = await ApiService.getAgencyNurses(agencyId);
         setPool(res.pool || []);
-        setDoctors(res.nurses || []);
+        setNurses(res.nurses || []);
       } catch (e) {
-        Alert.alert('Error', 'Failed to load doctors.');
+        Alert.alert('Error', 'Failed to load nurses.');
       } finally {
         setLoading(false);
       }
@@ -71,33 +71,33 @@ const AgencyAssignNurseScreen: React.FC = () => {
     load();
   }, [user?.id, jobId]);
 
-  // Filter to show only doctors (role === 'DOCTOR') and non-revoked
+  // Filter to show only nurses (role === 'NURSE') and non-revoked
   const eligiblePool = (pool || []).filter((m: any) => {
     const status = String(m.status || '').toUpperCase();
     const role = String(m.nurse?.role || m.role || '').toUpperCase();
-    return status !== 'REVOKED' && role === 'DOCTOR';
+    return status !== 'REVOKED' && role === 'NURSE';
   });
 
   const items = eligiblePool.map((m: any) => {
-    const fallback = doctors.find((x: any) => String(x.id) === String(m.nurseId || m.userId)) || {};
-    const doctor = m.nurse || m.doctor || fallback || {};
+    const fallback = nurses.find((x: any) => String(x.id) === String(m.nurseId || m.userId)) || {};
+    const nurse = m.nurse || fallback || {};
     return { 
-      id: doctor.id, 
-      firstName: doctor.firstName, 
-      lastName: doctor.lastName, 
-      email: doctor.email, 
-      phone: doctor.phone,
-      specialization: doctor.specialization,
-      department: doctor.department,
+      id: nurse.id, 
+      firstName: nurse.firstName, 
+      lastName: nurse.lastName, 
+      email: nurse.email, 
+      phone: nurse.phone,
+      specialization: nurse.specialization,
+      department: nurse.department,
       status: m.status 
     };
-  }).filter((d: any) => {
+  }).filter((n: any) => {
     if (!search.trim()) return true;
     const q = search.trim().toLowerCase();
     return (
-      String(d.firstName || '').toLowerCase().includes(q) ||
-      String(d.lastName || '').toLowerCase().includes(q) ||
-      String(d.email || '').toLowerCase().includes(q)
+      String(n.firstName || '').toLowerCase().includes(q) ||
+      String(n.lastName || '').toLowerCase().includes(q) ||
+      String(n.email || '').toLowerCase().includes(q)
     );
   });
 
@@ -130,7 +130,7 @@ const AgencyAssignNurseScreen: React.FC = () => {
     // Check all segments have required fields
     for (const seg of segments) {
       if (!seg.userId) {
-        return 'Please select a doctor for all segments';
+        return 'Please select a nurse for all segments';
       }
       if (!seg.startDate || !seg.endDate) {
         return 'Please select start and end dates for all segments';
@@ -172,7 +172,7 @@ const AgencyAssignNurseScreen: React.FC = () => {
       endDate: null,
       showStartPicker: false,
       showEndPicker: false,
-      showDoctorPicker: false
+      showNursePicker: false
     }]);
   };
 
@@ -219,7 +219,7 @@ const AgencyAssignNurseScreen: React.FC = () => {
       } else {
         // FULL mode
         if (!selectedUserId) {
-          Alert.alert('Select Doctor', 'Please select a doctor to assign.');
+          Alert.alert('Select Nurse', 'Please select a nurse to assign.');
           return;
         }
         setSubmitting(true);
@@ -228,43 +228,43 @@ const AgencyAssignNurseScreen: React.FC = () => {
           hourlyRate: rate,
           assignments: [{ userId: selectedUserId }],
         });
-        Alert.alert('Success', 'Doctor assigned to job.', [
+        Alert.alert('Success', 'Nurse assigned to job.', [
           { text: 'OK', onPress: () => (navigation as any).goBack() },
         ]);
       }
     } catch (e: any) {
-      Alert.alert('Error', e?.response?.data?.message || e?.message || 'Failed to assign doctor.');
+      Alert.alert('Error', e?.response?.data?.message || e?.message || 'Failed to assign nurse.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const getSelectedDoctorName = (userId: string | number | null): string => {
-    if (!userId) return 'Select doctor';
-    const doctor = items.find(d => String(d.id) === String(userId));
-    return doctor ? `Dr. ${doctor.firstName} ${doctor.lastName}` : 'Select doctor';
+  const getSelectedNurseName = (userId: string | number | null): string => {
+    if (!userId) return 'Select nurse';
+    const nurse = items.find(n => String(n.id) === String(userId));
+    return nurse ? `${nurse.firstName} ${nurse.lastName}` : 'Select nurse';
   };
 
   const dateRange = getJobDateRange();
 
-  const openDoctorPicker = (segmentId: string) => {
-    setSelectedSegmentForDoctor(segmentId);
-    setShowDoctorModal(true);
+  const openNursePicker = (segmentId: string) => {
+    setSelectedSegmentForNurse(segmentId);
+    setShowNurseModal(true);
   };
 
-  const selectDoctorForSegment = (doctorId: string | number) => {
-    if (selectedSegmentForDoctor) {
-      updateSegment(selectedSegmentForDoctor, { userId: doctorId, showDoctorPicker: false });
+  const selectNurseForSegment = (nurseId: string | number) => {
+    if (selectedSegmentForNurse) {
+      updateSegment(selectedSegmentForNurse, { userId: nurseId, showNursePicker: false });
     }
-    setShowDoctorModal(false);
-    setSelectedSegmentForDoctor(null);
+    setShowNurseModal(false);
+    setSelectedSegmentForNurse(null);
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" translucent={false} />
       <GlobalHeader 
-        title="Assign Doctor"
+        title="Assign Nurse"
         backgroundColor="#FFFFFF"
         titleColor="#111827"
         onBackPress={() => (navigation as any).goBack?.()}
@@ -317,7 +317,7 @@ const AgencyAssignNurseScreen: React.FC = () => {
               <FontAwesomeIcon icon="search" size={16} color={Colors.textSecondary} />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search doctors"
+                placeholder="Search nurses"
                 placeholderTextColor={Colors.textTertiary}
                 value={search}
                 onChangeText={setSearch}
@@ -352,12 +352,12 @@ const AgencyAssignNurseScreen: React.FC = () => {
                   </View>
 
                   <TouchableOpacity
-                    style={styles.segmentDoctorSelect}
-                    onPress={() => openDoctorPicker(segment.id)}>
-                    <View style={styles.segmentDoctorSelectContent}>
-                      <FontAwesomeIcon icon="user-md" size={18} color={segment.userId ? Colors.primary : Colors.textTertiary} />
-                      <Text style={[styles.segmentDoctorText, !segment.userId && styles.segmentDoctorPlaceholder]}>
-                        {getSelectedDoctorName(segment.userId)}
+                    style={styles.segmentNurseSelect}
+                    onPress={() => openNursePicker(segment.id)}>
+                    <View style={styles.segmentNurseSelectContent}>
+                      <FontAwesomeIcon icon="user-nurse" size={18} color={segment.userId ? Colors.primary : Colors.textTertiary} />
+                      <Text style={[styles.segmentNurseText, !segment.userId && styles.segmentNursePlaceholder]}>
+                        {getSelectedNurseName(segment.userId)}
                       </Text>
                     </View>
                     <FontAwesomeIcon icon="chevron-down" size={14} color={Colors.textSecondary} />
@@ -435,50 +435,50 @@ const AgencyAssignNurseScreen: React.FC = () => {
             {loading ? (
               <View style={styles.center}> 
                 <ActivityIndicator size="large" color={Colors.primary} />
-                <Text style={styles.loadingText}>Loading doctors…</Text>
+                <Text style={styles.loadingText}>Loading nurses…</Text>
               </View>
             ) : items.length === 0 ? (
               <View style={styles.emptyContainer}>
-                <FontAwesomeIcon icon="user-md" size={48} color={Colors.textTertiary} />
-                <Text style={styles.emptyText}>No doctors available</Text>
-                <Text style={styles.emptySubtext}>Add doctors to your agency pool first</Text>
+                <FontAwesomeIcon icon="user-nurse" size={48} color={Colors.textTertiary} />
+                <Text style={styles.emptyText}>No nurses available</Text>
+                <Text style={styles.emptySubtext}>Add nurses to your agency pool first</Text>
               </View>
             ) : (
               <View style={styles.listContainer}>
-                {items.map((doctor) => (
+                {items.map((nurse) => (
                   <TouchableOpacity 
-                    key={doctor.id}
-                    style={[styles.doctorItem, selectedUserId === doctor.id && styles.doctorItemActive]} 
-                    onPress={() => setSelectedUserId(doctor.id)}>
-                    <View style={[styles.avatar, selectedUserId === doctor.id && styles.avatarActive]}>
-                      <Text style={[styles.avatarTxt, selectedUserId === doctor.id && styles.avatarTxtActive]}>
-                        {(doctor.firstName || doctor.lastName || 'D').charAt(0).toUpperCase()}
+                    key={nurse.id}
+                    style={[styles.nurseItem, selectedUserId === nurse.id && styles.nurseItemActive]} 
+                    onPress={() => setSelectedUserId(nurse.id)}>
+                    <View style={[styles.avatar, selectedUserId === nurse.id && styles.avatarActive]}>
+                      <Text style={[styles.avatarTxt, selectedUserId === nurse.id && styles.avatarTxtActive]}>
+                        {(nurse.firstName || nurse.lastName || 'N').charAt(0).toUpperCase()}
                       </Text>
                     </View>
-                    <View style={styles.doctorBody}>
-                      <View style={styles.doctorHeader}>
-                        <Text style={styles.doctorName}>Dr. {doctor.firstName} {doctor.lastName}</Text>
-                        {selectedUserId === doctor.id && (
+                    <View style={styles.nurseBody}>
+                      <View style={styles.nurseHeader}>
+                        <Text style={styles.nurseName}>{nurse.firstName} {nurse.lastName}</Text>
+                        {selectedUserId === nurse.id && (
                           <View style={styles.selectedBadge}>
                             <FontAwesomeIcon icon="check-circle" size={16} color={Colors.white} />
                           </View>
                         )}
                       </View>
-                      {doctor.specialization && (
-                        <View style={styles.doctorMeta}>
+                      {nurse.specialization && (
+                        <View style={styles.nurseMeta}>
                           <FontAwesomeIcon icon="stethoscope" size={12} color={Colors.textSecondary} />
-                          <Text style={styles.doctorMetaText}>{doctor.specialization}</Text>
+                          <Text style={styles.nurseMetaText}>{nurse.specialization}</Text>
                         </View>
                       )}
-                      {doctor.department && (
-                        <View style={styles.doctorMeta}>
+                      {nurse.department && (
+                        <View style={styles.nurseMeta}>
                           <FontAwesomeIcon icon="hospital" size={12} color={Colors.textSecondary} />
-                          <Text style={styles.doctorMetaText}>{doctor.department}</Text>
+                          <Text style={styles.nurseMetaText}>{nurse.department}</Text>
                         </View>
                       )}
-                      <View style={styles.doctorMeta}>
+                      <View style={styles.nurseMeta}>
                         <FontAwesomeIcon icon="envelope" size={12} color={Colors.textSecondary} />
-                        <Text style={styles.doctorMetaText}>{doctor.email}</Text>
+                        <Text style={styles.nurseMetaText}>{nurse.email}</Text>
                       </View>
                     </View>
                   </TouchableOpacity>
@@ -501,28 +501,28 @@ const AgencyAssignNurseScreen: React.FC = () => {
             <ActivityIndicator size="small" color={Colors.white} />
           ) : (
             <Text style={styles.primaryBtnTxt}>
-              {mode === 'SEGMENTS' ? `Assign ${segments.length} Segment(s)` : 'Assign Doctor'}
+              {mode === 'SEGMENTS' ? `Assign ${segments.length} Segment(s)` : 'Assign Nurse'}
             </Text>
           )}
         </TouchableOpacity>
       </View>
 
-      {/* Doctor Selection Modal for Segments */}
+      {/* Nurse Selection Modal for Segments */}
       <Modal
-        visible={showDoctorModal}
+        visible={showNurseModal}
         transparent
         animationType="slide"
         onRequestClose={() => {
-          setShowDoctorModal(false);
-          setSelectedSegmentForDoctor(null);
+          setShowNurseModal(false);
+          setSelectedSegmentForNurse(null);
         }}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Doctor</Text>
+              <Text style={styles.modalTitle}>Select Nurse</Text>
               <TouchableOpacity onPress={() => {
-                setShowDoctorModal(false);
-                setSelectedSegmentForDoctor(null);
+                setShowNurseModal(false);
+                setSelectedSegmentForNurse(null);
               }}>
                 <FontAwesomeIcon icon="times" size={20} color={Colors.textPrimary} />
               </TouchableOpacity>
@@ -531,7 +531,7 @@ const AgencyAssignNurseScreen: React.FC = () => {
               <FontAwesomeIcon icon="search" size={16} color={Colors.textSecondary} />
               <TextInput
                 style={styles.modalSearchInput}
-                placeholder="Search doctors"
+                placeholder="Search nurses"
                 placeholderTextColor={Colors.textTertiary}
                 value={search}
                 onChangeText={setSearch}
@@ -540,27 +540,27 @@ const AgencyAssignNurseScreen: React.FC = () => {
             <FlatList
               data={items}
               keyExtractor={(item) => String(item.id)}
-              renderItem={({ item: doctor }) => (
+              renderItem={({ item: nurse }) => (
                 <TouchableOpacity
-                  style={styles.modalDoctorItem}
-                  onPress={() => selectDoctorForSegment(doctor.id)}>
+                  style={styles.modalNurseItem}
+                  onPress={() => selectNurseForSegment(nurse.id)}>
                   <View style={styles.modalAvatar}>
                     <Text style={styles.modalAvatarText}>
-                      {(doctor.firstName || doctor.lastName || 'D').charAt(0).toUpperCase()}
+                      {(nurse.firstName || nurse.lastName || 'N').charAt(0).toUpperCase()}
                     </Text>
                   </View>
-                  <View style={styles.modalDoctorBody}>
-                    <Text style={styles.modalDoctorName}>Dr. {doctor.firstName} {doctor.lastName}</Text>
-                    {doctor.specialization && (
-                      <Text style={styles.modalDoctorSub}>{doctor.specialization}</Text>
+                  <View style={styles.modalNurseBody}>
+                    <Text style={styles.modalNurseName}>{nurse.firstName} {nurse.lastName}</Text>
+                    {nurse.specialization && (
+                      <Text style={styles.modalNurseSub}>{nurse.specialization}</Text>
                     )}
-                    <Text style={styles.modalDoctorEmail}>{doctor.email}</Text>
+                    <Text style={styles.modalNurseEmail}>{nurse.email}</Text>
                   </View>
                 </TouchableOpacity>
               )}
               ListEmptyComponent={
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>No doctors found</Text>
+                  <Text style={styles.emptyText}>No nurses found</Text>
                 </View>
               }
             />
@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
   emptyText: { marginTop: 12, color: Colors.textSecondary, fontFamily: Typography.fontFamily.medium, fontSize: 16 },
   emptySubtext: { marginTop: 4, color: Colors.textTertiary, fontFamily: Typography.fontFamily.regular, fontSize: 14 },
   listContainer: { paddingHorizontal: 16, paddingTop: 8 },
-  doctorItem: { 
+  nurseItem: { 
     flexDirection: 'row', 
     alignItems: 'flex-start', 
     backgroundColor: Colors.white, 
@@ -633,7 +633,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  doctorItemActive: { 
+  nurseItemActive: { 
     borderColor: Colors.primary, 
     borderWidth: 2,
     backgroundColor: '#EEF2FF',
@@ -661,14 +661,14 @@ const styles = StyleSheet.create({
   avatarTxtActive: { 
     color: Colors.white 
   },
-  doctorBody: { flex: 1 },
-  doctorHeader: {
+  nurseBody: { flex: 1 },
+  nurseHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
   },
-  doctorName: { 
+  nurseName: { 
     color: Colors.textPrimary, 
     fontFamily: Typography.fontFamily.bold, 
     fontSize: 16,
@@ -679,13 +679,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 4,
   },
-  doctorMeta: {
+  nurseMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     marginBottom: 4,
   },
-  doctorMetaText: { 
+  nurseMetaText: { 
     color: Colors.textSecondary, 
     fontFamily: Typography.fontFamily.regular, 
     fontSize: 13 
@@ -780,7 +780,7 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 15,
   },
-  segmentDoctorSelect: {
+  segmentNurseSelect: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -791,19 +791,19 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: Colors.borderLight,
   },
-  segmentDoctorSelectContent: {
+  segmentNurseSelectContent: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     flex: 1,
   },
-  segmentDoctorText: {
+  segmentNurseText: {
     flex: 1,
     color: Colors.textPrimary,
     fontFamily: Typography.fontFamily.medium,
     fontSize: 15,
   },
-  segmentDoctorPlaceholder: {
+  segmentNursePlaceholder: {
     color: Colors.textTertiary,
   },
   dateRow: {
@@ -879,7 +879,7 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     fontFamily: Typography.fontFamily.regular,
   },
-  modalDoctorItem: {
+  modalNurseItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
@@ -900,22 +900,22 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.bold,
     fontSize: 18,
   },
-  modalDoctorBody: {
+  modalNurseBody: {
     flex: 1,
   },
-  modalDoctorName: {
+  modalNurseName: {
     color: Colors.textPrimary,
     fontFamily: Typography.fontFamily.bold,
     fontSize: 15,
     marginBottom: 4,
   },
-  modalDoctorSub: {
+  modalNurseSub: {
     color: Colors.textSecondary,
     fontFamily: Typography.fontFamily.regular,
     fontSize: 13,
     marginBottom: 2,
   },
-  modalDoctorEmail: {
+  modalNurseEmail: {
     color: Colors.textTertiary,
     fontFamily: Typography.fontFamily.regular,
     fontSize: 12,
